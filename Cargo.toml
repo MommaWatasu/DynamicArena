@@ -5,3 +5,9 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.0"
+
+[profile.dev]
+opt-level = 2
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = "0.3.76"
