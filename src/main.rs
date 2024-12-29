@@ -9,17 +9,21 @@ use bevy::{
 };
 
 mod mainmenu;
+mod settings;
+mod choose_character;
 
 const GAMETITLE: &str = "DynamicArena";
-const BACGROUND_COLOR: Color = Color::srgb(0.1, 0.1, 0.1);
-const PATH_REGULAR_FONT: &str = "fonts/static/Orbitron-Regular.ttf";
-const PATH_BOLD_FONT: &str = "fonts/static/Orbitron-Bold.ttf";
-const PATH_EXTRA_BOLD_FONT: &str = "fonts/static/Orbitron-ExtraBold.ttf";
+const PATH_FONT: &str = "fonts/Orbitron/Orbitron-Regular.ttf";
+const PATH_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-Bold.ttf";
+const PATH_EXTRA_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-ExtraBold.ttf";
+const PATH_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Regular.ttf";
+const PATH_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Bold.ttf";
+const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
 const PATH_IMAGE_PREFIX: &str = "images/";
 
 #[derive(Resource)]
-struct WindowConfig {
-    size: Vec2
+struct GameConfig {
+    window_size: Vec2
 }
 
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
@@ -28,7 +32,7 @@ enum AppState {
     Initialize,
     Mainmenu,
     Settings,
-    ChoosePlayer,
+    ChooseCharacter,
     Ingame,
 }
 
@@ -36,13 +40,15 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .init_state::<AppState>()
-        .insert_resource(ClearColor(BACGROUND_COLOR))
-        .insert_resource(WindowConfig {
-            size: Vec2::new(800.0, 600.0),
+        .insert_resource(GameConfig {
+            window_size: Vec2::new(800.0, 600.0),
         })
+        .insert_resource(ClearColor(Color::WHITE))
         
         .add_systems(Startup, setup)
         .add_plugins(mainmenu::MainmenuPlugin)
+        .add_plugins(settings::SettingsPlugin)
+        .add_plugins(choose_character::ChooseCharacterPlugin)
         .run();
 }
 
@@ -51,7 +57,7 @@ fn setup(
     mut commands: Commands,
     monitors: Query<&Monitor>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
-    mut window_conf: ResMut<WindowConfig>,
+    mut config: ResMut<GameConfig>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     println!("main: setup");
@@ -63,7 +69,7 @@ fn setup(
         }
         let name = monitor.name.clone().unwrap_or_else(|| "<no name>".into());
         let size = format!("{}x{}px", monitor.physical_height, monitor.physical_width);
-        window_conf.size = Vec2::new(monitor.physical_width as f32, monitor.physical_height as f32);
+        config.window_size = Vec2::new(monitor.physical_width as f32, monitor.physical_height as f32);
         let hz = monitor
             .refresh_rate_millihertz
             .map(|x| format!("{}Hz", x as f32 / 1000.0))
@@ -82,7 +88,7 @@ fn setup(
     // set window config
     if let Ok(mut window) = windows.get_single_mut() {
         window.mode = WindowMode::Fullscreen(MonitorSelection::Primary);
-        window.resolution = window_conf.size.into();
+        window.resolution = config.window_size.into();
     }
     // camera
     commands.spawn(Camera2d::default());
