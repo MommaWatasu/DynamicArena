@@ -7,17 +7,17 @@ Orbitron is a variable font with this axis:
   wght
 
 This means all the styles are contained in a single file:
-  Orbitron-VariableFont_wght.ttf
+  Orbitron/Orbitron-VariableFont_wght.ttf
 
 If your app fully supports variable fonts, you can now pick intermediate styles
 that aren’t available as static fonts. Not all apps support variable fonts, and
 in those cases you can use the static font files for Orbitron:
-  static/Orbitron-Regular.ttf
-  static/Orbitron-Medium.ttf
-  static/Orbitron-SemiBold.ttf
-  static/Orbitron-Bold.ttf
-  static/Orbitron-ExtraBold.ttf
-  static/Orbitron-Black.ttf
+  Orbitron/static/Orbitron-Regular.ttf
+  Orbitron/static/Orbitron-Medium.ttf
+  Orbitron/static/Orbitron-SemiBold.ttf
+  Orbitron/static/Orbitron-Bold.ttf
+  Orbitron/static/Orbitron-ExtraBold.ttf
+  Orbitron/static/Orbitron-Black.ttf
 
 Get started
 -----------
