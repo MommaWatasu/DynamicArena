@@ -1,8 +1,8 @@
 use bevy::prelude::*;
-use bevy::ui::widget::NodeImageMode;
 
 use crate::{
     GAMETITLE,
+    TITLE_FONT_SIZE,
     //PATH_REGULAR_FONT,
     PATH_BOLD_FONT,
     PATH_EXTRA_BOLD_FONT,
@@ -11,7 +11,6 @@ use crate::{
     GameConfig
 };
 
-const GAMETITLE_FONT_SIZE: f32 = 100.0;
 const BUTTON_FONT_SIZE: f32 = 50.0;
 const PATH_SOUND_BGM: &str = "sounds/bgm.ogg";
 
@@ -21,16 +20,19 @@ struct Mainmenu;
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    audio: Query<&AudioPlayer>,
     config: Res<GameConfig>,
 ) {
-    println!("mainmenu: setup");
+    info!("mainmenu: setup");
 
-    // bgm
-    commands.spawn((
-        AudioPlayer::new(asset_server.load(PATH_SOUND_BGM)),
-        PlaybackSettings::LOOP.with_spatial(true),
-        GlobalTransform::default(),
-    ));
+    // if audio query is empty, spawn bgm
+    if audio.is_empty() {
+        commands.spawn((
+            AudioPlayer::new(asset_server.load(PATH_SOUND_BGM)),
+            PlaybackSettings::LOOP.with_spatial(true),
+            GlobalTransform::default(),
+        ));
+    }
 
     commands
         .spawn((
@@ -63,7 +65,7 @@ fn setup(
                         Text::new(GAMETITLE),
                         TextFont {
                             font: asset_server.load(PATH_EXTRA_BOLD_FONT),
-                            font_size: GAMETITLE_FONT_SIZE,
+                            font_size: TITLE_FONT_SIZE,
                             ..Default::default()
                         },
                         TextColor(Color::BLACK),
@@ -190,7 +192,7 @@ fn exit(
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    println!("mainmenu: exit");
+    info!("mainmenu: exit");
 }
 
 pub struct MainmenuPlugin;

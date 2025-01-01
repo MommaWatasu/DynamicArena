@@ -13,6 +13,7 @@ mod settings;
 mod choose_character;
 
 const GAMETITLE: &str = "DynamicArena";
+const TITLE_FONT_SIZE: f32 = 100.0;
 const PATH_FONT: &str = "fonts/Orbitron/Orbitron-Regular.ttf";
 const PATH_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-Bold.ttf";
 const PATH_EXTRA_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-ExtraBold.ttf";
@@ -21,9 +22,24 @@ const PATH_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Bold.ttf";
 const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
 const PATH_IMAGE_PREFIX: &str = "images/";
 
+enum GameMode {
+    SinglePlayer,
+    MultiPlayer,
+}
+
 #[derive(Resource)]
 struct GameConfig {
-    window_size: Vec2
+    window_size: Vec2,
+    mode: GameMode
+}
+
+impl Default for GameConfig {
+    fn default() -> Self {
+        GameConfig {
+            window_size: Vec2::new(800.0, 600.0),
+            mode: GameMode::SinglePlayer,
+        }
+    }
 }
 
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
@@ -40,10 +56,9 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .init_state::<AppState>()
-        .insert_resource(GameConfig {
-            window_size: Vec2::new(800.0, 600.0),
-        })
+        .insert_resource(GameConfig::default())
         .insert_resource(ClearColor(Color::WHITE))
+        .insert_resource(GlobalVolume::new(0.5))
         
         .add_systems(Startup, setup)
         .add_plugins(mainmenu::MainmenuPlugin)
@@ -60,7 +75,7 @@ fn setup(
     mut config: ResMut<GameConfig>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    println!("main: setup");
+    info!("main: setup");
     // assume that there is only one monitor
     let primary_monitor: bool = false;
     for monitor in monitors.iter() {
@@ -80,7 +95,7 @@ fn setup(
         );
         let scale = format!("{:.2}", monitor.scale_factor);
         // show monitor info
-        println!(
+        info!(
             "Monitor: {} ({}), {} at {}, scale: {}",
             name, size, hz, position, scale
         );
@@ -102,7 +117,7 @@ fn setup(
     mut window_conf: ResMut<WindowConfig>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    println!("main: setup(wasm)");
+    info!("main: setup(wasm)");
     if let Ok(mut window) = windows.get_single_mut() {
         if let Some(win) = web_sys::window() {
             if let Ok(screen) = win.screen() {

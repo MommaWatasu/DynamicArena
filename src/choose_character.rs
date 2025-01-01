@@ -3,10 +3,11 @@ use bevy::{prelude::*, ui::widget::NodeImageMode};
 use crate::{
     AppState,
     GameConfig,
+    TITLE_FONT_SIZE,
     PATH_BOLD_FONT,
     PATH_EXTRA_BOLD_JP_FONT,
-    PATH_JP_FONT,
     PATH_IMAGE_PREFIX,
+    PATH_JP_FONT,
 };
 
 #[derive(Component)]
@@ -18,7 +19,7 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    println!("choose_character: setup");
+    info!("choose_character: setup");
     commands
         .spawn((Node {
             width: Val::Percent(90.0),
@@ -30,7 +31,6 @@ fn setup(
             justify_items: JustifyItems::Center,
             ..default()
         },
-        BorderRadius::all(Val::Px(10.0)),
         ChooseCharacter
     ))
         .with_children(|parent| {
@@ -38,14 +38,13 @@ fn setup(
                 Text::new("キャラクターを選んでください"),
                 TextFont {
                     font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
-                    font_size: 50.0,
+                    font_size: TITLE_FONT_SIZE,
                     ..Default::default()
                 },
                 TextColor(Color::BLACK),
                 TextLayout::new_with_justify(JustifyText::Center),
                 Node {
                     width: Val::Percent(100.0),
-                    height: Val::Percent(10.0),
                     ..default()
                 },
             ));
