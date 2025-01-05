@@ -66,10 +66,9 @@ fn setup(
                 .with_children(|builder| {
                     let character_names = vec!["character1", "character2", "character3"];
                     for i in 0..3 {
-                        let image_handle = asset_server.load(format!("{}character{}.png", PATH_IMAGE_PREFIX, i+1).as_str());
                         let font_bold = asset_server.load(PATH_BOLD_FONT);
                         let font_regular = asset_server.load(PATH_JP_FONT);
-                        create_character_box(builder, font_bold, font_regular, character_names[i], image_handle);
+                        create_character_box(builder, font_bold, font_regular, character_names[i], );
                     }
                 });
             });
@@ -80,7 +79,6 @@ fn create_character_box(
     font_bold: Handle<Font>,
     font_regular: Handle<Font>,
     character_name: &str,
-    image_handle: Handle<Image>,
 ) {
     builder.spawn((
         Node {
@@ -112,17 +110,6 @@ fn create_character_box(
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Center),
-        ));
-        builder.spawn((
-            ImageNode {
-                image: image_handle,
-                ..Default::default()
-            },
-            Node {
-                aspect_ratio: Some((1/3) as f32),
-                align_self: AlignSelf::Center,
-                ..default()
-            },
         ));
     });
 }
