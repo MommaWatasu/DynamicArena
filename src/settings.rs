@@ -1,36 +1,36 @@
 use bevy::prelude::*;
-
 use crate::{
-    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, TITLE_FONT_SIZE
+    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, TITLE_FONT_SIZE,
 };
 
 #[derive(Component)]
 struct Settings;
 
 #[derive(Component, Clone)]
-struct SettingItem {
+struct SettingItem<T: Clone + ToString + Send + Sync + 'static> {
     name: String,
-    min: f32,
-    max: f32,
-    value: f32,
+    min: T,
+    max: T,
+    step: T,
+    value: T,
+    list: Option<Vec<String>>
 }
 
-impl SettingItem {
-    pub fn new(name: String, min: f32, max: f32, value: f32) -> Self {
-        SettingItem { name, min, max, value, }
+impl<T: Clone + ToString + Send + Sync> SettingItem<T> {
+    pub fn new(name: String, min: T, max: T, step: T, value: T, list: Option<Vec<String>>) -> Self {
+        SettingItem { name, min, max, step, value, list }
+    }
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_value(&self) -> String {
+        self.value.to_string()
     }
 }
 
 #[derive(Component)]
-struct ConfigElement {
-    value: u32,
-}
-
-impl ConfigElement {
-    pub fn new(value: u32) -> Self {
-        ConfigElement { value }
-    }
-}
+struct ConfigElement(u32);
 
 fn setup(
     mut commands: Commands,
@@ -45,7 +45,6 @@ fn setup(
             border: UiRect::all(Val::Px(5.0)),
             ..default()
         },
-        BackgroundColor(Color::Srgba(Srgba::new(0.1, 0.1, 0.1, 0.8))),
         BorderRadius::MAX,
         BorderColor(Color::BLACK),
         Settings
@@ -103,16 +102,16 @@ fn setup(
                 BorderRadius::all(Val::Px(20.0)),
             ))
                 .with_children(|builder| {
-                    create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0.0, 1.0, 0.5), 0);
-                    create_setting_item(&asset_server, builder, SettingItem::new("プレイヤー数".to_string(), 1.0, 2.0, 1.0), 0);
+                    create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, 0.5, None), 0);
+                    create_setting_item(&asset_server, builder, SettingItem::new("プレイヤー数".to_string(), 1u32, 2, 1, 1, None), 1);
                 });
     });
 }
 
-fn create_setting_item(
+fn create_setting_item<T: Clone + ToString + Send + Sync>(
     asset_server: &Res<AssetServer>,
     builder: &mut ChildBuilder,
-    item: SettingItem,
+    item: SettingItem<T>,
     config_num: u32,
 ) {
     builder.spawn((
@@ -136,7 +135,7 @@ fn create_setting_item(
             ))
                 .with_children(|builder| {
                     builder.spawn((
-                        Text::new(format!("{}", &item.name)),
+                        Text::new(item.get_name()),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_JP_FONT),
                             font_size: 50.0,
@@ -144,8 +143,7 @@ fn create_setting_item(
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
                         TextColor(Color::BLACK),
-                        item.clone(),
-                        ConfigElement::new(config_num),
+                        ConfigElement(config_num),
                     ));
                 });
             builder.spawn((
@@ -160,6 +158,7 @@ fn create_setting_item(
                 },
                 BorderColor(Color::BLACK),
                 BorderRadius::MAX,
+                ConfigElement(config_num),
             ))
                 .with_child((
                     Text::new("-"),
@@ -170,7 +169,6 @@ fn create_setting_item(
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::BLACK),
-                    ConfigElement::new(config_num),
                 ));
             builder.spawn((
                 Node {
@@ -183,7 +181,7 @@ fn create_setting_item(
             ))
                 .with_children(|builder| {
                     builder.spawn((
-                        Text::new(format!("{:.2}", &item.value)),
+                        Text::new(item.get_value()),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
                             font_size: 50.0,
@@ -192,7 +190,7 @@ fn create_setting_item(
                         TextLayout::new_with_justify(JustifyText::Center),
                         TextColor(Color::BLACK),
                         item.clone(),
-                        ConfigElement::new(config_num),
+                        ConfigElement(config_num),
                     ));
                 });
             builder.spawn((
@@ -207,6 +205,7 @@ fn create_setting_item(
                 },
                 BorderColor(Color::BLACK),
                 BorderRadius::MAX,
+                ConfigElement(config_num),
             ))
                 .with_child((
                     Text::new("+"),
@@ -217,25 +216,67 @@ fn create_setting_item(
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::BLACK),
-                    ConfigElement::new(config_num),
                 ));
         });
 }
 
-fn exit(
-    mut commands: Commands,
-    query: Query<Entity, With<Settings>>,
-) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-    info!("settings: exit");
-}
-
-fn update(
-    query: Query<(Entity, &ConfigElement, &SettingItem)>,
+fn update_setting(
+    button_query: Query<(&Interaction, &ConfigElement, &Children), (Changed<Interaction>, With<Button>)>,
+    mut value_query: Query<(&ConfigElement, &mut SettingItem<f32>, &mut Text),(With<ConfigElement>, Without<SettingItem<u32>>),>,
+    mut value_query_int: Query<(&ConfigElement, &mut SettingItem<u32>, &mut Text),(With<ConfigElement>, Without<SettingItem<f32>>)>,
+    text_query: Query<&Text, Without<ConfigElement>>,
     mut config: ResMut<GameConfig>,
-) {}
+) {
+    for (interaction, config_element, children) in &mut button_query.iter() {
+        if interaction != &Interaction::Pressed { continue }
+        let sign;
+        match text_query.get(children[0]).unwrap().0.as_str() {
+            "-" => {
+                sign = false;
+            }
+            "+" => {
+                sign = true;
+            }
+            _ => {
+                sign = false
+            }
+        }
+        for (element, mut item, mut text) in &mut value_query.iter_mut() {
+            if element.0 == config_element.0 {
+                let mut new_value = item.value.clone();
+                if sign {
+                    new_value += item.step.clone();
+                } else {
+                    new_value -= item.step.clone();
+                }
+                if new_value < item.min {
+                    new_value = item.min.clone();
+                } else if new_value > item.max {
+                    new_value = item.max.clone();
+                }
+                item.value = new_value.clone();
+                text.0 = format!("{:.1}", new_value);
+            }
+        }
+        for (element, mut item, mut text) in &mut value_query_int.iter_mut() {
+            if element.0 == config_element.0 {
+                let mut new_value = item.value.clone();
+                if sign {
+                    new_value += item.step.clone();
+                } else {
+                    new_value -= item.step.clone();
+                }
+                if new_value < item.min {
+                    new_value = item.min.clone();
+                } else if new_value > item.max {
+                    new_value = item.max.clone();
+                }
+                item.value = new_value.clone();
+                text.0 = new_value.to_string();
+            }
+        }
+    }
+}
 
 fn check_back(
     mut state: ResMut<NextState<AppState>>,
@@ -261,6 +302,16 @@ fn check_back(
     }
 }
 
+fn exit(
+    mut commands: Commands,
+    query: Query<Entity, With<Settings>>,
+) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    info!("settings: exit");
+}
+
 pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
@@ -268,7 +319,7 @@ impl Plugin for SettingsPlugin {
         app
             .add_systems(OnEnter(AppState::Settings), setup)
             .add_systems(OnExit(AppState::Settings), exit)
-            .add_systems(Update, update.run_if(in_state(AppState::Settings)))
+            .add_systems(Update, update_setting.run_if(in_state(AppState::Settings)))
             .add_systems(Update, check_back.run_if(in_state(AppState::Settings)));
     }
 }

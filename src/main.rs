@@ -8,6 +8,7 @@ use bevy::{
     }
 };
 
+mod ingame;
 mod mainmenu;
 mod settings;
 mod choose_character;
@@ -30,7 +31,8 @@ enum GameMode {
 #[derive(Resource)]
 struct GameConfig {
     window_size: Vec2,
-    mode: GameMode
+    mode: GameMode,
+    characters_id: (isize, isize),
 }
 
 impl Default for GameConfig {
@@ -38,6 +40,7 @@ impl Default for GameConfig {
         GameConfig {
             window_size: Vec2::new(800.0, 600.0),
             mode: GameMode::SinglePlayer,
+            characters_id: (-1, -1),
         }
     }
 }
@@ -50,6 +53,8 @@ enum AppState {
     Settings,
     ChooseCharacter,
     Ingame,
+    #[cfg(debug_assertions)]
+    Pause
 }
 
 fn main() {
@@ -64,6 +69,7 @@ fn main() {
         .add_plugins(mainmenu::MainmenuPlugin)
         .add_plugins(settings::SettingsPlugin)
         .add_plugins(choose_character::ChooseCharacterPlugin)
+        .add_plugins(ingame::GamePlugin)
         .run();
 }
 
@@ -114,7 +120,7 @@ fn setup(
 fn setup(
     mut commands: Commands,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
-    mut window_conf: ResMut<WindowConfig>,
+    mut config: ResMut<GameConfig>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     info!("main: setup(wasm)");
@@ -125,7 +131,7 @@ fn setup(
                 let width = screen.width().unwrap_or(800) as f32;
                 let height = screen.height().unwrap_or(600) as f32;
                 window.resolution.set(width, height);
-                window_conf.size = Vec2::new(width, height);
+                config.window_size = Vec2::new(width, height);
                 info!("Set resolution to: {}x{}", width, height);
             }
         }
