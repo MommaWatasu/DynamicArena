@@ -1,0 +1,34 @@
+[tasks.BUILD]
+description = "Build project for development"
+script = ['''
+#!/bin/bash
+cargo build --features bevy/dynamic_linking
+''']
+
+[tasks.DEV]
+description = "Run project for development"
+script = ['''
+#!/bin/bash
+cargo run --features bevy/dynamic_linking
+''']
+
+[tasks.wasmDEV]
+description = "Run project for development"
+script = ['''
+#!/bin/bash
+cargo run --target wasm32-unknown-unknown --features bevy/dynamic_linking
+''']
+
+[tasks.RELEASE]
+description = "Build project for release"
+script = ['''
+#/bin/bash
+cargo build --release
+''']
+
+[tasks.wasmRELEASE]
+description = "Build project for release"
+script = ['''
+#/bin/bash
+cargo build --target wasm32-unknown-unknown --release
+''']
