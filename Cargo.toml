@@ -30,4 +30,4 @@ strip = "debuginfo"
 
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = "0.3.76"
+web-sys = "0.3.77"
