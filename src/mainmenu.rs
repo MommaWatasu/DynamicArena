@@ -25,7 +25,8 @@ fn setup(
 ) {
     info!("mainmenu: setup");
 
-    // if audio query is empty, spawn bgm
+    // if audio query is empty, spawn bgm]
+    /*
     if audio.is_empty() {
         commands.spawn((
             AudioPlayer::new(asset_server.load(PATH_SOUND_BGM)),
@@ -33,6 +34,7 @@ fn setup(
             GlobalTransform::default(),
         ));
     }
+    */
 
     commands
         .spawn((

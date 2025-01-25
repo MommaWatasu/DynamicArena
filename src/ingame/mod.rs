@@ -59,13 +59,14 @@ fn setup(
             InGame
         ))
         .with_children(|builder| {
-            spawn_player(builder, &mut meshes, &mut materials);
+            spawn_player(0, builder, &mut meshes, &mut materials);
         });
 }
 
 #[cfg(debug_assertions)]
 fn check_pause(
     mut state: ResMut<NextState<AppState>>,
+    keys: Res<ButtonInput<KeyCode>>,
     query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<&Text>,
 ) {
@@ -84,6 +85,16 @@ fn check_pause(
             _ => {}
         }
     }
+    if keys.just_pressed(KeyCode::Escape) {
+        state.set(AppState::Pause);
+    }
+}
+
+fn exit(mut commands: Commands, query: Query<Entity, With<InGame>>) {
+    info!("Exiting InGame");
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
 }
 
 pub struct GamePlugin;
@@ -95,6 +106,8 @@ impl Plugin for GamePlugin {
             .add_plugins(PausePlugin)
             .add_systems(Update, check_pause);
         app
-            .add_systems(OnEnter(AppState::Ingame), setup);
+            .add_plugins(PlayerPlugin)
+            .add_systems(OnEnter(AppState::Ingame), setup)
+            .add_systems(OnExit(AppState::Ingame), exit);
     }
 }
