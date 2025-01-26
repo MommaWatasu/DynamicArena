@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 #[cfg(debug_assertions)]
 mod pause;
@@ -59,6 +60,10 @@ fn setup(
             InGame
         ))
         .with_children(|builder| {
+            builder.spawn((
+                Collider::cuboid(config.window_size.x / 2.0, 10.0),
+                Transform::from_translation(Vec3::new(0.0, 100.0-config.window_size.y / 2.0, 0.0),),
+            ));
             spawn_player(0, builder, &mut meshes, &mut materials);
         });
 }
@@ -103,10 +108,13 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         #[cfg(debug_assertions)]
         app
+            // add debug plugin for rapier2d
+            .add_plugins(RapierDebugRenderPlugin::default())
             .add_plugins(PausePlugin)
             .add_systems(Update, check_pause);
         app
             .add_plugins(PlayerPlugin)
+            .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_systems(OnEnter(AppState::Ingame), setup)
             .add_systems(OnExit(AppState::Ingame), exit);
     }
