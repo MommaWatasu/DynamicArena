@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use crate::ingame::InGame;
+use crate::{ingame::InGame, AppState};
 
 const PLAYER_COLOR: Color = Color::srgb(0.0, 1.0, 0.0);
+
 const LIMB_LENGTH: f32 = 30.0;
 const LIMB_RADIUS: f32 = 15.0;
 
@@ -11,6 +12,8 @@ const UPPER_ARM_OFFSET: f32 = 0.0;
 const LOWER_ARM_OFFSET: f32 = -60.0;
 const UPPER_LEG_OFFSET: f32 = -100.0;
 const LOWER_LEG_OFFSET: f32 = -60.0;
+
+const FPS: f32 = 60.0;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Pose {
@@ -31,25 +34,56 @@ struct Pose {
 #[derive(Component, Clone, Copy)]
 struct PlayerID(u8);
 
+#[derive(Default, Clone, Copy)]
 enum PlayerState {
-    Idle(u8),
-    Running(u8),
-    Jumping(u8),
-    Falling(u8),
+    #[default]
+    Idle,
+    Running,
+    Jumping,
+    Falling,
 }
 
-impl Default for PlayerState {
-    fn default() -> Self {
-        Self::Idle(0)
-    }
+#[derive(Resource)]
+struct AnimationTimer {
+    timer: Timer
 }
 
-#[derive(Component, Default)]
+struct PlayerAnimation {
+    phase: u8,
+    count: u8,
+}
+
+#[derive(Component)]
 struct Player {
     pose: Pose,
+    animation: PlayerAnimation,
     state: PlayerState,
     speed: Vec2,
     health: u32,
+}
+
+impl Default for Player {
+    fn default() -> Self {
+        Self {
+            pose: Pose {
+                facing: true,
+                head: 0.0,
+                body: 0.0,
+                right_upper_arm: 10.0,
+                right_lower_arm: 90.0,
+                right_upper_leg: 10.0,
+                right_lower_leg: -40.0,
+                left_upper_arm: 30.0,
+                left_lower_arm: 90.0,
+                left_upper_leg: 40.0,
+                left_lower_leg: -50.0,
+            },
+            animation: PlayerAnimation { phase: 0, count: 0 },
+            state: PlayerState::default(),
+            speed: Vec2::ZERO,
+            health: 100,
+        }
+    }
 }
 
 #[derive(Component)]
@@ -95,7 +129,7 @@ pub fn spawn_player(
         PlayerID(id),
         InGame,
         // Player 0 is on top of the screen
-        Transform::from_translation(Vec3::new(if id == 0 {-500.0} else {500.0}, -200.0, if id == 0 { 10.0 } else {1.0})),
+        Transform::from_translation(Vec3::new(if id == 0 {-500.0} else {500.0}, -300.0, if id == 0 { 10.0 } else {1.0})),
         Visibility::Visible,
     ))
         // Body
@@ -148,7 +182,7 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(Color::BLACK)),
+                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
                         BodyParts::new(false, false, true, false, true),
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
@@ -200,7 +234,7 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(Color::BLACK)),
+                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
                         BodyParts::new(false, false, false, false, true),
                         PlayerID(id),
                         Transform::from_translation(Vec3::new(0.0, -100.0, if id == 0 { 1.0 } else { 3.0 })),
@@ -235,32 +269,46 @@ fn player_input(
 ) {
     if keys.pressed(KeyCode::KeyD) {
         for mut player in query.iter_mut() {
-            if let PlayerState::Running(_) = player.state {
+            if let PlayerState::Running = player.state {
             } else {
-                player.state = PlayerState::Running(0);
-                player.pose.right_upper_arm = 30.0;
+                player.state = PlayerState::Running;
+                player.pose.body = -30.0;
+                player.pose.left_upper_arm = 60.0;
+                player.pose.left_lower_arm = 90.0;
+                player.pose.right_upper_arm = -60.0;
                 player.pose.right_lower_arm = 90.0;
+                player.pose.right_upper_leg = 60.0;
+                player.pose.right_lower_leg = -90.0;
+                player.pose.left_upper_leg = -30.0;
+                player.pose.left_lower_leg = -50.0;
             }
             player.pose.facing = true;
         }
 
     } else if keys.pressed(KeyCode::KeyA) {
         for mut player in query.iter_mut() {
-            //transform.translation.x -= 3.0;
-            if let PlayerState::Running(_) = player.state {
+            if let PlayerState::Running = player.state {
             } else {
-                player.state = PlayerState::Running(0);
-                player.pose.right_upper_arm = 30.0;
+                player.state = PlayerState::Running;
+                player.pose.body = -30.0;
+                player.pose.left_upper_arm = 60.0;
+                player.pose.left_lower_arm = 90.0;
+                player.pose.right_upper_arm = -60.0;
                 player.pose.right_lower_arm = 90.0;
+                player.pose.right_upper_leg = 60.0;
+                player.pose.right_lower_leg = -90.0;
+                player.pose.left_upper_leg = -30.0;
+                player.pose.left_lower_leg = -50.0;
             }
             player.pose.facing = false;
         }
     } else if keys.pressed(KeyCode::Space) {
     } else {
         for mut player in query.iter_mut() {
-            if let PlayerState::Idle(_) = player.state {
+            if let PlayerState::Idle = player.state {
             } else {
-                player.state = PlayerState::Idle(0);
+                player.state = PlayerState::Idle;
+                player.pose.body = 0.0;
                 player.pose.right_upper_arm = 10.0;
                 player.pose.right_lower_arm = 90.0;
                 player.pose.left_upper_arm = 30.0;
@@ -275,18 +323,56 @@ fn player_input(
 }
 
 fn player_movement(
+    time: Res<Time>,
+    mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<(&mut Player, &mut Transform)>
 ) {
-    for (mut player, mut transform) in player_query.iter_mut() {
-        match player.state {
-            PlayerState::Running(phase) => {
-                if player.pose.facing {
-                    transform.translation.x += 3.0;
-                } else {
-                    transform.translation.x -= 3.0;
+    timer.timer.tick(time.delta());
+    if timer.timer.just_finished() {
+        for (mut player, mut transform) in player_query.iter_mut() {
+            match player.state {
+                PlayerState::Idle => {
+                    if player.animation.phase == 0 {
+                        player.animation.count += 1;
+                        if player.animation.count == 10 {
+                            player.animation.phase = 1;
+                            player.animation.count = 0;
+                        }
+                    } else if player.animation.phase == 1 {
+                        player.pose.right_upper_leg += 1.0;
+                        player.pose.right_lower_leg -= 1.0;
+                        player.pose.left_upper_leg += 1.0;
+                        player.pose.left_lower_leg -= 1.0;
+                        player.animation.count += 1;
+                        if player.animation.count == 10 {
+                            player.animation.phase = 2;
+                            player.animation.count = 0;
+                        }
+                    } else if player.animation.phase == 2 {
+                        player.pose.right_upper_leg -= 1.0;
+                        player.pose.right_lower_leg += 1.0;
+                        player.pose.left_upper_leg -= 1.0;
+                        player.pose.left_lower_leg += 1.0;
+                        player.animation.count += 1;
+                        if player.animation.count == 10 {
+                            player.animation.phase = 0;
+                            player.animation.count = 0;
+                        }
+                    }
                 }
+                PlayerState::Running => {
+                    if player.pose.facing {
+                        transform.translation.x += 6.0;
+                        /*if player.animation.phase == 0 {
+                            player.pose.right_upper_leg += 1.0;
+                            player.animation.count += 1;
+                        }*/
+                    } else {
+                        transform.translation.x -= 6.0;
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 }
@@ -331,8 +417,11 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(Update, player_input)
-            .add_systems(Update, player_movement)
-            .add_systems(Update, update_pose);
+            .insert_resource(AnimationTimer {
+                timer: Timer::from_seconds(1.0 / FPS, TimerMode::Repeating),
+            })
+            .add_systems(Update, player_input.run_if(in_state(AppState::Ingame)))
+            .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame)))
+            .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)));
     }
 }
