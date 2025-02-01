@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}, ui::update};
 use bevy_rapier2d::prelude::*;
 
 #[cfg(debug_assertions)]
@@ -7,10 +7,7 @@ mod player;
 mod pose;
 
 use crate::{
-    PATH_IMAGE_PREFIX,
-    PATH_BOLD_FONT,
-    AppState,
-    GameConfig
+    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_MONOSPACE_FONT, PATH_IMAGE_PREFIX
 };
 
 #[cfg(debug_assertions)]
@@ -19,6 +16,9 @@ use player::*;
 
 #[derive(Component)]
 struct InGame;
+
+#[derive(Component)]
+struct GameTimer(f32);
 
 #[derive(Component)]
 struct Ground;
@@ -57,6 +57,78 @@ fn setup(
 
     commands
         .spawn((
+            InGame,
+            Node {
+                width: Val::Px(300.0),
+                height: Val::Px(100.0),
+                justify_self: JustifySelf::Center,
+                align_self: AlignSelf::Start,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(Color::BLACK),
+            BorderRadius::all(Val::Px(5.0)),
+        ))
+            .with_children(|builder| {
+                builder.spawn((
+                    GameTimer(60.0),
+                    Text::new("60,00"),
+                    TextFont {
+                        font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                        font_size: 50.0,
+                        ..Default::default()
+                    },
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    TextColor(Color::WHITE),
+                ));
+            });
+    commands
+        .spawn((
+            InGame,
+            PlayerID(0),
+            HealthBar(100),
+            Mesh2d(meshes.add(
+                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
+                        .with_inserted_attribute(
+                            Mesh::ATTRIBUTE_POSITION,
+                            vec![[0.0, 0.0, 1.0], [0.0, 40.0, 1.0], [config.window_size.x / 2.0 - 300.0, 0.0, 1.0], [config.window_size.x / 2.0 - 250.0, 40.0, 1.0]]
+                        )
+                        .with_inserted_attribute(
+                            Mesh::ATTRIBUTE_COLOR,
+                            vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
+                        )
+                        .with_inserted_indices(Indices::U32(vec![
+                            0, 1, 2,
+                            1, 2, 3]))
+            )),
+            MeshMaterial2d(materials.add(ColorMaterial::default())),
+            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+        ));
+    commands
+        .spawn((
+            InGame,
+            PlayerID(1),
+            HealthBar(100),
+            Mesh2d(meshes.add(
+                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
+                        .with_inserted_attribute(
+                            Mesh::ATTRIBUTE_POSITION,
+                            vec![[0.0, 0.0, 1.0], [0.0, 40.0, 1.0], [300.0 - config.window_size.x / 2.0, 0.0, 1.0], [250.0 - config.window_size.x / 2.0, 40.0, 1.0]]
+                        )
+                        .with_inserted_attribute(
+                            Mesh::ATTRIBUTE_COLOR,
+                            vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
+                        )
+                        .with_inserted_indices(Indices::U32(vec![
+                            0, 1, 2,
+                            1, 2, 3]))
+            )),
+            MeshMaterial2d(materials.add(ColorMaterial::default())),
+            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+        ));
+    commands
+        .spawn((
             Sprite{
                 image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
                 custom_size: Some(config.window_size),
@@ -75,6 +147,21 @@ fn setup(
             ));
             spawn_player(0, builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
         });
+}
+
+fn update_timer(
+    time: Res<Time>,
+    mut query: Query<(&mut Text, &mut TextColor, &mut GameTimer)>,
+) {
+    for (mut text, mut color, mut timer) in query.iter_mut() {
+        timer.0 -= time.delta_secs();
+        if timer.0 < 0.0 {
+            timer.0 = 0.0;
+        } else if timer.0 < 5.0 {
+            color.0 = Color::srgb(1.0, 0.0, 0.0);
+        }
+        text.0 = format!("{:.2}", timer.0);
+    }
 }
 
 #[cfg(debug_assertions)]
@@ -125,6 +212,7 @@ impl Plugin for GamePlugin {
             .add_plugins(PlayerPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
             .add_systems(OnEnter(AppState::Ingame), setup)
-            .add_systems(OnExit(AppState::Ingame), exit);
+            .add_systems(OnExit(AppState::Ingame), exit)
+            .add_systems(Update, update_timer.run_if(in_state(AppState::Ingame)));
     }
 }

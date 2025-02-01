@@ -21,6 +21,7 @@ const PATH_EXTRA_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-ExtraBold.ttf";
 const PATH_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Regular.ttf";
 const PATH_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Bold.ttf";
 const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
+const PATH_BOLD_MONOSPACE_FONT: &str = "fonts/Roboto_Condensed/RobotoCondensed-Bold.ttf";
 const PATH_IMAGE_PREFIX: &str = "images/";
 
 enum GameMode {

@@ -22,7 +22,10 @@ const TERMINATE_VELOCITY: f32 = 5.0;
 const FPS: f32 = 60.0;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct PlayerID(u8);
+pub struct PlayerID(pub u8);
+
+#[derive(Component)]
+pub struct HealthBar(pub u8);
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 enum PlayerState {
@@ -126,12 +129,12 @@ pub fn spawn_player(
                 // Head
                 .with_children(|builder| {
                     builder.spawn((
-                        Mesh2d(meshes.add(Circle::new(50.0))),
+                        Mesh2d(meshes.add(Circle::new(45.0))),
                         MeshMaterial2d(materials.add(PLAYER_COLOR)),
                         BodyParts::HEAD,
                         Transform::from_translation(Vec3::new(0.0, 100.0, 1.0)),
                         RigidBody::KinematicPositionBased,
-                        Collider::ball(50.0),
+                        Collider::ball(45.0),
                     ));
                     // Right Upper Arm
                     builder.spawn((
@@ -404,7 +407,7 @@ fn player_movement(
                     }
                 }
                 PlayerState::Jumping => {
-                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL / FPS);
+                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 1.5 / FPS);
                     if player.animation.phase == 0 {
                         player.animation.count -= 1;
                         let diff_pose = player.animation.diff_pose;
