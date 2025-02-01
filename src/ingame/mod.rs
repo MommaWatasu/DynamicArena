@@ -4,6 +4,7 @@ use bevy_rapier2d::prelude::*;
 #[cfg(debug_assertions)]
 mod pause;
 mod player;
+mod pose;
 
 use crate::{
     PATH_IMAGE_PREFIX,
@@ -11,12 +12,16 @@ use crate::{
     AppState,
     GameConfig
 };
+
 #[cfg(debug_assertions)]
 use pause::*;
 use player::*;
 
 #[derive(Component)]
 struct InGame;
+
+#[derive(Component)]
+struct Ground;
 
 fn setup(
     mut commands: Commands,
@@ -61,10 +66,14 @@ fn setup(
         ))
         .with_children(|builder| {
             builder.spawn((
-                Collider::cuboid(config.window_size.x / 2.0, 10.0),
+                Ground,
                 Transform::from_translation(Vec3::new(0.0, 100.0-config.window_size.y / 2.0, 0.0),),
+                RigidBody::Fixed,
+                Collider::cuboid(config.window_size.x / 2.0, 10.0),
+                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_STATIC,
+                ActiveEvents::COLLISION_EVENTS,
             ));
-            spawn_player(0, builder, &mut meshes, &mut materials);
+            spawn_player(0, builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
         });
 }
 
@@ -96,7 +105,7 @@ fn check_pause(
 }
 
 fn exit(mut commands: Commands, query: Query<Entity, With<InGame>>) {
-    info!("Exiting InGame");
+    info!("ingame: exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
@@ -114,7 +123,7 @@ impl Plugin for GamePlugin {
             .add_systems(Update, check_pause);
         app
             .add_plugins(PlayerPlugin)
-            .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+            .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
             .add_systems(OnEnter(AppState::Ingame), setup)
             .add_systems(OnExit(AppState::Ingame), exit);
     }
