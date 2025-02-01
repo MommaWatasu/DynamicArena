@@ -8,10 +8,11 @@ use bevy::{
     }
 };
 
+mod character_def;
+mod choose_character;
 mod ingame;
 mod mainmenu;
 mod settings;
-mod choose_character;
 
 const GAMETITLE: &str = "DynamicArena";
 const TITLE_FONT_SIZE: f32 = 100.0;
@@ -33,7 +34,7 @@ enum GameMode {
 struct GameConfig {
     window_size: Vec2,
     mode: GameMode,
-    characters_id: (isize, isize),
+    characters_id: [isize; 2],
 }
 
 impl Default for GameConfig {
@@ -41,7 +42,7 @@ impl Default for GameConfig {
         GameConfig {
             window_size: Vec2::new(800.0, 600.0),
             mode: GameMode::SinglePlayer,
-            characters_id: (-1, -1),
+            characters_id: [-1, -1],
         }
     }
 }

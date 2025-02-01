@@ -1,7 +1,7 @@
-use bevy::{prelude::*, render::mesh};
+use bevy::{asset, prelude::*};
 
 use crate::{
-    AppState, GameConfig, PATH_BOLD_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_IMAGE_PREFIX, PATH_JP_FONT, TITLE_FONT_SIZE
+    character_def::*, AppState, GameConfig, PATH_BOLD_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_BOLD_JP_FONT, TITLE_FONT_SIZE
 };
 
 #[derive(Component)]
@@ -107,9 +107,7 @@ fn setup(
                 .with_children(|builder| {
                     let character_names = vec!["character1", "character2", "character3"];
                     for i in 0..3 {
-                        let font_bold = asset_server.load(PATH_BOLD_FONT);
-                        let font_regular = asset_server.load(PATH_JP_FONT);
-                        create_character_box(builder, font_bold, font_regular, character_names[i], i as isize);
+                        create_character_box(builder, &asset_server, character_names[i], i as isize);
                     }
                 });
             });
@@ -117,11 +115,11 @@ fn setup(
 
 fn create_character_box(
     builder: &mut ChildBuilder,
-    font_bold: Handle<Font>,
-    font_regular: Handle<Font>,
+    asset_server: &Res<AssetServer>,
     character_name: &str,
     character_id: isize,
 ) {
+    let profile = &CHARACTER_PROFILES[character_id as usize];
     builder.spawn((
         Node {
             width: Val::Percent(30.0),
@@ -135,9 +133,9 @@ fn create_character_box(
         BackgroundColor(Color::srgba(0.6, 0.8, 0.9, 0.8)),
     )).with_children(|builder| {
         builder.spawn((
-            Text::new(character_name),
+            Text::new(profile.name),
             TextFont {
-                font: font_bold,
+                font: asset_server.load(PATH_BOLD_FONT),
                 font_size: 40.0,
                 ..Default::default()
             },
@@ -145,15 +143,53 @@ fn create_character_box(
             TextColor(Color::BLACK),
         ));
         builder.spawn((
-            Text::new("移動速度は速いが、攻撃力は高くない"),
+            Text::new(profile.description),
             TextFont {
-                font: font_regular,
-                font_size: 20.0,
+                font: asset_server.load(PATH_BOLD_JP_FONT),
+                font_size: 30.0,
                 ..Default::default()
             },
-            TextLayout::new_with_justify(JustifyText::Center),
+            TextLayout::new_with_justify(JustifyText::Left),
+            TextColor(Color::BLACK),
+        ));
+        builder.spawn((
+            Text::new(format!("<体力>\n{}", profile.health)),
+            TextFont {
+                font: asset_server.load(PATH_BOLD_JP_FONT),
+                font_size: 30.0,
+                ..Default::default()
+            },
+            TextLayout::new_with_justify(JustifyText::Left),
+            TextColor(Color::BLACK),
+        ));
+        builder.spawn((
+            Text::new(format!("<速さ>\n{}", profile.speed)),
+            TextFont {
+                font: asset_server.load(PATH_BOLD_JP_FONT),
+                font_size: 30.0,
+                ..Default::default()
+            },
+            TextLayout::new_with_justify(JustifyText::Left),
+            TextColor(Color::BLACK),
+        ));
+        builder.spawn((
+            Text::new(format!("<力>\n{}", profile.power)),
+            TextFont {
+                font: asset_server.load(PATH_BOLD_JP_FONT),
+                font_size: 30.0,
+                ..Default::default()
+            },
+            TextLayout::new_with_justify(JustifyText::Left),
+            TextColor(Color::BLACK),
         ));
     });
+}
+
+fn choose_rand_character(id: isize) -> isize {
+    use rand::seq::IteratorRandom;
+    let mut available_nums = vec![0, 1, 2];
+    available_nums.retain(|&x| x != id);
+    available_nums.iter().choose(&mut rand::rng()).unwrap().clone()
 }
 
 fn update(
@@ -165,8 +201,8 @@ fn update(
     for (interaction, id) in button_query.iter() {
         match interaction {
             &Interaction::Pressed => {
-                if config.characters_id.0 == id.0 {
-                    config.characters_id = (-1, -1);
+                if config.characters_id[0] == id.0 {
+                    config.characters_id = [-1, -1];
                     for (children, mut bc) in transitin_query.iter_mut() {
                         let mut text = text_query.get_mut(children[0]).unwrap();
                         match text.0.as_str() {
@@ -179,7 +215,8 @@ fn update(
                         }
                     }
                 } else {
-                    config.characters_id = (id.0, -1);
+                    config.characters_id[0] = id.0;
+                    config.characters_id[1] = choose_rand_character(id.0);
                     for (children, mut bc) in transitin_query.iter_mut() {
                         let mut text = text_query.get_mut(children[0]).unwrap();
                         match text.0.as_str() {

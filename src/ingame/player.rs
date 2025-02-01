@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use crate::{ingame::{InGame, Ground}, AppState, GameConfig};
+use crate::{character_def::CHARACTER_PROFILES, ingame::{InGame, Ground}, AppState, GameConfig};
 use super::pose::*;
-
-const PLAYER_COLOR: Color = Color::srgb(0.0, 1.0, 0.0);
 
 const LIMB_LENGTH: f32 = 30.0;
 const LIMB_RADIUS: f32 = 15.0;
@@ -25,7 +23,7 @@ const FPS: f32 = 60.0;
 pub struct PlayerID(pub u8);
 
 #[derive(Component)]
-pub struct HealthBar(pub u8);
+pub struct HealthBar(pub f32);
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 enum PlayerState {
@@ -99,11 +97,13 @@ impl BodyParts {
 
 pub fn spawn_player(
     id: u8,
+    character_id: isize,
     builder: &mut ChildBuilder,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
     y_pos: f32,
 ) {
+    let profile = &CHARACTER_PROFILES[character_id as usize];
     builder.spawn((
         Player::default(),
         PlayerID(id),
@@ -119,7 +119,7 @@ pub fn spawn_player(
                     radius: LIMB_RADIUS,
                     half_length: 60.0,
                 })),
-                MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                MeshMaterial2d(materials.add(profile.color)),
                 Transform::default(),
                 BodyParts::BODY,
                 PlayerID(id),
@@ -130,7 +130,7 @@ pub fn spawn_player(
                 .with_children(|builder| {
                     builder.spawn((
                         Mesh2d(meshes.add(Circle::new(45.0))),
-                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                        MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::HEAD,
                         Transform::from_translation(Vec3::new(0.0, 100.0, 1.0)),
                         RigidBody::KinematicPositionBased,
@@ -142,7 +142,7 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                        MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, true, true, true),
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
@@ -157,7 +157,7 @@ pub fn spawn_player(
                                 radius: LIMB_RADIUS,
                                 half_length: LIMB_LENGTH,
                             })),
-                            MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                            MeshMaterial2d(materials.add(profile.color)),
                             BodyParts::new(false, false, true, true, false),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
@@ -170,7 +170,7 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                        MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, true, false, true),
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
@@ -185,7 +185,7 @@ pub fn spawn_player(
                                 radius: LIMB_RADIUS,
                                 half_length: LIMB_LENGTH,
                             })),
-                            MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                            MeshMaterial2d(materials.add(profile.color)),
                             BodyParts::new(false, false, true, false, false),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
@@ -198,7 +198,7 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                        MeshMaterial2d(materials.add(profile.color)),
                         // right upper leg
                         BodyParts::new(false, false, false, true, true),
                         PlayerID(id),
@@ -215,7 +215,7 @@ pub fn spawn_player(
                                     radius: LIMB_RADIUS,
                                     half_length: LIMB_LENGTH,
                                 })),
-                                MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                                MeshMaterial2d(materials.add(profile.color)),
                                 // right lower leg
                                 BodyParts::new(false, false, false, true, false),
                                 PlayerID(id),
@@ -232,7 +232,7 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                        MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, false, false, true),
                         PlayerID(id),
                         Transform::from_translation(Vec3::new(0.0, -100.0, if id == 0 { 1.0 } else { 3.0 })),
@@ -246,7 +246,7 @@ pub fn spawn_player(
                                     radius: LIMB_RADIUS,
                                     half_length: LIMB_LENGTH,
                                 })),
-                                MeshMaterial2d(materials.add(PLAYER_COLOR)),
+                                MeshMaterial2d(materials.add(profile.color)),
                                 BodyParts::new(false, false, false, false, false),
                                 PlayerID(id),
                                 Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
@@ -518,6 +518,20 @@ fn update_pose(
     }
 }
 
+fn update_health_bar(
+    player_query: Query<(&Player, &PlayerID)>,
+    mut health_query: Query<(&mut HealthBar, &PlayerID)>,
+) {
+    for (player, player_id) in player_query.iter() {
+        let profile = &CHARACTER_PROFILES[player_id.0 as usize];
+        for (mut health, health_id) in health_query.iter_mut() {
+            if player_id == health_id {
+                health.0 = (player.health / profile.health * 100) as f32;
+            }
+        }
+    }
+}
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -529,6 +543,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, player_input.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame)))
-            .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)));
+            .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
+            .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame)));
     }
 }

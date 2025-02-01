@@ -87,7 +87,7 @@ fn setup(
         .spawn((
             InGame,
             PlayerID(0),
-            HealthBar(100),
+            HealthBar(100.0),
             Mesh2d(meshes.add(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
@@ -109,7 +109,7 @@ fn setup(
         .spawn((
             InGame,
             PlayerID(1),
-            HealthBar(100),
+            HealthBar(100.0),
             Mesh2d(meshes.add(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
@@ -145,7 +145,8 @@ fn setup(
                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_STATIC,
                 ActiveEvents::COLLISION_EVENTS,
             ));
-            spawn_player(0, builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+            spawn_player(0, config.characters_id[0], builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+            spawn_player(1, config.characters_id[1], builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
         });
 }
 
