@@ -70,6 +70,7 @@ struct BodyParts {
     flags: u8
 }
 
+#[allow(dead_code)]
 impl BodyParts {
     const HEAD: Self = Self { flags: 0b10000 };
     const BODY: Self = Self { flags: 0b01000 };
@@ -427,7 +428,6 @@ fn player_movement(
                         }
                     }
                 }
-                _ => {}
             }
             transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
             if transform.translation.x < -config.window_size.x / 2.0 {

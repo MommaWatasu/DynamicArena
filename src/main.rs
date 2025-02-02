@@ -35,6 +35,7 @@ struct GameConfig {
     window_size: Vec2,
     mode: GameMode,
     characters_id: [isize; 2],
+    sound_volume: f32,
 }
 
 impl Default for GameConfig {
@@ -43,6 +44,7 @@ impl Default for GameConfig {
             window_size: Vec2::new(800.0, 600.0),
             mode: GameMode::SinglePlayer,
             characters_id: [-1, -1],
+            sound_volume: 0.5,
         }
     }
 }

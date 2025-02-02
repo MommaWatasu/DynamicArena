@@ -1,4 +1,4 @@
-use bevy::{asset, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     character_def::*, AppState, GameConfig, PATH_BOLD_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_BOLD_JP_FONT, TITLE_FONT_SIZE
@@ -105,9 +105,8 @@ fn setup(
                 BorderRadius::all(Val::Px(20.0)),
             ))
                 .with_children(|builder| {
-                    let character_names = vec!["character1", "character2", "character3"];
                     for i in 0..3 {
-                        create_character_box(builder, &asset_server, character_names[i], i as isize);
+                        create_character_box(builder, &asset_server, i as isize);
                     }
                 });
             });
@@ -116,7 +115,6 @@ fn setup(
 fn create_character_box(
     builder: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
-    character_name: &str,
     character_id: isize,
 ) {
     let profile = &CHARACTER_PROFILES[character_id as usize];

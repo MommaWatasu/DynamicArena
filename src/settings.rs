@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{
-    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, TITLE_FONT_SIZE,
+    AppState, GameConfig, GameMode, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, TITLE_FONT_SIZE,
 };
 
 #[derive(Component)]
@@ -256,6 +256,9 @@ fn update_setting(
                 }
                 item.value = new_value.clone();
                 text.0 = format!("{:.1}", new_value);
+                if element.0 == 0 {
+                    config.sound_volume = new_value;
+                }
             }
         }
         for (element, mut item, mut text) in &mut value_query_int.iter_mut() {
@@ -273,6 +276,9 @@ fn update_setting(
                 }
                 item.value = new_value.clone();
                 text.0 = new_value.to_string();
+                if element.0 == 1 {
+                    config.mode = if {new_value} == 1 {GameMode::SinglePlayer} else {GameMode::MultiPlayer};
+                }
             }
         }
     }

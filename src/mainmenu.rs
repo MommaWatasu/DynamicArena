@@ -8,7 +8,6 @@ use crate::{
     PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX,
     AppState,
-    GameConfig
 };
 
 const BUTTON_FONT_SIZE: f32 = 50.0;
@@ -21,12 +20,11 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     audio: Query<&AudioPlayer>,
-    config: Res<GameConfig>,
+    //config: Res<GameConfig>,
 ) {
     info!("mainmenu: setup");
 
     // if audio query is empty, spawn bgm]
-    /*
     if audio.is_empty() {
         commands.spawn((
             AudioPlayer::new(asset_server.load(PATH_SOUND_BGM)),
@@ -34,7 +32,6 @@ fn setup(
             GlobalTransform::default(),
         ));
     }
-    */
 
     commands
         .spawn((
