@@ -165,3 +165,17 @@ pub const JUMPING_POSE2: Pose = Pose {
     left_upper_leg: 60.0,
     left_lower_leg: -70.0,
 };
+
+pub const KICK_POSE: Pose = Pose {
+    facing: true,
+    head: 0.0,
+    body: 10.0,
+    right_upper_arm: 10.0,
+    right_lower_arm: 90.0,
+    right_upper_leg: 100.0,
+    right_lower_leg: 10.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: -20.0,
+    left_lower_leg: -10.0,
+};

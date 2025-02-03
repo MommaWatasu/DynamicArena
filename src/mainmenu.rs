@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use crate::{
     GAMETITLE,
     TITLE_FONT_SIZE,
-    //PATH_REGULAR_FONT,
     PATH_BOLD_FONT,
     PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX,
@@ -20,7 +19,6 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     audio: Query<&AudioPlayer>,
-    //config: Res<GameConfig>,
 ) {
     info!("mainmenu: setup");
 

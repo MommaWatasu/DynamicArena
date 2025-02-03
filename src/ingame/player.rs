@@ -30,7 +30,9 @@ enum PlayerState {
     #[default]
     Idle,
     Running,
+    DoubleJumping,
     Jumping,
+    Kicking,
 }
 
 #[derive(Resource)]
@@ -274,7 +276,7 @@ fn player_input(
 ) {
     if keys.get_pressed().len() == 0 {
         for mut player in query.iter_mut() {
-            if player.state != PlayerState::Idle && player.state != PlayerState::Jumping {
+            if player.state != PlayerState::Idle && !(player.state == PlayerState::Jumping || player.state == PlayerState::Kicking) {
                 player.state = PlayerState::Idle;
                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                 player.animation.phase = 0;
@@ -288,9 +290,9 @@ fn player_input(
                 player.velocity.x = TERMINATE_VELOCITY;
             } else if player.state != PlayerState::Running {
                 player.state = PlayerState::Running;
-                player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 30.0;
+                player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
                 player.animation.phase = 0;
-                player.animation.count = 30;
+                player.animation.count = 10;
             }
             player.pose.facing = true;
         }
@@ -301,21 +303,31 @@ fn player_input(
                 player.velocity.x = -TERMINATE_VELOCITY;
             } else if player.state != PlayerState::Running {
                 player.state = PlayerState::Running;
-                player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 30.0;
+                player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
                 player.animation.phase = 0;
-                player.animation.count = 30;
+                player.animation.count = 10;
             }
             player.pose.facing = false;
         }
     }
     if keys.just_pressed(KeyCode::Space) {
         for mut player in query.iter_mut() {
-            if player.state != PlayerState::Jumping {
+            if !(player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping) {
                 player.state = PlayerState::Jumping;
                 player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
                 player.animation.phase = 0;
                 player.animation.count = 30;
                 player.velocity = Vec2::new(0.0, 6.0);
+            }
+        }
+    }
+    if keys.just_pressed(KeyCode::KeyK) {
+        for mut player in query.iter_mut() {
+            if player.state != PlayerState::Kicking  && player.state != PlayerState::Jumping {
+                player.state = PlayerState::Kicking;
+                player.animation.diff_pose = (KICK_POSE - player.pose) / 10.0;
+                player.animation.phase = 0;
+                player.animation.count = 10;
             }
         }
     }
@@ -428,6 +440,20 @@ fn player_movement(
                         }
                     }
                 }
+                PlayerState::Kicking => {
+                    if player.animation.phase == 0 {
+                        player.animation.count -= 1;
+                        let diff_pose = player.animation.diff_pose;
+                        player.pose += diff_pose;
+                        if player.animation.count == 0 {
+                            player.state = PlayerState::Idle;
+                            player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
+                            player.animation.phase = 0;
+                            player.animation.count = 30;
+                        }
+                    }
+                },
+                PlayerState::DoubleJumping => {}
             }
             transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
             if transform.translation.x < -config.window_size.x / 2.0 {
@@ -452,7 +478,7 @@ fn check_ground(
                     let (parts, id) = parts_query.get(*entity2).unwrap();
                     if !parts.is_arm() && !parts.is_upper() {
                         for (mut player, player_id) in player_query.iter_mut() {
-                            if id == player_id {
+                            if id == player_id && player.state == PlayerState::Jumping {
                                 player.velocity = Vec2::ZERO;
                                 player.state = PlayerState::Idle;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
@@ -465,7 +491,7 @@ fn check_ground(
                     let (parts, id) = parts_query.get(*entity1).unwrap();
                     if !parts.is_arm() && !parts.is_upper() {
                         for (mut player, player_id) in player_query.iter_mut() {
-                            if id == player_id {
+                            if id == player_id && player.state == PlayerState::Jumping {
                                 player.velocity = Vec2::ZERO;
                                 player.state = PlayerState::Idle;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
