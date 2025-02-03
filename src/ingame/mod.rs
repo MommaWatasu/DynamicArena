@@ -1,4 +1,4 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
+use bevy::{asset::{self, RenderAssetUsages}, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
 use bevy_rapier2d::prelude::*;
 
 #[cfg(debug_assertions)]
@@ -7,7 +7,7 @@ mod player;
 mod pose;
 
 use crate::{
-    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_MONOSPACE_FONT, PATH_IMAGE_PREFIX
+    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_MONOSPACE_FONT, PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX
 };
 
 #[cfg(debug_assertions)]
@@ -72,7 +72,7 @@ fn setup(
         ))
             .with_children(|builder| {
                 builder.spawn((
-                    GameTimer(60.0),
+                    GameTimer(10.0),
                     Text::new("60,00"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
@@ -151,18 +151,50 @@ fn setup(
 }
 
 fn update_timer(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     time: Res<Time>,
     mut query: Query<(&mut Text, &mut TextColor, &mut GameTimer)>,
 ) {
-    for (mut text, mut color, mut timer) in query.iter_mut() {
-        timer.0 -= time.delta_secs();
-        if timer.0 < 0.0 {
-            timer.0 = 0.0;
-        } else if timer.0 < 5.0 {
-            color.0 = Color::srgb(1.0, 0.0, 0.0);
-        }
-        text.0 = format!("{:.2}", timer.0);
+    let (mut text, mut color, mut timer) = query.single_mut();
+    if timer.0 == 0.0 {
+        return;
     }
+    timer.0 -= time.delta_secs();
+    if timer.0 < 0.0 {
+        timer.0 = 0.0;
+        gameset(&mut commands, &asset_server);
+    } else if timer.0 < 5.0 {
+        color.0 = Color::srgb(1.0, 0.0, 0.0);
+    }
+    text.0 = format!("{:.2}", timer.0);
+}
+
+fn gameset(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+) {
+    info!("ingame: gameset");
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        InGame
+    ))
+        .with_child((
+                Text::new("GAME SET!"),
+                TextFont {
+                    font: asset_server.load(PATH_EXTRA_BOLD_FONT),
+                    font_size: 100.0,
+                    ..Default::default()
+                },
+                TextLayout::new_with_justify(JustifyText::Center),
+                TextColor(Color::BLACK),
+        ));
 }
 
 #[cfg(debug_assertions)]
