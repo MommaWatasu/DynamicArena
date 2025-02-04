@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use crate::{character_def::CHARACTER_PROFILES, ingame::{InGame, Ground}, AppState, GameConfig};
+use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame}, AppState, GameConfig, GameMode};
 use super::pose::*;
 
 const LIMB_LENGTH: f32 = 30.0;
@@ -15,7 +15,6 @@ const LOWER_LEG_OFFSET: f32 = -60.0;
 
 const PIXELS_PER_METER: f32 = 100.0;
 const GRAVITY_ACCEL: f32 = 9.80665;
-const TERMINATE_VELOCITY: f32 = 5.0;
 
 const FPS: f32 = 60.0;
 
@@ -33,6 +32,7 @@ enum PlayerState {
     DoubleJumping,
     Jumping,
     Kicking,
+    Punching,
 }
 
 #[derive(Resource)]
@@ -48,6 +48,7 @@ struct PlayerAnimation {
 
 #[derive(Component)]
 struct Player {
+    character_id: isize,
     pose: Pose,
     animation: PlayerAnimation,
     state: PlayerState,
@@ -55,10 +56,21 @@ struct Player {
     health: u32,
 }
 
-impl Default for Player {
-    fn default() -> Self {
+impl Player {
+    pub fn new(character_id: isize) -> Self {
         Self {
+            character_id,
             pose: IDLE_POSE1,
+            animation: PlayerAnimation { diff_pose: default(), phase: 1, count: 10 },
+            state: PlayerState::default(),
+            velocity: Vec2::ZERO,
+            health: 100,
+        }
+    }
+    pub fn new_opposite(character_id: isize) -> Self {
+        Self {
+            character_id,
+            pose: OPPOSITE_DEFAULT_POSE,
             animation: PlayerAnimation { diff_pose: default(), phase: 1, count: 10 },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
@@ -108,7 +120,7 @@ pub fn spawn_player(
 ) {
     let profile = &CHARACTER_PROFILES[character_id as usize];
     builder.spawn((
-        Player::default(),
+        if id == 0 { Player::new(character_id) } else { Player::new_opposite(character_id) },
         PlayerID(id),
         InGame,
         // Player 0 is on top of the screen
@@ -270,24 +282,30 @@ fn rotate_parts(transform: &mut Transform, offset: f32, degree: f32) {
     transform.translation.y = offset + LIMB_LENGTH * (1.0-rad.cos());
 }
 
+// TODO: CHange the implementation of PlayerState.
+// Current implementation is only capable of one state.
+// But, player can have multiple states at the same time(ex: Jumping and Kicking).
+// The best way to resolve this is to use bitflags.
 fn player_input(
     keys: Res<ButtonInput<KeyCode>>,
-    mut query: Query<&mut Player>
+    config: Res<GameConfig>,
+    mut query: Query<(&mut Player, &PlayerID)>
 ) {
-    if keys.get_pressed().len() == 0 {
-        for mut player in query.iter_mut() {
-            if player.state != PlayerState::Idle && !(player.state == PlayerState::Jumping || player.state == PlayerState::Kicking) {
+    for (mut player, player_id) in query.iter_mut() {
+        if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
+            continue;
+        }
+        if keys.get_pressed().len() == 0 {
+            if player.state != PlayerState::Idle && !(player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping || player.state == PlayerState::Kicking) {
                 player.state = PlayerState::Idle;
                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                 player.animation.phase = 0;
                 player.animation.count = 30;
             }
         }
-    }
-    if keys.pressed(KeyCode::KeyD) {
-        for mut player in query.iter_mut() {
-            if player.state == PlayerState::Jumping {
-                player.velocity.x = TERMINATE_VELOCITY;
+        if keys.pressed(KeyCode::KeyD) {
+            if player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping {
+                player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].speed;
             } else if player.state != PlayerState::Running {
                 player.state = PlayerState::Running;
                 player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
@@ -295,12 +313,9 @@ fn player_input(
                 player.animation.count = 10;
             }
             player.pose.facing = true;
-        }
-
-    } else if keys.pressed(KeyCode::KeyA) {
-        for mut player in query.iter_mut() {
-            if player.state == PlayerState::Jumping {
-                player.velocity.x = -TERMINATE_VELOCITY;
+        } else if keys.pressed(KeyCode::KeyA) {
+            if player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping {
+                player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].speed;
             } else if player.state != PlayerState::Running {
                 player.state = PlayerState::Running;
                 player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
@@ -309,23 +324,43 @@ fn player_input(
             }
             player.pose.facing = false;
         }
-    }
-    if keys.just_pressed(KeyCode::Space) {
-        for mut player in query.iter_mut() {
-            if !(player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping) {
-                player.state = PlayerState::Jumping;
-                player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
-                player.animation.phase = 0;
-                player.animation.count = 30;
-                player.velocity = Vec2::new(0.0, 6.0);
+        if keys.just_pressed(KeyCode::Space) {
+            if player.character_id == 1 {
+                if player.state != PlayerState::Jumping && player.state != PlayerState::DoubleJumping {
+                    player.state = PlayerState::Jumping;
+                    player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
+                    player.animation.phase = 0;
+                    player.animation.count = 30;
+                    player.velocity = Vec2::new(0.0, 7.0);
+                } else if player.state != PlayerState::DoubleJumping {
+                    player.state = PlayerState::DoubleJumping;
+                    player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
+                    player.animation.phase = 0;
+                    player.animation.count = 30;
+                    player.velocity = Vec2::new(0.0, 7.5);
+                }
+            } else {
+                if player.state != PlayerState::Jumping {
+                    player.state = PlayerState::Jumping;
+                    player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
+                    player.animation.phase = 0;
+                    player.animation.count = 30;
+                    player.velocity = Vec2::new(0.0, 7.0);
+                }
             }
         }
-    }
-    if keys.just_pressed(KeyCode::KeyK) {
-        for mut player in query.iter_mut() {
-            if player.state != PlayerState::Kicking  && player.state != PlayerState::Jumping {
+        if keys.just_pressed(KeyCode::KeyK) {
+            if player.state != PlayerState::Kicking && player.state != PlayerState::Jumping {
                 player.state = PlayerState::Kicking;
                 player.animation.diff_pose = (KICK_POSE - player.pose) / 10.0;
+                player.animation.phase = 0;
+                player.animation.count = 10;
+            }
+        }
+        if keys.just_pressed(KeyCode::KeyL) {
+            if player.state != PlayerState::Punching && player.state != PlayerState::Jumping {
+                player.state = PlayerState::Punching;
+                player.animation.diff_pose = (PUNCH_POSE - player.pose) / 10.0;
                 player.animation.phase = 0;
                 player.animation.count = 10;
             }
@@ -337,11 +372,14 @@ fn player_movement(
     time: Res<Time>,
     config: Res<GameConfig>,
     mut timer: ResMut<AnimationTimer>,
-    mut player_query: Query<(&mut Player, &mut Transform)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Transform)>,
 ) {
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, mut transform) in player_query.iter_mut() {
+        for (mut player, player_id, mut transform) in player_query.iter_mut() {
+            if player_id.0 == 1 {
+                continue;
+            }
             match player.state {
                 PlayerState::Idle => {
                     player.velocity = Vec2::ZERO;
@@ -380,15 +418,15 @@ fn player_movement(
                     }
                 }
                 PlayerState::Running => {
-                    if player.pose.facing && player.velocity.x < TERMINATE_VELOCITY {
+                    if player.pose.facing && player.velocity.x < CHARACTER_PROFILES[player.character_id as usize].speed {
                         player.velocity += Vec2::new(1.0, 0.0) * PIXELS_PER_METER / FPS;
-                    } else if !player.pose.facing && player.velocity.x > -TERMINATE_VELOCITY {
+                    } else if !player.pose.facing && player.velocity.x > -CHARACTER_PROFILES[player.character_id as usize].speed {
                         player.velocity += Vec2::new(-1.0, 0.0) * PIXELS_PER_METER / FPS;
                     }
-                    if player.velocity.x > TERMINATE_VELOCITY {
-                        player.velocity.x = TERMINATE_VELOCITY;
-                    } else if player.velocity.x < -TERMINATE_VELOCITY {
-                        player.velocity.x = -TERMINATE_VELOCITY;
+                    if player.velocity.x > CHARACTER_PROFILES[player.character_id as usize].speed {
+                        player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].speed;
+                    } else if player.velocity.x < -CHARACTER_PROFILES[player.character_id as usize].speed {
+                        player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].speed;
                     }
                     if player.animation.phase == 0 {
                         player.animation.count -= 1;
@@ -440,6 +478,27 @@ fn player_movement(
                         }
                     }
                 }
+                PlayerState::DoubleJumping => {
+                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 1.5 / FPS);
+                    if player.animation.phase == 0 {
+                        player.animation.count -= 1;
+                        let diff_pose = player.animation.diff_pose;
+                        player.pose += diff_pose;
+                        if player.animation.count == 0 {
+                            player.animation.diff_pose = (JUMPING_POSE2 - JUMPING_POSE1) / 30.0;
+                            player.animation.phase = 1;
+                            player.animation.count = 30;
+                        }
+                    } else if player.animation.phase == 1 {
+                        player.animation.count -= 1;
+                        let diff_pose = player.animation.diff_pose;
+                        player.pose += diff_pose;
+                        if player.animation.count == 0 {
+                            player.animation.phase = 2;
+                            player.animation.count = 0;
+                        }
+                    }
+                }
                 PlayerState::Kicking => {
                     if player.animation.phase == 0 {
                         player.animation.count -= 1;
@@ -453,7 +512,19 @@ fn player_movement(
                         }
                     }
                 },
-                PlayerState::DoubleJumping => {}
+                PlayerState::Punching => {
+                    if player.animation.phase == 0 {
+                        player.animation.count -= 1;
+                        let diff_pose = player.animation.diff_pose;
+                        player.pose += diff_pose;
+                        if player.animation.count == 0 {
+                            player.state = PlayerState::Idle;
+                            player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
+                            player.animation.phase = 0;
+                            player.animation.count = 30;
+                        }
+                    }
+                },
             }
             transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
             if transform.translation.x < -config.window_size.x / 2.0 {
@@ -478,7 +549,7 @@ fn check_ground(
                     let (parts, id) = parts_query.get(*entity2).unwrap();
                     if !parts.is_arm() && !parts.is_upper() {
                         for (mut player, player_id) in player_query.iter_mut() {
-                            if id == player_id && player.state == PlayerState::Jumping {
+                            if id == player_id && (player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping) {
                                 player.velocity = Vec2::ZERO;
                                 player.state = PlayerState::Idle;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
@@ -491,7 +562,7 @@ fn check_ground(
                     let (parts, id) = parts_query.get(*entity1).unwrap();
                     if !parts.is_arm() && !parts.is_upper() {
                         for (mut player, player_id) in player_query.iter_mut() {
-                            if id == player_id && player.state == PlayerState::Jumping {
+                            if id == player_id && (player.state == PlayerState::Jumping || player.state == PlayerState::DoubleJumping) {
                                 player.velocity = Vec2::ZERO;
                                 player.state = PlayerState::Idle;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;

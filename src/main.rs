@@ -25,6 +25,7 @@ const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
 const PATH_BOLD_MONOSPACE_FONT: &str = "fonts/Roboto_Condensed/RobotoCondensed-Bold.ttf";
 const PATH_IMAGE_PREFIX: &str = "images/";
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 enum GameMode {
     SinglePlayer,
     MultiPlayer,

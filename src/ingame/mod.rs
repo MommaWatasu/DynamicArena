@@ -1,4 +1,4 @@
-use bevy::{asset::{self, RenderAssetUsages}, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
+use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
 use bevy_rapier2d::prelude::*;
 
 #[cfg(debug_assertions)]
@@ -72,8 +72,8 @@ fn setup(
         ))
             .with_children(|builder| {
                 builder.spawn((
-                    GameTimer(10.0),
-                    Text::new("60,00"),
+                    GameTimer(60.0),
+                    Text::new("60.00"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
                         font_size: 50.0,
