@@ -183,11 +183,20 @@ fn create_character_box(
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn choose_rand_character(id: isize) -> isize {
     use rand::seq::IteratorRandom;
     let mut available_nums = vec![0, 1, 2];
     available_nums.retain(|&x| x != id);
     available_nums.iter().choose(&mut rand::rng()).unwrap().clone()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn choose_rand_character(id: isize) -> isize {
+    let mut available_nums = vec![0, 1, 2];
+    available_nums.retain(|&x| x != id);
+    let random_index = (web_sys::js_sys::Math::random() * 2.0).floor() as usize;
+    available_nums[random_index]
 }
 
 fn update(
