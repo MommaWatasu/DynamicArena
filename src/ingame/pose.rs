@@ -180,6 +180,20 @@ pub const JUMPING_POSE2: Pose = Pose {
     left_lower_leg: -70.0,
 };
 
+pub const JUMPING_KICK_POSE: Pose = Pose {
+    facing: true,
+    head: 0.0,
+    body: -10.0,
+    right_upper_arm: -10.0,
+    right_lower_arm: 20.0,
+    right_upper_leg: 70.0,
+    right_lower_leg: -110.0,
+    left_upper_arm: -20.0,
+    left_lower_arm: 10.0,
+    left_upper_leg: 10.0,
+    left_lower_leg: -10.0,
+};
+
 pub const KICK_POSE: Pose = Pose {
     facing: true,
     head: 0.0,
@@ -194,12 +208,54 @@ pub const KICK_POSE: Pose = Pose {
     left_lower_leg: -10.0,
 };
 
+pub const HIGH_KICK_POSE: Pose = Pose {
+    facing: true,
+    head: 0.0,
+    body: 10.0,
+    right_upper_arm: 10.0,
+    right_lower_arm: 90.0,
+    right_upper_leg: 150.0,
+    right_lower_leg: 10.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: -20.0,
+    left_lower_leg: -10.0,
+};
+
 pub const PUNCH_POSE: Pose = Pose {
     facing: true,
     head: 0.0,
     body: 0.0,
     right_upper_arm: 90.0,
     right_lower_arm: 0.0,
+    right_upper_leg: 10.0,
+    right_lower_leg: -40.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: 40.0,
+    left_lower_leg: -50.0,
+};
+
+pub const UPPER_PUNCH_POSE1: Pose = Pose {
+    facing: true,
+    head: 0.0,
+    body: 0.0,
+    right_upper_arm: 90.0,
+    right_lower_arm: 0.0,
+    right_upper_leg: 10.0,
+    right_lower_leg: -40.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: 40.0,
+    left_lower_leg: -50.0,
+};
+
+pub const UPPER_PUNCH_POSE2: Pose = Pose {
+    facing: true,
+    head: 0.0,
+    body: 0.0,
+    right_upper_arm: 90.0,
+    right_lower_arm: 90.0,
     right_upper_leg: 10.0,
     right_lower_leg: -40.0,
     left_upper_arm: 30.0,
