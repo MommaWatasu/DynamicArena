@@ -37,6 +37,7 @@ cargo build --target wasm32-unknown-unknown --release
 description = "create wasm directory to deploy, and launch the local server to test"
 script = ['''
 #!/bin/bash
+rm -r ./target/wasm_out/*
 wasm-bindgen --no-typescript --target web --out-dir ./target/wasm_out --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
 cp -r assets ./target/wasm_out/assets
 cp index.html target/wasm_out/index.html
