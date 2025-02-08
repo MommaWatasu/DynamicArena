@@ -86,8 +86,8 @@ fn setup(
     commands
         .spawn((
             InGame,
-            PlayerID(0),
-            HealthBar(100.0),
+            PlayerID(1),
+            HealthBar(1.0, config.window_size.x / 2.0 - 250.0),
             Mesh2d(meshes.add(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
@@ -108,8 +108,8 @@ fn setup(
     commands
         .spawn((
             InGame,
-            PlayerID(1),
-            HealthBar(100.0),
+            PlayerID(0),
+            HealthBar(1.0, 250.0 - config.window_size.x / 2.0),
             Mesh2d(meshes.add(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(

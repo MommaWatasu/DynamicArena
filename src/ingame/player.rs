@@ -1,5 +1,5 @@
 use std::ops::{BitOr, BitOrAssign, BitAndAssign, Not};
-use bevy::prelude::*;
+use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame}, AppState, GameConfig, GameMode};
 use super::pose::*;
@@ -23,7 +23,7 @@ const FPS: f32 = 60.0;
 pub struct PlayerID(pub u8);
 
 #[derive(Component)]
-pub struct HealthBar(pub f32);
+pub struct HealthBar(pub f32, pub f32);
 
 /// Represents the current state of a player using bit flags.
 /// Multiple states can be active simultaneously by combining flags with bitwise OR.
@@ -37,7 +37,7 @@ pub struct HealthBar(pub f32);
 /// | KICKING       | 0b00001000  | Player is performing kick    |
 /// | PUNCHING      | 0b00010000  | Player is performing punch   |
 /// | SPECIAL_ATTACK| 0b00100000  | Player is performing special attack |
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 struct PlayerState(u8);
 
 impl BitOr for PlayerState {
@@ -210,6 +210,8 @@ pub fn spawn_player(
                 PlayerID(id),
                 Collider::capsule_y(60.0, LIMB_RADIUS),
                 RigidBody::KinematicPositionBased,
+                ActiveEvents::COLLISION_EVENTS,
+                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
             ))
                 // Head
                 .with_children(|builder| {
@@ -220,6 +222,8 @@ pub fn spawn_player(
                         Transform::from_translation(Vec3::new(0.0, 100.0, 1.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::ball(45.0),
+                        ActiveEvents::COLLISION_EVENTS,
+                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                     ));
                     // Right Upper Arm
                     builder.spawn((
@@ -235,6 +239,8 @@ pub fn spawn_player(
                         Transform::from_translation(Vec3::new(0.0, 0.0, if id == 0 { 3.0 } else { 1.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                        ActiveEvents::COLLISION_EVENTS,
+                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                     ))
                         // Right Lower Arm
                         .with_child((
@@ -248,6 +254,8 @@ pub fn spawn_player(
                             Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                         ));
                     // Left Upper Arm
                     builder.spawn((
@@ -263,6 +271,8 @@ pub fn spawn_player(
                         Transform::from_translation(Vec3::new(0.0, 0.0, if id == 0 { 1.0 } else { 3.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                        ActiveEvents::COLLISION_EVENTS,
+                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                     ))
                         // Left Lower Arm
                         .with_child((
@@ -276,6 +286,8 @@ pub fn spawn_player(
                             Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                         ));
                     // Right Upper Leg
                     builder.spawn((
@@ -292,6 +304,8 @@ pub fn spawn_player(
                         Transform::from_translation(Vec3::new(0.0, -100.0, if id == 0 { 3.0 } else { 1.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                        ActiveEvents::COLLISION_EVENTS,
+                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                     ))
                         // Right Lower Leg
                         .with_children(|builder| {
@@ -309,6 +323,7 @@ pub fn spawn_player(
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 Sensor,
                                 ActiveEvents::COLLISION_EVENTS,
+                                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                             ));
                         });
                     // Left Upper Leg
@@ -323,6 +338,8 @@ pub fn spawn_player(
                         Transform::from_translation(Vec3::new(0.0, -100.0, if id == 0 { 1.0 } else { 3.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                        ActiveEvents::COLLISION_EVENTS,
+                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                     ))
                         // Left Lower Leg
                         .with_children(|builder| {
@@ -339,6 +356,7 @@ pub fn spawn_player(
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 Sensor,
                                 ActiveEvents::COLLISION_EVENTS,
+                                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                             ));
                         });
                 });
@@ -404,7 +422,7 @@ fn player_input(
         }
         if keys.pressed(KeyCode::KeyD) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].speed;
+                player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].agility;
             } else if !player.state.check(PlayerState::RUNNING) {
                 player.state |= PlayerState::RUNNING;
                 player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
@@ -414,7 +432,7 @@ fn player_input(
             player.pose.facing = true;
         } else if keys.pressed(KeyCode::KeyA) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].speed;
+                player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].agility;
             } else if !player.state.check(PlayerState::RUNNING) {
                 player.state |= PlayerState::RUNNING;
                 player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
@@ -589,6 +607,10 @@ fn player_movement(
                             player.animation.phase = 2;
                             player.animation.count = 0;
                         }
+                    } else if player.animation.phase == 2 && player.animation.count != 0 {
+                        player.animation.count -= 1;
+                        let diff_pose = player.animation.diff_pose;
+                        player.pose += diff_pose;
                     }
                 }
             } else {
@@ -656,15 +678,15 @@ fn player_movement(
                     }
                 }
                 if player.state.check(PlayerState::RUNNING) {
-                    if player.pose.facing && player.velocity.x < CHARACTER_PROFILES[player.character_id as usize].speed {
+                    if player.pose.facing && player.velocity.x < CHARACTER_PROFILES[player.character_id as usize].agility {
                         player.velocity += Vec2::new(1.0, 0.0) * PIXELS_PER_METER / FPS;
-                    } else if !player.pose.facing && player.velocity.x > -CHARACTER_PROFILES[player.character_id as usize].speed {
+                    } else if !player.pose.facing && player.velocity.x > -CHARACTER_PROFILES[player.character_id as usize].agility {
                         player.velocity += Vec2::new(-1.0, 0.0) * PIXELS_PER_METER / FPS;
                     }
-                    if player.velocity.x > CHARACTER_PROFILES[player.character_id as usize].speed {
-                        player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].speed;
-                    } else if player.velocity.x < -CHARACTER_PROFILES[player.character_id as usize].speed {
-                        player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].speed;
+                    if player.velocity.x > CHARACTER_PROFILES[player.character_id as usize].agility {
+                        player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].agility;
+                    } else if player.velocity.x < -CHARACTER_PROFILES[player.character_id as usize].agility {
+                        player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].agility;
                     }
                     if player.animation.phase == 0 {
                         player.animation.count -= 1;
@@ -799,16 +821,105 @@ fn update_pose(
     }
 }
 
+fn check_attack(
+    mut collision_events: EventReader<CollisionEvent>,
+    parts_query: Query<(&BodyParts, &PlayerID)>,
+    mut player_query: Query<(&mut Player, &PlayerID)>,
+) {
+    let mut player_info: [(isize, PlayerState); 2] = [(0, PlayerState::IDLE); 2];
+    for (player, player_id) in player_query.iter() {
+        player_info[player_id.0 as usize] = (player.character_id, player.state);
+    }
+    for collision_event in collision_events.read() {
+        match collision_event {
+            CollisionEvent::Started(entity1, entity2, _) => {
+                let Ok((parts1, id1)) = parts_query.get(*entity1) else {
+                    continue;
+                };
+                let Ok((parts2, id2)) = parts_query.get(*entity2) else {
+                    continue;
+                };
+                if parts1.is_arm() && parts2.is_body() {
+                    let mut attacker_id: PlayerID = PlayerID(2);
+                    let mut opponent_id: PlayerID = PlayerID(2);
+                    let mut attacker_power: f32 = 0.0;
+                    for (player, player_id) in player_query.iter() {
+                        if player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
+                            if attacker_id != PlayerID(2) && attacker_power > CHARACTER_PROFILES[player.character_id as usize].power {
+                                continue;
+                            }
+                            attacker_id = *player_id;
+                            opponent_id = if PlayerID(0) == attacker_id { PlayerID(1) } else { PlayerID(0) };
+                            attacker_power = CHARACTER_PROFILES[player.character_id as usize].power;
+                        }
+                    }
+                    if attacker_id == PlayerID(2) { continue; }
+
+                    let mut damage: u32 = 0;
+                    if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == attacker_id.0) {
+                        damage = calculate_damage(player_info[attacker_id.0 as usize], player_info[opponent_id.0 as usize]);
+                        println!("Player {} hit: {} damage", attacker_id.0, damage);
+                        player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING);
+                        player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
+                        player.animation.phase = 0;
+                        player.animation.count = 30;
+                    }
+                    if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
+                        player.health = player.health.saturating_sub(damage);
+                    }
+                }
+            }
+            CollisionEvent::Stopped(_, _, _) => {
+            }
+        }
+    }
+}
+
+fn calculate_damage(attacker_info: (isize, PlayerState), opponent_info: (isize, PlayerState)) -> u32 {
+    let attacker_profile = &CHARACTER_PROFILES[attacker_info.0 as usize];
+    let opponent_profile = &CHARACTER_PROFILES[opponent_info.0 as usize];
+    let mut damage = attacker_profile.power;
+    if attacker_info.1.check(PlayerState::KICKING) {
+        if opponent_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+            damage *= 1.5;
+        } else {
+            damage *= 1.0;
+        }
+    } else if attacker_info.1.check(PlayerState::PUNCHING) {
+        if opponent_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+            damage *= 1.5;
+        } else {
+            damage *= 1.0;
+        }
+    } else if attacker_info.1.check(PlayerState::SPECIAL_ATTACK) {
+        if opponent_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+            damage *= 2.0;
+        } else {
+            damage *= 1.5;
+        }
+    }
+    return (damage / opponent_profile.defense).floor() as u32;
+}
+
 /// Updates the health bar of the player character based on their current health.
 fn update_health_bar(
+    mut meshes: ResMut<Assets<Mesh>>,
     player_query: Query<(&Player, &PlayerID)>,
-    mut health_query: Query<(&mut HealthBar, &PlayerID)>,
+    mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
 ) {
     for (player, player_id) in player_query.iter() {
-        let profile = &CHARACTER_PROFILES[player_id.0 as usize];
-        for (mut health, health_id) in health_query.iter_mut() {
+        let profile = &CHARACTER_PROFILES[player.character_id as usize];
+        for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
             if player_id == health_id {
-                health.0 = (player.health / profile.health * 100) as f32;
+                let old_health = health_bar.0;
+                health_bar.0 = player.health as f32 / profile.health as f32;
+                if old_health == health_bar.0 { continue };
+                if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                        positions[3][0] = health_bar.1 * health_bar.0;
+                        positions[2][0] = health_bar.1 * health_bar.0 + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                    }
+                }
             }
         }
     }
@@ -826,6 +937,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
+            .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame)));
     }
 }
