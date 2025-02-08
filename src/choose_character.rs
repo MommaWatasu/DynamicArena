@@ -161,7 +161,7 @@ fn create_character_box(
             TextColor(Color::BLACK),
         ));
         builder.spawn((
-            Text::new(format!("<速さ>\n{}", profile.speed)),
+            Text::new(format!("<速さ>\n{}", profile.agility)),
             TextFont {
                 font: asset_server.load(PATH_BOLD_JP_FONT),
                 font_size: 30.0,
