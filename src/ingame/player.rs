@@ -164,6 +164,22 @@ impl BodyParts {
     }
 }
 
+
+/// Spawns a player character with the specified ID and character profile.
+/// 
+/// # Arguments
+/// 
+/// * `id` - The player ID (0 for player 1, 1 for player 2)
+/// * `character_id` - Index into CHARACTER_PROFILES for the character definition
+/// * `builder` - The entity builder to spawn the player hierarchy
+/// * `meshes` - Asset server for creating mesh components 
+/// * `materials` - Asset server for creating material components
+/// * `y_pos` - Initial Y position to spawn the player at
+///
+/// Creates a full player character hierarchy including:
+/// - Main player entity with components for state, animation, etc
+/// - Body parts (head, torso, arms, legs) with colliders and materials
+/// - Configures physics properties and collision sensors
 pub fn spawn_player(
     id: u8,
     character_id: isize,
@@ -329,6 +345,18 @@ pub fn spawn_player(
         });
 }
 
+/// Rotates and positions a body part based on given parameters.
+/// 
+/// # Arguments
+/// 
+/// * `transform` - The Transform component to modify
+/// * `offset` - Vertical offset from the parent joint
+/// * `degree` - Rotation angle in degrees (positive is counterclockwise)
+/// 
+/// This function:
+/// 1. Converts degree to radians and sets rotation
+/// 2. Calculates X offset using sin of angle * limb length  
+/// 3. Calculates Y position using cosine and adds vertical offset
 fn rotate_parts(transform: &mut Transform, offset: f32, degree: f32) {
     let rad = degree.to_radians();
     transform.rotation = Quat::from_rotation_z(rad);
@@ -336,6 +364,27 @@ fn rotate_parts(transform: &mut Transform, offset: f32, degree: f32) {
     transform.translation.y = offset + LIMB_LENGTH * (1.0-rad.cos());
 }
 
+/// Handles player input for character controls.
+///
+/// # Arguments
+///
+/// * `keys` - Resource providing keyboard input state
+/// * `config` - Resource containing game configuration
+/// * `query` - Query to access player components
+///
+/// This function processes keyboard input to control player characters:
+/// - Movement (A/D keys for running left/right)
+/// - Jumping (Space key for single/double jumps)
+/// - Combat moves:
+///   - K key for kicks
+///   - L key for punches
+///   - J key for special kick attack
+///   - H key for special punch attack
+///
+/// The function updates player state and animations based on input,
+/// handling state transitions and preventing invalid combinations
+/// of moves. For multiplayer, it processes input for both players
+/// unless in single player mode.
 fn player_input(
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
@@ -448,6 +497,20 @@ fn player_input(
     }
 }
 
+/// Handles the movement and animation of the player character.
+///
+/// # Arguments
+///
+/// * `time` - Resource providing access to the elapsed time
+/// * `config` - Resource containing game configuration settings
+/// * `timer` - Resource managing the animation timer
+/// * `player_query` - Query to access and modify player components
+///
+/// This function:
+/// 1. Updates the animation timer and checks if it has finished.
+/// 2. Iterates through each player and updates their state based on their current state and animation phase.
+/// 3. Adjusts the player's velocity and position based on their state and input.
+/// 4. Ensures the player stays within the game window boundaries.
 fn player_movement(
     time: Res<Time>,
     config: Res<GameConfig>,
@@ -643,6 +706,7 @@ fn player_movement(
     }
 }
 
+/// Checks for collisions between player characters and the ground.
 fn check_ground(
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
@@ -698,6 +762,7 @@ fn check_ground(
     }
 }
 
+/// Updates the pose of the player character based on their current state.
 fn update_pose(
     player_query: Query<(&Player, &PlayerID)>,
     mut parts_query: Query<(&BodyParts, &PlayerID, &mut Transform)>,
@@ -734,6 +799,7 @@ fn update_pose(
     }
 }
 
+/// Updates the health bar of the player character based on their current health.
 fn update_health_bar(
     player_query: Query<(&Player, &PlayerID)>,
     mut health_query: Query<(&mut HealthBar, &PlayerID)>,
