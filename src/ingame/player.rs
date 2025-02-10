@@ -140,6 +140,7 @@ struct BodyParts {
 
 #[allow(dead_code)]
 impl BodyParts {
+    const NULL: Self = Self { flags: 0b00000 };
     const HEAD: Self = Self { flags: 0b10000 };
     const BODY: Self = Self { flags: 0b01000 };
     pub fn new(head: bool, body: bool, arm: bool, right: bool, upper: bool) -> Self {
@@ -321,7 +322,6 @@ pub fn spawn_player(
                                 Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
                                 RigidBody::KinematicPositionBased,
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                                Sensor,
                                 ActiveEvents::COLLISION_EVENTS,
                                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                             ));
@@ -354,7 +354,6 @@ pub fn spawn_player(
                                 Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
                                 RigidBody::KinematicPositionBased,
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                                Sensor,
                                 ActiveEvents::COLLISION_EVENTS,
                                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                             ));
@@ -482,13 +481,8 @@ fn player_input(
             }
         }
         if keys.just_pressed(KeyCode::KeyL) {
-            if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
-                if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                    player.state |= PlayerState::PUNCHING;
-                    player.animation.diff_pose = (JUMPING_KICK_POSE - player.pose) / 10.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 10;
-                } else if !player.state.check(PlayerState::RUNNING) {
+            if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+                if !player.state.check(PlayerState::RUNNING) {
                     player.state |= PlayerState::PUNCHING;
                     player.animation.diff_pose = (PUNCH_POSE - player.pose) / 10.0;
                     player.animation.phase = 0;
@@ -579,7 +573,7 @@ fn player_movement(
             }
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 1.5 / FPS);
-                if player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
+                if player.state.check(PlayerState::KICKING) {
                     if player.animation.phase == 0 {
                         player.animation.count -= 1;
                         let diff_pose = player.animation.diff_pose;
@@ -839,34 +833,55 @@ fn check_attack(
                 let Ok((parts2, id2)) = parts_query.get(*entity2) else {
                     continue;
                 };
-                if parts1.is_arm() && parts2.is_body() {
-                    let mut attacker_id: PlayerID = PlayerID(2);
-                    let mut opponent_id: PlayerID = PlayerID(2);
-                    let mut attacker_power: f32 = 0.0;
-                    for (player, player_id) in player_query.iter() {
-                        if player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
-                            if attacker_id != PlayerID(2) && attacker_power > CHARACTER_PROFILES[player.character_id as usize].power {
-                                continue;
-                            }
-                            attacker_id = *player_id;
-                            opponent_id = if PlayerID(0) == attacker_id { PlayerID(1) } else { PlayerID(0) };
-                            attacker_power = CHARACTER_PROFILES[player.character_id as usize].power;
+                let mut attacker_id: PlayerID = PlayerID(2);
+                let mut opponent_id: PlayerID = PlayerID(2);
+                let mut attacker_parts: &BodyParts = &BodyParts::NULL;
+                let mut opponent_parts: &BodyParts = &BodyParts::NULL;
+                let mut attacker_power: f32 = 0.0;
+                for (player, player_id) in player_query.iter() {
+                    if player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
+                        // Check if the attacker is already set
+                        if id1 == player_id {
+                            attacker_parts = parts1;
+                            opponent_parts = parts2;
+                        } else if id2 == player_id {
+                            attacker_parts = parts2;
+                            opponent_parts = parts1;
                         }
-                    }
-                    if attacker_id == PlayerID(2) { continue; }
 
-                    let mut damage: u32 = 0;
-                    if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == attacker_id.0) {
-                        damage = calculate_damage(player_info[attacker_id.0 as usize], player_info[opponent_id.0 as usize]);
-                        println!("Player {} hit: {} damage", attacker_id.0, damage);
-                        player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING);
-                        player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                        player.animation.phase = 0;
-                        player.animation.count = 30;
+                        // Check if the attacker is in a valid state
+                        if player.state.check(PlayerState::KICKING) && attacker_parts.is_arm(){
+                            continue;
+                        } else if player.state.check(PlayerState::PUNCHING) &&  !attacker_parts.is_arm(){
+                            continue;
+                        }
+
+                        // Check if the attacker is already set
+                        if attacker_id != PlayerID(2) && attacker_power > CHARACTER_PROFILES[player.character_id as usize].power {
+                            continue;
+                        }
+                        attacker_id = *player_id;
+                        opponent_id = if PlayerID(0) == attacker_id { PlayerID(1) } else { PlayerID(0) };
+                        attacker_power = CHARACTER_PROFILES[player.character_id as usize].power;
                     }
-                    if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
-                        player.health = player.health.saturating_sub(damage);
-                    }
+                }
+                if attacker_id == PlayerID(2) { continue; }
+
+                let mut damage: u32 = 0;
+                if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == attacker_id.0) {
+                    damage = calculate_damage(
+                        player_info[attacker_id.0 as usize],
+                        player_info[opponent_id.0 as usize],
+                        opponent_parts,
+                    );
+                    println!("Player {} hit: {} damage", attacker_id.0, damage);
+                    player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING);
+                    player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
+                    player.animation.phase = 0;
+                    player.animation.count = 30;
+                }
+                if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
+                    player.health = player.health.saturating_sub(damage);
                 }
             }
             CollisionEvent::Stopped(_, _, _) => {
@@ -875,29 +890,44 @@ fn check_attack(
     }
 }
 
-fn calculate_damage(attacker_info: (isize, PlayerState), opponent_info: (isize, PlayerState)) -> u32 {
+fn calculate_damage(
+    attacker_info: (isize, PlayerState),
+    opponent_info: (isize, PlayerState),
+    opponent_parts: &BodyParts,
+) -> u32 {
     let attacker_profile = &CHARACTER_PROFILES[attacker_info.0 as usize];
     let opponent_profile = &CHARACTER_PROFILES[opponent_info.0 as usize];
     let mut damage = attacker_profile.power;
+    
+    // Apply damage multipliers based on player states
     if attacker_info.1.check(PlayerState::KICKING) {
-        if opponent_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-            damage *= 1.5;
-        } else {
-            damage *= 1.0;
-        }
+        damage *= 1.3;
     } else if attacker_info.1.check(PlayerState::PUNCHING) {
-        if opponent_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-            damage *= 1.5;
-        } else {
-            damage *= 1.0;
-        }
-    } else if attacker_info.1.check(PlayerState::SPECIAL_ATTACK) {
-        if opponent_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-            damage *= 2.0;
-        } else {
-            damage *= 1.5;
-        }
+        damage *= 1.0;
     }
+
+    // If attacker is performes a jumping kick or double jump kick, double the damage
+    if attacker_info.1.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+        damage *= 2.0;
+    }
+
+    // If attacker is performing a special attack, double the damage
+    if attacker_info.1.check(PlayerState::SPECIAL_ATTACK) {
+        damage *= 2.0;
+    }
+
+    // Apply damage multipliers based on opponent body parts
+    if opponent_parts.is_head() {
+        damage *= 2.0;
+    } else if opponent_parts.is_body() {
+        damage *= 1.5;
+    } else if opponent_parts.is_upper() {
+        damage *= 1.3;
+    } else if opponent_parts.is_arm() {
+        damage *= 0.8;
+    }
+
+    // Apply damage reduction based on opponent defense
     return (damage / opponent_profile.defense).floor() as u32;
 }
 
