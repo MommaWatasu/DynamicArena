@@ -212,7 +212,13 @@ fn update_timer(
     if timer.0 < 0.0 {
         timer.0 = 0.0;
         let bars: Vec<_> = health_bar_query.iter().collect();
-        let winner_id = if bars[0].0.0 <= bars[1].0.0 { bars[1].1.0 + 1 } else { bars[0].1.0 + 1 };
+        let winner_id = if bars[0].0.0 < bars[1].0.0 {
+            bars[1].1.0 + 1
+        } else if bars[0].0.0 == bars[1].0.0 {
+            0
+        } else {
+            bars[0].1.0 + 1
+        };
         let round = gamestate.round as usize - 1;
         gamestate.winners[round] = winner_id;
         gamestate.win_types[round] = false;
@@ -351,7 +357,12 @@ fn main_game_system(
             }
         } else if gamestate.phase == 8 {
             let (_, mut text, _) = query.get_single_mut().unwrap();
-            text.0 = format!("Player {} WIN", gamestate.winners[gamestate.round as usize - 1]);
+            let winner_id = gamestate.winners[gamestate.round as usize - 1];
+            if winner_id == 0 {
+                text.0 = "DRAW".to_string();
+            } else {
+                text.0 = format!("Player {} WIN", winner_id);
+            }
             gamestate.phase = 9;
             gamestate.count = 0;
         } else if gamestate.phase == 9 {
@@ -368,7 +379,6 @@ fn main_game_system(
                 gamestate.round += 1;
                 if gamestate.round == 4 {
                     // change app state to show result
-                    println!("bump into result");
                     next_state.set(AppState::Result);
                 } else {
                     gamestate.phase = 11;

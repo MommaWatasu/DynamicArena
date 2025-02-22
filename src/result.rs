@@ -130,7 +130,7 @@ fn create_round_result(
     ))
         .with_children(|builder| {
             builder.spawn((
-                Text::new(format!("Round {} Winner", round)),
+                Text::new(format!("Round {} Result", round)),
                 TextFont {
                     font: asset_server.load(PATH_BOLD_FONT),
                     font_size: 50.0,
@@ -143,24 +143,41 @@ fn create_round_result(
                     ..default()
                 },
             ));
-            builder.spawn((
-                Text::new(format!("Player {}", winner_id)),
-                TextFont {
-                    font: asset_server.load(PATH_BOLD_FONT),
-                    font_size: 50.0,
-                    ..Default::default()
-                },
-                if winner_id == 1 {
-                    TextColor(Color::srgba(1.0, 0.0, 0.0, 0.8))
-                } else {
-                    TextColor(Color::srgba(0.0, 0.0, 1.0, 0.8))
-                },
-                TextLayout::new_with_justify(JustifyText::Center),
-                Node {
-                    width: Val::Percent(100.0),
-                    ..default()
-                },
-            ));
+            if winner_id == 0 {
+                builder.spawn((
+                    Text::new("DRAW"),
+                    TextFont {
+                        font: asset_server.load(PATH_BOLD_FONT),
+                        font_size: 50.0,
+                        ..Default::default()
+                    },
+                    TextColor(Color::BLACK),
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    Node {
+                        width: Val::Percent(100.0),
+                        ..default()
+                    },
+                ));
+            } else {
+                builder.spawn((
+                    Text::new(format!("Player {} WIN!", winner_id)),
+                    TextFont {
+                        font: asset_server.load(PATH_BOLD_FONT),
+                        font_size: 50.0,
+                        ..Default::default()
+                    },
+                    if winner_id == 1 {
+                        TextColor(Color::srgba(1.0, 0.0, 0.0, 0.8))
+                    } else {
+                        TextColor(Color::srgba(0.0, 0.0, 1.0, 0.8))
+                    },
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    Node {
+                        width: Val::Percent(100.0),
+                        ..default()
+                    },
+                ));
+            }
         });
 }
 
@@ -197,22 +214,7 @@ fn create_total_result(
                     ..default()
                 },
             ));
-            if winner_id != 0 {
-                builder.spawn((
-                    Text::new(format!("Player {} WIN!", winner_id)),
-                    TextFont {
-                        font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
-                        ..Default::default()
-                    },
-                    TextColor(Color::srgba(1.0, 0.0, 0.0, 0.8)),
-                    TextLayout::new_with_justify(JustifyText::Center),
-                    Node {
-                        width: Val::Percent(100.0),
-                        ..default()
-                    },
-                ));
-            } else {
+            if winner_id == 0 {
                 builder.spawn((
                     Text::new("DRAW"),
                     TextFont {
@@ -221,6 +223,21 @@ fn create_total_result(
                         ..Default::default()
                     },
                     TextColor(Color::BLACK),
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    Node {
+                        width: Val::Percent(100.0),
+                        ..default()
+                    },
+                ));
+            } else {
+                builder.spawn((
+                    Text::new(format!("Player {} WIN!", winner_id)),
+                    TextFont {
+                        font: asset_server.load(PATH_BOLD_FONT),
+                        font_size: 50.0,
+                        ..Default::default()
+                    },
+                    TextColor(Color::srgba(1.0, 0.0, 0.0, 0.8)),
                     TextLayout::new_with_justify(JustifyText::Center),
                     Node {
                         width: Val::Percent(100.0),
