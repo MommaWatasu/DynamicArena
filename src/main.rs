@@ -13,6 +13,7 @@ mod choose_character;
 mod ingame;
 mod mainmenu;
 mod settings;
+mod result;
 
 const GAMETITLE: &str = "DynamicArena";
 const TITLE_FONT_SIZE: f32 = 100.0;
@@ -58,6 +59,7 @@ enum AppState {
     Settings,
     ChooseCharacter,
     Ingame,
+    Result,
     #[cfg(debug_assertions)]
     Pause
 }
@@ -75,6 +77,7 @@ fn main() {
         .add_plugins(settings::SettingsPlugin)
         .add_plugins(choose_character::ChooseCharacterPlugin)
         .add_plugins(ingame::GamePlugin)
+        .add_plugins(result::ResultPlugin)
         .run();
 }
 

@@ -979,6 +979,6 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame)));
+            .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
     }
 }

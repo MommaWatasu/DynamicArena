@@ -1,4 +1,4 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
+use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues}};
 use bevy_rapier2d::prelude::*;
 
 #[cfg(debug_assertions)]
@@ -17,13 +17,35 @@ use player::*;
 const FPS: f32 = 60.0;
 
 #[derive(Resource, Default)]
-struct GameState {
+pub struct GameState {
     pub winners: [u8; 3],
     pub win_types: [bool; 3],
     pub round: u8,
     pub phase: u8,
     pub count: u8,
     pub timer: Timer
+}
+
+impl GameState {
+    // return the total winner
+    pub fn get_winner(&self) -> u8 {
+        let mut player1 = 0;
+        let mut player2 = 0;
+        for winner in self.winners.iter() {
+            if *winner == 1 {
+                player1 += 1;
+            } else if *winner == 2 {
+                player2 += 1;
+            }
+        }
+        if player1 > player2 {
+            return 1;
+        } else if player1 < player2 {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
 }
 
 #[derive(Component)]
@@ -52,7 +74,7 @@ fn setup(
     mut game_state: ResMut<GameState>,
     config: Res<GameConfig>,
 ) {
-    info!("ingame: setup");
+    info!("setup");
     #[cfg(debug_assertions)]
     commands.spawn((
         Button,
@@ -220,11 +242,14 @@ fn main_game_system(
     mut commands: Commands,
     time: Res<Time>,
     asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
     mut gamestate: ResMut<GameState>,
+    mut next_state: ResMut<NextState<AppState>>,
     mut query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
     mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
     mut player_query: Query<(&PlayerID, &mut Player, &mut Transform)>,
-    mut halth_bar_query: Query<&mut HealthBar>,
+    mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
+    mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
 ) {
     gamestate.timer.tick(time.delta());
     if gamestate.timer.just_finished() {
@@ -343,6 +368,8 @@ fn main_game_system(
                 gamestate.round += 1;
                 if gamestate.round == 4 {
                     // change app state to show result
+                    println!("bump into result");
+                    next_state.set(AppState::Result);
                 } else {
                     gamestate.phase = 11;
                     gamestate.count = 0;
@@ -357,9 +384,20 @@ fn main_game_system(
                         transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
                     }
                     // reset health bar
-                    for mut bar in halth_bar_query.iter_mut() {
-                        bar.0 = 1.0;
+                    for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
+                        health_bar.0 = 1.0;
+                        if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                            if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                                positions[3][0] = health_bar.1 * health_bar.0;
+                                positions[2][0] = health_bar.1 * health_bar.0 + if health_id.0 == 0 { 50.0 } else { -50.0 };
+                            }
+                        }
                     }
+                    // reset timer
+                    let (mut text, mut color, mut timer) = timer_query.get_single_mut().unwrap();
+                    timer.0 = 60.0;
+                    text.0 = "60.00".to_string();
+                    color.0 = Color::WHITE;
                 }
             }
         } else if gamestate.phase == 11 {
@@ -402,7 +440,7 @@ fn check_pause(
 }
 
 fn exit(mut commands: Commands, query: Query<Entity, With<InGame>>) {
-    info!("ingame: exit");
+    info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
