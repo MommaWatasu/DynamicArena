@@ -16,10 +16,10 @@ mod settings;
 
 const GAMETITLE: &str = "DynamicArena";
 const TITLE_FONT_SIZE: f32 = 100.0;
-const PATH_FONT: &str = "fonts/Orbitron/Orbitron-Regular.ttf";
+//const PATH_FONT: &str = "fonts/Orbitron/Orbitron-Regular.ttf";
 const PATH_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-Bold.ttf";
 const PATH_EXTRA_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-ExtraBold.ttf";
-const PATH_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Regular.ttf";
+//const PATH_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Regular.ttf";
 const PATH_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Bold.ttf";
 const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
 const PATH_BOLD_MONOSPACE_FONT: &str = "fonts/Roboto_Condensed/RobotoCondensed-Bold.ttf";
