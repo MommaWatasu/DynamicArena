@@ -12,7 +12,7 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    info!("pause: setup");
+    info!("setup");
     commands.spawn((
         Node {
             justify_content: JustifyContent::SpaceEvenly,
@@ -88,6 +88,7 @@ fn exit(
     mut commands: Commands,
     query: Query<Entity, With<Pause>>,
 ) {
+    info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }

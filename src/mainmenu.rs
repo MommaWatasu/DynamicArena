@@ -20,7 +20,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     audio: Query<&AudioPlayer>,
 ) {
-    info!("mainmenu: setup");
+    info!("setup");
 
     // if audio query is empty, spawn bgm]
     if audio.is_empty() {
@@ -186,10 +186,10 @@ fn exit(
     mut commands: Commands,
     query: Query<Entity, With<Mainmenu>>,
 ) {
+    info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    info!("mainmenu: exit");
 }
 
 pub struct MainmenuPlugin;

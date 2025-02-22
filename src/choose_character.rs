@@ -16,7 +16,7 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    info!("choose_character: setup");
+    info!("setup");
     commands.spawn((
         Button,
         Node {
@@ -276,10 +276,10 @@ fn exit(
     mut commands: Commands,
     query: Query<Entity, With<ChooseCharacter>>,
 ) {
+    info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    info!("settings: exit");
 }
 
 impl Plugin for ChooseCharacterPlugin {

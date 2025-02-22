@@ -36,7 +36,7 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    info!("settings: setup");
+    info!("setup");
     commands.spawn((
         Button,
         Node {
@@ -312,10 +312,10 @@ fn exit(
     mut commands: Commands,
     query: Query<Entity, With<Settings>>,
 ) {
+    info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    info!("settings: exit");
 }
 
 pub struct SettingsPlugin;
