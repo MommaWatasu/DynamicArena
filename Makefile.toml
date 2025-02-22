@@ -37,10 +37,15 @@ cargo build --target wasm32-unknown-unknown --release
 description = "create wasm directory to deploy, and launch the local server to test"
 script = ['''
 #!/bin/bash
-rm -r ./target/wasm_out/*
-wasm-bindgen --no-typescript --target web --out-dir ./target/wasm_out --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
-cp -r assets ./target/wasm_out/assets
-cp index.html target/wasm_out/index.html
-cd target/wasm_out
+rm -r ./docs/*
+wasm-bindgen --no-typescript --target web --out-dir ./docs --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
+cp -r assets ./docs/assets
+cp ./wasm_build/index.html docs/index.html
+
+temp_file=$(mktemp)
+cat ./wasm_build/enable_sound.js ./docs/dynamicarena.js > $temp_file
+mv $temp_file ./docs/dynamicarena.js
+
+cd docs
 python3 -m http.server 8000
 ''']
