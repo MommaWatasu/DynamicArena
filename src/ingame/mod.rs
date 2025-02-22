@@ -14,6 +14,27 @@ use crate::{
 use pause::*;
 use player::*;
 
+const FPS: f32 = 60.0;
+
+#[derive(Resource, Default)]
+struct GameState {
+    pub winners: [u8; 3],
+    pub win_types: [bool; 3],
+    pub round: u8,
+    pub phase: u8,
+    pub count: u8,
+    pub timer: Timer
+}
+
+#[derive(Component)]
+struct StatusBar;
+
+#[derive(Component)]
+struct Curtain;
+
+#[derive(Resource)]
+struct Fighting;
+
 #[derive(Component)]
 struct InGame;
 
@@ -28,6 +49,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut game_state: ResMut<GameState>,
     config: Res<GameConfig>,
 ) {
     info!("ingame: setup");
@@ -148,13 +170,17 @@ fn setup(
             spawn_player(0, config.characters_id[0], builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
             spawn_player(1, config.characters_id[1], builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
         });
+    game_state.phase = 0;
+    game_state.count = 0;
+    game_state.round = 1;
+    game_state.timer = Timer::from_seconds(1.0 / FPS, TimerMode::Repeating);
 }
 
 fn update_timer(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
     time: Res<Time>,
+    mut gamestate: ResMut<GameState>,
     mut query: Query<(&mut Text, &mut TextColor, &mut GameTimer)>,
+    health_bar_query: Query<(&HealthBar, &PlayerID)>,
 ) {
     let (mut text, mut color, mut timer) = query.single_mut();
     if timer.0 == 0.0 {
@@ -163,38 +189,189 @@ fn update_timer(
     timer.0 -= time.delta_secs();
     if timer.0 < 0.0 {
         timer.0 = 0.0;
-        gameset(&mut commands, &asset_server);
+        let bars: Vec<_> = health_bar_query.iter().collect();
+        let winner_id = if bars[0].0.0 <= bars[1].0.0 { bars[1].1.0 + 1 } else { bars[0].1.0 + 1 };
+        let round = gamestate.round as usize - 1;
+        gamestate.winners[round] = winner_id;
+        gamestate.win_types[round] = false;
+        gamestate.phase = 6;
     } else if timer.0 < 5.0 {
         color.0 = Color::srgb(1.0, 0.0, 0.0);
     }
     text.0 = format!("{:.2}", timer.0);
 }
 
-fn gameset(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
+fn check_gameset(
+    mut gamestate: ResMut<GameState>,
+    query: Query<(&HealthBar, &PlayerID)>
 ) {
-    info!("ingame: gameset");
-    commands.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..default()
-        },
-        InGame
-    ))
-        .with_child((
-                Text::new("GAME SET!"),
-                TextFont {
-                    font: asset_server.load(PATH_EXTRA_BOLD_FONT),
-                    font_size: 100.0,
-                    ..Default::default()
-                },
-                TextLayout::new_with_justify(JustifyText::Center),
-                TextColor(Color::BLACK),
-        ));
+    for (bar, player_id) in query.iter() {
+        if bar.0 <= 0.0 {
+            let round = gamestate.round as usize - 1;
+            gamestate.winners[round] = if player_id.0 == 0 { 2 } else { 1 };
+            gamestate.win_types[round] = true;
+            gamestate.phase = 6;
+            break;
+        }
+    }
+}
+
+fn main_game_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    asset_server: Res<AssetServer>,
+    mut gamestate: ResMut<GameState>,
+    mut query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
+    mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
+    mut player_query: Query<(&PlayerID, &mut Player, &mut Transform)>,
+    mut halth_bar_query: Query<&mut HealthBar>,
+) {
+    gamestate.timer.tick(time.delta());
+    if gamestate.timer.just_finished() {
+        if gamestate.phase == 0 {
+            if gamestate.round == 1 {
+                commands.spawn((
+                    InGame,
+                    Curtain,
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        justify_self: JustifySelf::Center,
+                        align_self: AlignSelf::Center,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
+                ));
+                commands.spawn((
+                    InGame,
+                    StatusBar,
+                    Node {
+                        width: Val::Percent(100.0),
+                        justify_self: JustifySelf::Center,
+                        align_self: AlignSelf::Center,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+
+                    Text::new("ROUND 1"),
+                    TextFont {
+                        font: asset_server.load(PATH_EXTRA_BOLD_FONT),
+                        font_size: 100.0,
+                        ..Default::default()
+                    },
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    TextColor(Color::srgba(1.0, 1.0, 1.0, 0.8)),
+                ));
+            } else {
+                let (mut bar, mut text, mut text_color) = query.get_single_mut().unwrap();
+                bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
+                text.0 = format!("ROUND {}", gamestate.round);
+                text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
+            }
+            gamestate.phase = 1;
+            gamestate.count = 0;
+        } else if gamestate.phase == 1 {
+            gamestate.count += 1;
+            if gamestate.count == 60 {
+                let (_, mut text, _) = query.get_single_mut().unwrap();
+                text.0 = "READY?".to_string();
+                gamestate.phase = 2;
+                gamestate.count = 0;
+            }
+        } else if gamestate.phase == 2 {
+            gamestate.count += 1;
+            if gamestate.count == 90 {
+                let (_, mut text, _) = query.get_single_mut().unwrap();
+                text.0 = "FIGHT!".to_string();
+                gamestate.phase = 3;
+                gamestate.count = 0;
+            }
+        } else if gamestate.phase == 3 {
+            gamestate.count += 1;
+            if gamestate.count == 30 {
+                gamestate.phase = 4;
+                gamestate.count = 0;
+            }
+        } else if gamestate.phase == 4 {
+            gamestate.count += 1;
+            let (mut bar, _, mut text_color) = query.get_single_mut().unwrap();
+            bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8 - gamestate.count as f32/60.0);
+            text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8 - gamestate.count as f32/60.0);
+            if gamestate.count == 48 {
+                commands.insert_resource(Fighting);
+                gamestate.phase = 5;
+                gamestate.count = 0;
+            }
+        } else if gamestate.phase == 6 {
+            commands.remove_resource::<Fighting>();
+            let (mut bar, mut text, mut text_color) = query.get_single_mut().unwrap();
+            bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
+            text.0 = if gamestate.win_types[gamestate.round as usize - 1] {
+                "KO!".to_string()
+            } else {
+                "TIME UP!".to_string()
+            };
+            text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
+            gamestate.phase = 7;
+            gamestate.count = 0;
+        } else if gamestate.phase == 7 {
+            gamestate.count += 1;
+            if gamestate.count == 60 {
+                gamestate.phase = 8;
+                gamestate.count = 0;
+            }
+        } else if gamestate.phase == 8 {
+            let (_, mut text, _) = query.get_single_mut().unwrap();
+            text.0 = format!("Player {} WIN", gamestate.winners[gamestate.round as usize - 1]);
+            gamestate.phase = 9;
+            gamestate.count = 0;
+        } else if gamestate.phase == 9 {
+            gamestate.count += 1;
+            if gamestate.count == 60 {
+                gamestate.phase = 10;
+                gamestate.count = 0;
+            }
+        } else if gamestate.phase == 10 {
+            gamestate.count += 1;
+            let mut curtain = curtain_query.get_single_mut().unwrap();
+            curtain.0 = Color::srgba(0.0, 0.0, 0.0, gamestate.count as f32/60.0);
+            if gamestate.count == 60 {
+                gamestate.round += 1;
+                if gamestate.round == 4 {
+                    // change app state to show result
+                } else {
+                    gamestate.phase = 11;
+                    gamestate.count = 0;
+
+                    // remove status bar
+                    let (mut bar, _, mut text_color) = query.get_single_mut().unwrap();
+                    bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.0);
+                    text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.0);
+                    // reset player
+                    for (id, mut player, mut transform) in player_query.iter_mut() {
+                        player.reset(id);
+                        transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
+                    }
+                    // reset health bar
+                    for mut bar in halth_bar_query.iter_mut() {
+                        bar.0 = 1.0;
+                    }
+                }
+            }
+        } else if gamestate.phase == 11 {
+            gamestate.count += 1;
+            let mut curtain = curtain_query.get_single_mut().unwrap();
+            curtain.0 = Color::srgba(0.0, 0.0, 0.0, 1.0 - gamestate.count as f32/60.0);
+            if gamestate.count == 60 {
+                gamestate.phase = 0;
+                gamestate.count = 0;
+            }
+        }
+    }
 }
 
 #[cfg(debug_assertions)]
@@ -244,8 +421,11 @@ impl Plugin for GamePlugin {
         app
             .add_plugins(PlayerPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
+            .insert_resource(GameState::default())
             .add_systems(OnEnter(AppState::Ingame), setup)
             .add_systems(OnExit(AppState::Ingame), exit)
-            .add_systems(Update, update_timer.run_if(in_state(AppState::Ingame)));
+            .add_systems(Update, update_timer.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, check_gameset.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, main_game_system.run_if(in_state(AppState::Ingame)));
     }
 }

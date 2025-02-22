@@ -2,7 +2,7 @@ use std::ops::{BitOr, BitOrAssign, BitAndAssign, Not};
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame}, AppState, GameConfig, GameMode};
-use super::pose::*;
+use super::{Fighting, pose::*};
 
 const LIMB_LENGTH: f32 = 30.0;
 const LIMB_RADIUS: f32 = 15.0;
@@ -101,7 +101,7 @@ struct PlayerAnimation {
 }
 
 #[derive(Component)]
-struct Player {
+pub struct Player {
     character_id: isize,
     pose: Pose,
     animation: PlayerAnimation,
@@ -130,6 +130,17 @@ impl Player {
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
         }
+    }
+    pub fn reset(&mut self, id: &PlayerID) {
+        if id.0 == 0 {
+            self.pose = IDLE_POSE1;
+        } else {
+            self.pose = OPPOSITE_DEFAULT_POSE;
+        }
+        self.animation = PlayerAnimation { diff_pose: default(), phase: 1, count: 10 };
+        self.state = PlayerState::default();
+        self.velocity = Vec2::ZERO;
+        self.health = CHARACTER_PROFILES[self.character_id as usize].health;
     }
 }
 
@@ -963,11 +974,11 @@ impl Plugin for PlayerPlugin {
             .insert_resource(AnimationTimer {
                 timer: Timer::from_seconds(1.0 / FPS, TimerMode::Repeating),
             })
-            .add_systems(Update, player_input.run_if(in_state(AppState::Ingame)))
-            .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame)))
-            .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame)))
+            .add_systems(Update, player_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
-            .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame)))
+            .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame)));
     }
 }
