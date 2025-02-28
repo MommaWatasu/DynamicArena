@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use bevy::prelude::*;
 use crate::{
     AppState, GameConfig, GameMode, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, TITLE_FONT_SIZE,
@@ -16,7 +17,7 @@ struct SettingItem<T: Clone + ToString + Send + Sync + 'static> {
     list: Option<Vec<String>>
 }
 
-impl<T: Clone + ToString + Send + Sync> SettingItem<T> {
+impl<T: Clone + ToString + Send + Sync + Display> SettingItem<T> {
     pub fn new(name: String, min: T, max: T, step: T, value: T, list: Option<Vec<String>>) -> Self {
         SettingItem { name, min, max, step, value, list }
     }
@@ -24,8 +25,16 @@ impl<T: Clone + ToString + Send + Sync> SettingItem<T> {
         self.name.clone()
     }
 
-    pub fn get_value(&self) -> String {
-        self.value.to_string()
+    pub fn get_string(&self) -> String {
+        if let Some(list) = &self.list {
+            return list[self.value.to_string().parse::<usize>().unwrap()-1].clone();
+        } else {
+            format!("{:.1}", self.value)
+        }
+    }
+
+    pub fn is_list(&self) -> bool {
+        self.list.is_some()
     }
 }
 
@@ -35,6 +44,7 @@ struct ConfigElement(u32);
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    config: Res<GameConfig>,
 ) {
     info!("setup");
     commands.spawn((
@@ -102,13 +112,13 @@ fn setup(
                 BorderRadius::all(Val::Px(20.0)),
             ))
                 .with_children(|builder| {
-                    create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, 0.5, None), 0);
-                    create_setting_item(&asset_server, builder, SettingItem::new("プレイヤー数".to_string(), 1u32, 2, 1, 1, None), 1);
+                    create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, config.sound_volume, None), 0);
+                    create_setting_item(&asset_server, builder, SettingItem::new("ゲームモード".to_string(), 1u32, 2, 1, config.mode as u32, Some(vec!["シングル".to_string(), "マルチ".to_string()])), 1);
                 });
     });
 }
 
-fn create_setting_item<T: Clone + ToString + Send + Sync>(
+fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
     asset_server: &Res<AssetServer>,
     builder: &mut ChildBuilder,
     item: SettingItem<T>,
@@ -181,9 +191,9 @@ fn create_setting_item<T: Clone + ToString + Send + Sync>(
             ))
                 .with_children(|builder| {
                     builder.spawn((
-                        Text::new(item.get_value()),
+                        Text::new(item.get_string()),
                         TextFont {
-                            font: asset_server.load(PATH_BOLD_FONT),
+                            font: asset_server.load(if item.is_list() {PATH_BOLD_JP_FONT} else {PATH_BOLD_FONT}),
                             font_size: 50.0,
                             ..Default::default()
                         },
@@ -226,6 +236,7 @@ fn update_setting(
     mut value_query_int: Query<(&ConfigElement, &mut SettingItem<u32>, &mut Text),(With<ConfigElement>, Without<SettingItem<f32>>)>,
     text_query: Query<&Text, Without<ConfigElement>>,
     mut config: ResMut<GameConfig>,
+    audio: Query<&AudioSink>,
 ) {
     for (interaction, config_element, children) in &mut button_query.iter() {
         if interaction != &Interaction::Pressed { continue }
@@ -258,6 +269,9 @@ fn update_setting(
                 text.0 = format!("{:.1}", new_value);
                 if element.0 == 0 {
                     config.sound_volume = new_value;
+                    if let Ok(sink) = audio.get_single() {
+                        sink.set_volume(new_value);
+                    }
                 }
             }
         }
@@ -275,7 +289,7 @@ fn update_setting(
                     new_value = item.max.clone();
                 }
                 item.value = new_value.clone();
-                text.0 = new_value.to_string();
+                text.0 = item.get_string();
                 if element.0 == 1 {
                     config.mode = if {new_value} == 1 {GameMode::SinglePlayer} else {GameMode::MultiPlayer};
                 }

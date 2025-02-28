@@ -22,11 +22,11 @@ fn setup(
 ) {
     info!("setup");
 
-    // if audio query is empty, spawn bgm]
+    // if audio query is empty, spawn bgm
     if audio.is_empty() {
         commands.spawn((
             AudioPlayer::new(asset_server.load(PATH_SOUND_BGM)),
-            PlaybackSettings::LOOP.with_spatial(true),
+            PlaybackSettings::LOOP,
             GlobalTransform::default(),
         ));
     }

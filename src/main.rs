@@ -26,10 +26,10 @@ const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
 const PATH_BOLD_MONOSPACE_FONT: &str = "fonts/Roboto_Condensed/RobotoCondensed-Bold.ttf";
 const PATH_IMAGE_PREFIX: &str = "images/";
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum GameMode {
-    SinglePlayer,
-    MultiPlayer,
+    SinglePlayer = 1,
+    MultiPlayer = 2,
 }
 
 #[derive(Resource)]
@@ -46,7 +46,7 @@ impl Default for GameConfig {
             window_size: Vec2::new(800.0, 600.0),
             mode: GameMode::SinglePlayer,
             characters_id: [-1, -1],
-            sound_volume: 0.5,
+            sound_volume: 1.0,
         }
     }
 }
