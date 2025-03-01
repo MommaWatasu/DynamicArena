@@ -1,4 +1,4 @@
-use std::ops::{BitOr, BitOrAssign, BitAndAssign, Not};
+use std::{fmt::Debug, ops::{BitAndAssign, BitOr, BitOrAssign, Not}};
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame}, AppState, GameConfig, GameMode};
@@ -37,6 +37,7 @@ pub struct HealthBar(pub f32, pub f32);
 /// | KICKING       | 0b00001000  | Player is performing kick    |
 /// | PUNCHING      | 0b00010000  | Player is performing punch   |
 /// | SPECIAL_ATTACK| 0b00100000  | Player is performing special attack |
+/// | COOLDOWN      | 0b01000000  | Player is in cooldown state  |
 #[derive(PartialEq, Eq, Copy, Clone)]
 struct PlayerState(u8);
 
@@ -72,6 +73,39 @@ impl Default for PlayerState {
     }
 }
 
+impl Debug for PlayerState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let states = [
+            (PlayerState::RUNNING, "RUNNING"),
+            (PlayerState::JUMPING, "JUMPING"),
+            (PlayerState::DOUBLE_JUMPING, "DOUBLE_JUMPING"),
+            (PlayerState::KICKING, "KICKING"),
+            (PlayerState::PUNCHING, "PUNCHING"),
+            (PlayerState::SPECIAL_ATTACK, "SPECIAL_ATTACK"),
+            (PlayerState::COOLDOWN, "COOLDOWN"),
+        ];
+        
+        if self.0 == 0 {
+            write!(f, "IDLE")?;
+            return Ok(());
+        }
+        
+        let mut first = true;
+        for (state, name) in states {
+            if self.check(state) {
+                if !first {
+                    write!(f, "|")?;
+                }
+                write!(f, "{}", name)?;
+                first = false;
+            }
+        }
+        
+        // Also include the raw binary representation
+        write!(f, " ({:#010b})", self.0)
+    }
+}
+
 impl PlayerState {
     pub const IDLE: Self = Self(0b00000000);
     pub const RUNNING: Self = Self(0b00000001);
@@ -80,8 +114,10 @@ impl PlayerState {
     pub const KICKING: Self = Self(0b00001000);
     pub const PUNCHING: Self = Self(0b00010000);
     pub const SPECIAL_ATTACK: Self = Self(0b00100000);
+    pub const COOLDOWN: Self = Self(0b01000000);
+    // ignore cooldown state
     pub fn is_idle(&self) -> bool {
-        *self == Self::IDLE
+        self.0 & !Self::COOLDOWN.0 == 0
     }
     pub fn check(&self, state: Self) -> bool {
         self.0 & state.0 != 0
@@ -422,13 +458,8 @@ fn player_input(
         if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
             continue;
         }
-        if keys.get_pressed().len() == 0 {
-            if !player.state.is_idle() && !player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::PUNCHING) {
-                player.state = PlayerState::IDLE;
-                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                player.animation.phase = 0;
-                player.animation.count = 30;
-            }
+        if player.state.check(PlayerState::COOLDOWN) {
+            continue;
         }
         if keys.pressed(KeyCode::KeyD) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
@@ -450,6 +481,13 @@ fn player_input(
                 player.animation.count = 10;
             }
             player.pose.facing = false;
+        } else {
+            if player.state.check(PlayerState::RUNNING) {
+                player.state &= !PlayerState::RUNNING;
+                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
+                player.animation.phase = 0;
+                player.animation.count = 30;
+            }
         }
         if keys.just_pressed(KeyCode::Space) {
             if player.character_id == 1 {
@@ -502,7 +540,12 @@ fn player_input(
             }
         }
         if keys.just_pressed(KeyCode::KeyJ) {
-            if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING) {
+            if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) & !player.state.check(PlayerState::KICKING) {
+                player.state |= PlayerState::KICKING;
+                player.animation.diff_pose = (JUMPING_KICK_POSE - player.pose) / 10.0;
+                player.animation.phase = 0;
+                player.animation.count = 10;
+            } else if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING) {
                 player.state |= PlayerState::KICKING | PlayerState::SPECIAL_ATTACK;
                 player.animation.diff_pose = (HIGH_KICK_POSE - player.pose) / 10.0;
                 player.animation.phase = 0;
@@ -510,7 +553,7 @@ fn player_input(
             }
         }
         if keys.just_pressed(KeyCode::KeyH) {
-            if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING) {
+            if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 player.state |= PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK;
                 player.animation.diff_pose = (UPPER_PUNCH_POSE1 - player.pose) / 5.0;
                 player.animation.phase = 0;
@@ -553,6 +596,9 @@ fn player_movement(
                     let diff_pose = player.animation.diff_pose;
                     player.pose += diff_pose;
                     if player.animation.count == 0 {
+                        if player.state.check(PlayerState::COOLDOWN) {
+                            player.state &= !PlayerState::COOLDOWN;
+                        }
                         player.animation.phase = 1;
                         player.animation.count = 10;
                     }
@@ -626,7 +672,7 @@ fn player_movement(
                             let diff_pose = player.animation.diff_pose;
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE;
+                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                                 player.animation.phase = 0;
                                 player.animation.count = 30;
@@ -638,7 +684,7 @@ fn player_movement(
                             let diff_pose = player.animation.diff_pose;
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE;
+                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                                 player.animation.phase = 0;
                                 player.animation.count = 30;
@@ -662,7 +708,7 @@ fn player_movement(
                             let diff_pose = player.animation.diff_pose;
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE;
+                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                                 player.animation.phase = 0;
                                 player.animation.count = 30;
@@ -674,7 +720,7 @@ fn player_movement(
                             let diff_pose = player.animation.diff_pose;
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE;
+                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                                 player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                                 player.animation.phase = 0;
                                 player.animation.count = 30;
@@ -743,32 +789,26 @@ fn check_ground(
     for collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _) => {
-                if *entity1 == ground_query.single(){
-                    let (parts, id) = parts_query.get(*entity2).unwrap();
-                    if !parts.is_arm() && !parts.is_upper() {
-                        for (mut player, player_id) in player_query.iter_mut() {
-                            if id == player_id && player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                                player.velocity = Vec2::ZERO;
-                                player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::PUNCHING);
-                                if player.state.check(PlayerState::RUNNING) {
-                                    player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
-                                    player.animation.phase = 0;
-                                    player.animation.count = 10;
-                                } else {
-                                    player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                                    player.animation.phase = 0;
-                                    player.animation.count = 30;
-                                }
-                            }
-                        }
-                    }
+                // Determine which entity is the ground and which is the potential player part
+                let (part_entity, _) = if *entity1 == ground_query.single() {
+                    (*entity2, *entity1)
                 } else if *entity2 == ground_query.single() {
-                    let (parts, id) = parts_query.get(*entity1).unwrap();
+                    (*entity1, *entity2)
+                } else {
+                    continue // Neither entity is ground, so exit early
+                };
+
+                // Check if we found a collision with the ground
+                if let Ok((parts, id)) = parts_query.get(part_entity) {
+                    // Only process for non-arm and non-upper body parts
                     if !parts.is_arm() && !parts.is_upper() {
                         for (mut player, player_id) in player_query.iter_mut() {
                             if id == player_id && player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                                 player.velocity = Vec2::ZERO;
-                                player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::PUNCHING);
+                                player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | 
+                                                PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
+                                
+                                // Set animation based on running state
                                 if player.state.check(PlayerState::RUNNING) {
                                     player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
                                     player.animation.phase = 0;
@@ -782,6 +822,7 @@ fn check_ground(
                         }
                     }
                 }
+
             }
             CollisionEvent::Stopped(_, _, _) => {
             }
@@ -844,6 +885,10 @@ fn check_attack(
                 let Ok((parts2, id2)) = parts_query.get(*entity2) else {
                     continue;
                 };
+
+                // Check if the collision is between two player characters
+                if id1 == id2 { continue }
+
                 let mut attacker_id: PlayerID = PlayerID(2);
                 let mut opponent_id: PlayerID = PlayerID(2);
                 let mut attacker_parts: &BodyParts = &BodyParts::NULL;
