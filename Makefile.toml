@@ -39,18 +39,17 @@ script = ['''
 #!/bin/bash
 rm -r ./docs/*
 wasm-bindgen --no-typescript --target web --out-dir ./docs --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
-cp -r assets ./docs/assets
+mkdir ./docs/assets
+mkdir ./docs/assets/images
+cp -r assets/fonts ./docs/assets/fonts
+cp -r assets/images/web ./docs/assets/images/web
+cp -r assets/sounds ./docs/assets/sounds
 cp ./wasm_build/index.html docs/index.html
 
 temp_file=$(mktemp)
 cat ./wasm_build/enable_sound.js ./docs/dynamicarena.js > $temp_file
 mv $temp_file ./docs/dynamicarena.js
 
-cd docs/assets/images
-rm *.blend
-rm *.blend1
-cd ../
-rm README.md
-cd ../../
+cd docs
 python3 -m http.server 8000
 ''']
