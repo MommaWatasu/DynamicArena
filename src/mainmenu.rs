@@ -33,7 +33,10 @@ fn setup(
 
     commands
         .spawn((
+            #[cfg(not(target_arch = "wasm32"))]
             ImageNode::new(asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX))),
+            #[cfg(target_arch = "wasm32")]
+            ImageNode::new(asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX))),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),

@@ -46,6 +46,11 @@ temp_file=$(mktemp)
 cat ./wasm_build/enable_sound.js ./docs/dynamicarena.js > $temp_file
 mv $temp_file ./docs/dynamicarena.js
 
-cd docs
+cd docs/assets/images
+rm *.blend
+rm *.blend1
+cd ../
+rm README.md
+cd ../../
 python3 -m http.server 8000
 ''']

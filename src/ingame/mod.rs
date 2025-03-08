@@ -3,6 +3,8 @@ use bevy_rapier2d::prelude::*;
 
 #[cfg(debug_assertions)]
 mod pause;
+#[cfg(not(target_arch = "wasm32"))]
+mod bot;
 mod player;
 mod pose;
 
@@ -199,7 +201,10 @@ fn setup(
     commands
         .spawn((
             Sprite{
+                #[cfg(not(target_arch = "wasm32"))]
                 image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
+                #[cfg(target_arch = "wasm32")]
+                image: asset_server.load(format!("{}web/background.png", PATH_IMAGE_PREFIX)),
                 ..Default::default()
             },
             BackGround,
