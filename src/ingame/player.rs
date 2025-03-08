@@ -2,7 +2,7 @@ use std::{fmt::Debug, ops::{BitAndAssign, BitOr, BitOrAssign, Not}};
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame}, AppState, GameConfig, GameMode};
-use super::{Fighting, pose::*};
+use super::{pose::*, BackGround, Fighting};
 
 const LIMB_LENGTH: f32 = 30.0;
 const LIMB_RADIUS: f32 = 15.0;
@@ -231,7 +231,7 @@ impl BodyParts {
 pub fn spawn_player(
     id: u8,
     character_id: isize,
-    builder: &mut ChildBuilder,
+    builder: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
     y_pos: f32,
@@ -581,14 +581,12 @@ fn player_movement(
     time: Res<Time>,
     config: Res<GameConfig>,
     mut timer: ResMut<AnimationTimer>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Transform)>,
+    mut player_query: Query<(&mut Player, &mut Transform), Without<BackGround>>,
+    mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
 ) {
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, player_id, mut transform) in player_query.iter_mut() {
-            if player_id.0 == 1 {
-                continue;
-            }
+        for (mut player, mut transform) in player_query.iter_mut() {
             if player.state.is_idle() {
                 player.velocity = Vec2::ZERO;
                 if player.animation.phase == 0 {
@@ -770,10 +768,66 @@ fn player_movement(
                 }
             }
             transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
-            if transform.translation.x < -config.window_size.x / 2.0 {
-                transform.translation.x = -config.window_size.x / 2.0;
-            } else if transform.translation.x > config.window_size.x / 2.0 {
-                transform.translation.x = config.window_size.x / 2.0;
+        }
+
+        // move player and ground
+        let mut ground = ground_query.get_single_mut().unwrap();
+        let mut avg_x = 0.0;
+        for (_, transform) in player_query.iter_mut() {
+            avg_x += transform.translation.x;
+        }
+        avg_x /= 2.0;
+
+        if avg_x > 0.0 && ground.translation.x == config.window_size.x / 2.0 - 2000.0 {
+            return;
+        } else if avg_x < 0.0 && ground.translation.x == 2000.0 - config.window_size.x / 2.0 {
+            return;
+        }
+        
+        // Check if players are at opposite ends of the screen
+        let mut at_edges = true;
+        let mut x_positions = Vec::new();
+        for (_, transform) in player_query.iter() {
+            x_positions.push(transform.translation.x);
+            if transform.translation.x > -config.window_size.x / 2.0 + 100.0 && 
+               transform.translation.x < config.window_size.x / 2.0 - 100.0 {
+                at_edges = false;
+                break;
+            }
+        }
+        
+        // If both players are at edges and on opposite sides, don't move camera
+        if at_edges && x_positions.len() > 1 && 
+           ((x_positions[0] < 0.0 && x_positions[1] > 0.0) || 
+            (x_positions[0] > 0.0 && x_positions[1] < 0.0))
+        {
+            avg_x = 0.0;
+        }
+        let mut diff = avg_x;
+
+        // Otherwise, move camera to center players
+        if ground.translation.x + avg_x < config.window_size.x / 2.0 - 2000.0 {
+            avg_x = config.window_size.x / 2.0 - 2000.0 - ground.translation.x;
+        } else if ground.translation.x + avg_x > 2000.0 - config.window_size.x / 2.0 {
+            avg_x = 2000.0 - config.window_size.x / 2.0 - ground.translation.x;
+        }
+        ground.translation.x += avg_x;
+
+        // Move players to center of screen
+        if ground.translation.x < config.window_size.x / 2.0 - 2000.0 {
+            diff = config.window_size.x / 2.0 - 2000.0 - ground.translation.x;
+            ground.translation.x = config.window_size.x / 2.0 - 2000.0;
+        } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
+            diff = 2000.0 - config.window_size.x / 2.0 - ground.translation.x;
+            ground.translation.x = 2000.0 - config.window_size.x / 2.0;
+        }
+
+        for (_, mut transform) in player_query.iter_mut() {
+            transform.translation.x -= diff;
+            if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
+                transform.translation.x = -config.window_size.x / 2.0 + 100.0;
+            } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
+                transform.translation.x = config.window_size.x / 2.0 - 100.0;
             }
         }
     }

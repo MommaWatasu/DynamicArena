@@ -48,17 +48,23 @@ impl GameState {
     }
 }
 
-#[derive(Component)]
-struct StatusBar;
-
-#[derive(Component)]
-struct Curtain;
-
 #[derive(Resource)]
 struct Fighting;
 
 #[derive(Component)]
 struct InGame;
+
+#[derive(Component)]
+struct SkyBackground;
+
+#[derive(Component)]
+struct BackGround;
+
+#[derive(Component)]
+struct StatusBar;
+
+#[derive(Component)]
+struct Curtain;
 
 #[derive(Component)]
 struct GameTimer(f32);
@@ -171,13 +177,33 @@ fn setup(
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
         ));
+    commands.spawn((
+        Sprite {
+            image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
+            ..Default::default()
+        },
+        Transform::from_translation(Vec3::new(0.0, 100.0, -1.0)),
+        SkyBackground,
+        InGame
+    ));
+    commands.spawn((
+        Sprite {
+            image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
+            flip_x: true,
+            ..Default::default()
+        },
+        Transform::from_translation(Vec3::new(4800.0, 100.0, -1.0)),
+        SkyBackground,
+        InGame
+    ));
     commands
         .spawn((
             Sprite{
                 image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
-                custom_size: Some(config.window_size),
                 ..Default::default()
             },
+            BackGround,
+            Transform::default(),
             InGame
         ))
         .with_children(|builder| {
@@ -185,13 +211,13 @@ fn setup(
                 Ground,
                 Transform::from_translation(Vec3::new(0.0, 100.0-config.window_size.y / 2.0, 0.0),),
                 RigidBody::Fixed,
-                Collider::cuboid(config.window_size.x / 2.0, 10.0),
+                Collider::cuboid(2000.0, 10.0),
                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_STATIC,
                 ActiveEvents::COLLISION_EVENTS,
             ));
-            spawn_player(0, config.characters_id[0], builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
-            spawn_player(1, config.characters_id[1], builder, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
         });
+    spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+    spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
     game_state.phase = 0;
     game_state.count = 0;
     game_state.round = 1;
@@ -422,6 +448,18 @@ fn main_game_system(
     }
 }
 
+fn move_background(
+    mut query: Query<&mut Transform, With<SkyBackground>>,
+) {
+    // move sky background
+    for mut transform in query.iter_mut() {
+        transform.translation.x -= 0.25;
+        if transform.translation.x < -4750.0 {
+            transform.translation.x = 4750.0;
+        }
+    }
+}
+
 #[cfg(debug_assertions)]
 fn check_pause(
     mut state: ResMut<NextState<AppState>>,
@@ -454,6 +492,7 @@ fn exit(mut commands: Commands, query: Query<Entity, With<InGame>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
+    commands.remove_resource::<Fighting>();
 }
 
 pub struct GamePlugin;
@@ -474,6 +513,7 @@ impl Plugin for GamePlugin {
             .add_systems(OnExit(AppState::Ingame), exit)
             .add_systems(Update, update_timer.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, check_gameset.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, move_background.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, main_game_system.run_if(in_state(AppState::Ingame)));
     }
 }

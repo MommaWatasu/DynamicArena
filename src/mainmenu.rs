@@ -33,7 +33,7 @@ fn setup(
 
     commands
         .spawn((
-            ImageNode::new(asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX))),
+            ImageNode::new(asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX))),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),

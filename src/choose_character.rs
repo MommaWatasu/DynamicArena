@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    character_def::*, AppState, GameConfig, PATH_BOLD_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_BOLD_JP_FONT, TITLE_FONT_SIZE
+    character_def::*, AppState, GameConfig, PATH_BOLD_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_BOLD_JP_FONT, TITLE_FONT_SIZE, PATH_IMAGE_PREFIX
 };
 
 #[derive(Component)]
@@ -18,98 +18,118 @@ fn setup(
 ) {
     info!("setup");
     commands.spawn((
-        Button,
+        ImageNode::new(asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX))),
         Node {
-            justify_self: JustifySelf::Start,
-            align_self: AlignSelf::Start,
-            border: UiRect::all(Val::Px(5.0)),
-            ..default()
-        },
-        BorderRadius::MAX,
-        BorderColor(Color::BLACK),
-        ChooseCharacter
-    ))
-        .with_child((
-            Text::new("<Back"),
-            TextFont {
-                font: asset_server.load(PATH_BOLD_FONT),
-                font_size: 50.0,
-                ..Default::default()
-            },
-            TextLayout::new_with_justify(JustifyText::Center),
-            TextColor(Color::BLACK),
-        ));
-    commands.spawn((
-        Button,
-        Node {
-            justify_self: JustifySelf::End,
-            align_self: AlignSelf::Start,
-            border: UiRect::all(Val::Px(5.0)),
-            ..default()
-        },
-        BorderRadius::MAX,
-        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-        ChooseCharacter
-    ))
-        .with_child((
-            Text::new("Next>"),
-            TextFont {
-                font: asset_server.load(PATH_BOLD_FONT),
-                font_size: 50.0,
-                ..Default::default()
-            },
-            TextLayout::new_with_justify(JustifyText::Center),
-            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-        ));
-    commands
-        .spawn((Node {
-            width: Val::Percent(90.0),
-            height: Val::Percent(90.0),
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
             flex_direction: FlexDirection::Column,
-            align_self: AlignSelf::Center,
-            justify_self: JustifySelf::Center,
-            align_items: AlignItems::Center,
-            justify_items: JustifyItems::Center,
             ..default()
         },
         ChooseCharacter
     ))
         .with_children(|builder| {
-            builder.spawn((
-                Text::new("キャラクターを選んでください"),
-                TextFont {
-                    font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
-                    font_size: TITLE_FONT_SIZE,
-                    ..Default::default()
-                },
-                TextColor(Color::BLACK),
-                TextLayout::new_with_justify(JustifyText::Center),
+            builder.spawn(
                 Node {
                     width: Val::Percent(100.0),
+                    height: Val::Percent(10.0),
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
                     ..default()
-                },
-            ));
-            builder.spawn((
-                Node{
+                }
+            )
+                .with_children(|builder| {
+                    builder.spawn((
+                        Button,
+                        Node {
+                            justify_self: JustifySelf::Start,
+                            align_self: AlignSelf::Start,
+                            border: UiRect::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        BorderRadius::MAX,
+                        BorderColor(Color::BLACK),
+                    ))
+                    .with_child((
+                        Text::new("<Back"),
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_FONT),
+                            font_size: 50.0,
+                            ..Default::default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextColor(Color::BLACK),
+                    ));
+                    builder.spawn((
+                        Button,
+                        Node {
+                            justify_self: JustifySelf::End,
+                            align_self: AlignSelf::Start,
+                            border: UiRect::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        BorderRadius::MAX,
+                        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+                    ))
+                    .with_child((
+                        Text::new("Next>"),
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_FONT),
+                            font_size: 50.0,
+                            ..Default::default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+                    ));
+                });
+            builder.spawn(
+                Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(90.0),
-                    flex_direction: FlexDirection::Row,
+                    flex_direction: FlexDirection::Column,
                     align_self: AlignSelf::Center,
                     justify_self: JustifySelf::Center,
                     align_items: AlignItems::Center,
                     justify_items: JustifyItems::Center,
-                    justify_content: JustifyContent::SpaceEvenly,
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
-                BorderRadius::all(Val::Px(20.0)),
-            ))
+            )
                 .with_children(|builder| {
-                    for i in 0..3 {
-                        create_character_box(builder, &asset_server, i as isize);
-                    }
+                    builder.spawn((
+                        Text::new("キャラクターを選んでください"),
+                        TextFont {
+                            font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
+                            font_size: TITLE_FONT_SIZE,
+                            ..Default::default()
+                        },
+                        TextColor(Color::BLACK),
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        Node {
+                            width: Val::Percent(100.0),
+                            ..default()
+                        },
+                    ));
+                    builder.spawn((
+                        Node{
+                            width: Val::Percent(100.0),
+                            height: Val::Percent(90.0),
+                            flex_direction: FlexDirection::Row,
+                            align_self: AlignSelf::Center,
+                            justify_self: JustifySelf::Center,
+                            align_items: AlignItems::Center,
+                            justify_items: JustifyItems::Center,
+                            justify_content: JustifyContent::SpaceEvenly,
+                            ..default()
+                        },
+                        BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
+                        BorderRadius::all(Val::Px(20.0)),
+                    ))
+                        .with_children(|builder| {
+                            for i in 0..3 {
+                                create_character_box(builder, &asset_server, i as isize);
+                            }
+                        });
                 });
-            });
+        });
 }
 
 fn create_character_box(
