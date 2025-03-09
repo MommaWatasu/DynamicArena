@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.15.0"
 bevy_rapier2d = "0.28.0"
+ringbuffer = "0.15.0"
 
 [profile.dev]
 opt-level = 2
