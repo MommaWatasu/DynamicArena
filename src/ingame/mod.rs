@@ -1,5 +1,6 @@
 use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues}};
 use bevy_rapier2d::prelude::*;
+use pose::{LOSER_POSE, WINNER_POSE};
 
 #[cfg(debug_assertions)]
 mod pause;
@@ -369,7 +370,6 @@ fn main_game_system(
                 gamestate.count = 0;
             }
         } else if gamestate.phase == 6 {
-            commands.remove_resource::<Fighting>();
             let (mut bar, mut text, mut text_color) = query.get_single_mut().unwrap();
             bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
             text.0 = if gamestate.win_types[gamestate.round as usize - 1] {
@@ -378,6 +378,14 @@ fn main_game_system(
                 "TIME UP!".to_string()
             };
             text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
+            // winner and loser animation
+            for (id, mut player, _) in player_query.iter_mut() {
+                if gamestate.winners[gamestate.round as usize - 1] == id.0 {
+                    player.set_animation(WINNER_POSE, 0, 10);
+                } else {
+                    player.set_animation(LOSER_POSE, 0, 10);
+                }
+            }
             gamestate.phase = 7;
             gamestate.count = 0;
         } else if gamestate.phase == 7 {

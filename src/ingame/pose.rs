@@ -263,3 +263,31 @@ pub const UPPER_PUNCH_POSE2: Pose = Pose {
     left_upper_leg: 40.0,
     left_lower_leg: -50.0,
 };
+
+pub const WINNER_POSE: Pose = Pose {
+    facing: true,
+    head: 0.0,
+    body: 0.0,
+    right_upper_arm: 100.0,
+    right_lower_arm: 60.0,
+    right_upper_leg: -20.0,
+    right_lower_leg: 0.0,
+    left_upper_arm: -20.0,
+    left_lower_arm: 120.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 0.0,
+};
+
+pub const LOSER_POSE: Pose = Pose {
+    facing: true,
+    head: 50.0,
+    body: -70.0,
+    right_upper_arm: -80.0,
+    right_lower_arm: 70.0,
+    right_upper_leg: 10.0,
+    right_lower_leg: -20.0,
+    left_upper_arm: -45.0,
+    left_lower_arm: 55.0,
+    left_upper_leg: 40.0,
+    left_lower_leg: -100.0,
+};

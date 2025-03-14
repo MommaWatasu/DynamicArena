@@ -1,7 +1,7 @@
 use std::{fmt::Debug, ops::{BitAndAssign, BitOr, BitOrAssign, Not}};
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
-use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame}, AppState, GameConfig, GameMode};
+use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame, GameState}, AppState, GameConfig, GameMode};
 use super::{pose::*, BackGround, Fighting};
 
 const LIMB_LENGTH: f32 = 30.0;
@@ -177,6 +177,9 @@ impl Player {
         self.state = PlayerState::default();
         self.velocity = Vec2::ZERO;
         self.health = CHARACTER_PROFILES[self.character_id as usize].health;
+    }
+    pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
+        self.animation = PlayerAnimation { diff_pose: (pose - self.pose) / count as f32, phase, count };
     }
 }
 
@@ -578,8 +581,10 @@ fn player_input(
 /// 3. Adjusts the player's velocity and position based on their state and input.
 /// 4. Ensures the player stays within the game window boundaries.
 fn player_movement(
+    mut commands: Commands,
     time: Res<Time>,
     config: Res<GameConfig>,
+    gamestate: Res<GameState>,
     mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<(&mut Player, &mut Transform), Without<BackGround>>,
     mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
@@ -587,6 +592,16 @@ fn player_movement(
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
         for (mut player, mut transform) in player_query.iter_mut() {
+            if gamestate.phase == 7 {
+                player.animation.count -= 1;
+                let diff_pose = player.animation.diff_pose;
+                player.pose += diff_pose;
+                if player.animation.count == 0 {
+                    player.animation.phase = 1;
+                    commands.remove_resource::<Fighting>();
+                }
+                continue
+            }
             if player.state.is_idle() {
                 player.velocity = Vec2::ZERO;
                 if player.animation.phase == 0 {
