@@ -281,7 +281,7 @@ pub const WINNER_POSE: Pose = Pose {
 pub const LOSER_POSE: Pose = Pose {
     facing: true,
     head: 50.0,
-    body: -70.0,
+    body: 70.0,
     right_upper_arm: -80.0,
     right_lower_arm: 70.0,
     right_upper_leg: 10.0,

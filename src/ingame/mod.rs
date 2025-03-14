@@ -279,6 +279,7 @@ fn check_gameset(
 fn main_game_system(
     mut commands: Commands,
     time: Res<Time>,
+    config: Res<GameConfig>,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut gamestate: ResMut<GameState>,
@@ -379,7 +380,7 @@ fn main_game_system(
             };
             text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
             // winner and loser animation
-            for (id, mut player, _) in player_query.iter_mut() {
+            for (id, mut player, mut transform) in player_query.iter_mut() {
                 if gamestate.winners[gamestate.round as usize - 1] == id.0 {
                     player.set_animation(WINNER_POSE, 0, 10);
                 } else {
@@ -431,6 +432,7 @@ fn main_game_system(
                     for (id, mut player, mut transform) in player_query.iter_mut() {
                         player.reset(id);
                         transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
+                        transform.translation.y = 270.0 - config.window_size.y / 2.0;
                     }
                     // reset health bar
                     for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {

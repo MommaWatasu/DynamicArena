@@ -1000,7 +1000,7 @@ fn check_attack(
                         opponent_parts,
                     );
                     println!("Player {} hit: {} damage", attacker_id.0, damage);
-                    player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING);
+                    player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK);
                     player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
                     player.animation.phase = 0;
                     player.animation.count = 30;
