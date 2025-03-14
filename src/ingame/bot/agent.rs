@@ -1,3 +1,4 @@
+/*
 use burn::{
     module::{
         Module,
@@ -118,3 +119,9 @@ pub fn soft_update_linear<B: Backend>(
 }
 
 /* Utils END */
+
+*/
+
+/* Rule Base Agent Definition START */
+
+/* Rule Base Agent Definition END */
