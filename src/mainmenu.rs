@@ -19,7 +19,9 @@ struct Mainmenu;
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    #[cfg(not(target_arch = "wasm32"))]
     mut config: ResMut<GameConfig>,
+    #[cfg(not(target_arch = "wasm32"))]
     gamepads: Query<(&Name, Entity), With<Gamepad>>,
     audio: Query<&AudioPlayer>,
 ) {
@@ -35,6 +37,7 @@ fn setup(
     }
 
     // detect gamepads
+    #[cfg(not(target_arch = "wasm32"))]
     for (name, entity) in gamepads.iter() {
         if **name == *"DynamicArena Controller" {
             if config.gamepads[0] == Entity::from_raw(0) {
