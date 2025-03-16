@@ -119,7 +119,7 @@ fn setup(
                         },
                     ));
                     builder.spawn((
-                        Node{
+                        Node {
                             width: Val::Percent(90.0),
                             height: Val::Percent(90.0),
                             flex_direction: FlexDirection::Row,

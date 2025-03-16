@@ -1,7 +1,14 @@
 use std::fmt::Display;
 use bevy::prelude::*;
 use crate::{
-    AppState, GameConfig, GameMode, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, TITLE_FONT_SIZE,
+    AppState,
+    GameConfig,
+    GameMode,
+    PATH_BOLD_FONT,
+    PATH_BOLD_JP_FONT,
+    PATH_EXTRA_BOLD_JP_FONT,
+    TITLE_FONT_SIZE,
+    PATH_IMAGE_PREFIX,
 };
 
 #[derive(Component)]
@@ -48,74 +55,98 @@ fn setup(
 ) {
     info!("setup");
     commands.spawn((
-        Button,
+        #[cfg(not(target_arch = "wasm32"))]
+        ImageNode::new(asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX))),
+        #[cfg(target_arch = "wasm32")]
+        ImageNode::new(asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX))),
         Node {
-            justify_self: JustifySelf::Start,
-            align_self: AlignSelf::Start,
-            border: UiRect::all(Val::Px(5.0)),
-            ..default()
-        },
-        BorderRadius::MAX,
-        BorderColor(Color::BLACK),
-        Settings
-    ))
-        .with_child((
-            Text::new("<Back"),
-            TextFont {
-                font: asset_server.load(PATH_BOLD_FONT),
-                font_size: 50.0,
-                ..Default::default()
-            },
-            TextLayout::new_with_justify(JustifyText::Center),
-            TextColor(Color::BLACK),
-        ));
-    commands.spawn((
-        Node {
-            width: Val::Percent(90.0),
-            height: Val::Percent(90.0),
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
             flex_direction: FlexDirection::Column,
-            align_self: AlignSelf::Center,
-            justify_self: JustifySelf::Center,
-            align_items: AlignItems::Center,
-            justify_items: JustifyItems::Center,
-            ..Default::default()
+            ..default()
         },
         Settings
     ))
         .with_children(|builder| {
-            builder.spawn((
-                Text::new("設定"),
-                TextFont {
-                    font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
-                    font_size: TITLE_FONT_SIZE,
-                    ..Default::default()
-                },
-                TextColor(Color::BLACK),
-                TextLayout::new_with_justify(JustifyText::Center),
+            builder.spawn(
                 Node {
                     width: Val::Percent(100.0),
+                    height: Val::Percent(10.0),
+                    justify_content: JustifyContent::Start,
+                    align_items: AlignItems::Center,
                     ..default()
-                },
-            ));
-            builder.spawn((
+                }
+            )
+                .with_children(|builder| {
+                    builder.spawn((
+                        Button,
+                        Node {
+                            justify_self: JustifySelf::Start,
+                            align_self: AlignSelf::Start,
+                            border: UiRect::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        BorderRadius::MAX,
+                        BorderColor(Color::BLACK),
+                    ))
+                    .with_child((
+                        Text::new("<Back"),
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_FONT),
+                            font_size: 50.0,
+                            ..Default::default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextColor(Color::BLACK),
+                    ));
+                });
+            builder.spawn(
                 Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(90.0),
                     flex_direction: FlexDirection::Column,
                     align_self: AlignSelf::Center,
                     justify_self: JustifySelf::Center,
-                    align_items: AlignItems::Start,
-                    justify_items: JustifyItems::Start,
+                    align_items: AlignItems::Center,
+                    justify_items: JustifyItems::Center,
                     ..default()
-                },
-                BackgroundColor(Color::Srgba(Srgba::new(0.1, 0.1, 0.1, 0.8))),
-                BorderRadius::all(Val::Px(20.0)),
-            ))
+                }
+            )
                 .with_children(|builder| {
-                    create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, config.sound_volume, None), 0);
-                    create_setting_item(&asset_server, builder, SettingItem::new("ゲームモード".to_string(), 1u32, 2, 1, config.mode as u32, Some(vec!["シングル".to_string(), "マルチ".to_string()])), 1);
+                    builder.spawn((
+                        Text::new("設定"),
+                        TextFont {
+                            font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
+                            font_size: TITLE_FONT_SIZE,
+                            ..Default::default()
+                        },
+                        TextColor(Color::BLACK),
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        Node {
+                            width: Val::Percent(100.0),
+                            ..default()
+                        },
+                    ));
+                    builder.spawn((
+                        Node {
+                            width: Val::Percent(90.0),
+                            height: Val::Percent(90.0),
+                            flex_direction: FlexDirection::Column,
+                            align_self: AlignSelf::Center,
+                            justify_self: JustifySelf::Center,
+                            align_items: AlignItems::Center,
+                            justify_items: JustifyItems::Center,
+                            ..default()
+                        },
+                        BackgroundColor(Color::Srgba(Srgba::new(0.1, 0.1, 0.1, 0.8))),
+                        BorderRadius::all(Val::Px(20.0)),
+                    ))
+                        .with_children(|builder| {
+                            create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, config.sound_volume, None), 0);
+                            create_setting_item(&asset_server, builder, SettingItem::new("ゲームモード".to_string(), 1u32, 2, 1, config.mode as u32, Some(vec!["シングル".to_string(), "マルチ".to_string()])), 1);
+                        });
                 });
-    });
+        });
 }
 
 fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
@@ -126,12 +157,19 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
 ) {
     builder.spawn((
         Node{
-            width: Val::Percent(100.0),
+            width: Val::Percent(90.0),
             height: Val::Percent(10.0),
+            margin: UiRect {
+                top: Val::Px(5.0),
+                bottom: Val::Px(5.0),
+                ..Default::default()
+            },
             flex_direction: FlexDirection::Row,
             align_content: AlignContent::Center,
             ..Default::default()
         },
+        BackgroundColor(Color::WHITE),
+        BorderRadius::all(Val::Px(20.0)),
     ))
         .with_children(|builder| {
             builder.spawn((
