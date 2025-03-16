@@ -384,14 +384,20 @@ fn main_game_system(
                 };
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
                 // winner and loser animation
-                for (id, mut player, _) in player_query.iter_mut() {
-                    if gamestate.winners[gamestate.round as usize - 1] == id.0 + 1 {
-                        player.set_animation(WINNER_POSE, 0, 10);
-                    } else {
-                        player.set_animation(LOSER_POSE, 0, 10);
+                if gamestate.winners[gamestate.round as usize - 1] == 0 {
+                    commands.remove_resource::<Fighting>();
+                    gamestate.phase = 7;
+                    gamestate.count = 0;
+                } else {
+                    for (id, mut player, _) in player_query.iter_mut() {
+                        if gamestate.winners[gamestate.round as usize - 1] == id.0 + 1 {
+                            player.set_animation(WINNER_POSE, 0, 10);
+                        } else {
+                            player.set_animation(LOSER_POSE, 0, 10);
+                        }
                     }
+                    gamestate.count = 1;
                 }
-                gamestate.count = 1;
             }
         } else if gamestate.phase == 7 {
             gamestate.count += 1;

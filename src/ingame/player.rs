@@ -7,9 +7,12 @@ use super::{pose::*, BackGround, Fighting};
 const LIMB_LENGTH: f32 = 30.0;
 const LIMB_RADIUS: f32 = 15.0;
 
+const SKIN_COLOR: Color = Color::srgb(0.9, 0.8, 0.7);
+
+const BODY_THICKNESS: f32 = 20.0;
 const HEAD_OFFSET: f32 = 100.0;
 const BODY_OFFSET: f32 = 40.0;
-const UPPER_ARM_OFFSET: f32 = 0.0;
+const UPPER_ARM_OFFSET: f32 = 30.0;
 const LOWER_ARM_OFFSET: f32 = -60.0;
 const UPPER_LEG_OFFSET: f32 = -100.0;
 const LOWER_LEG_OFFSET: f32 = -60.0;
@@ -256,15 +259,12 @@ pub fn spawn_player(
         // Body
         .with_children(|builder| {
             builder.spawn((
-                Mesh2d(meshes.add(Capsule2d {
-                    radius: LIMB_RADIUS,
-                    half_length: 60.0,
-                })),
+                Mesh2d(meshes.add( Rectangle::new(80.0, 130.0))),
                 MeshMaterial2d(materials.add(profile.color)),
                 Transform::default(),
                 BodyParts::BODY,
                 PlayerID(id),
-                Collider::capsule_y(60.0, LIMB_RADIUS),
+                Collider::cuboid(40.0, 65.0),
                 RigidBody::KinematicPositionBased,
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
@@ -273,7 +273,7 @@ pub fn spawn_player(
                 .with_children(|builder| {
                     builder.spawn((
                         Mesh2d(meshes.add(Circle::new(45.0))),
-                        MeshMaterial2d(materials.add(profile.color)),
+                        MeshMaterial2d(materials.add(SKIN_COLOR)),
                         BodyParts::HEAD,
                         Transform::from_translation(Vec3::new(0.0, 100.0, 1.0)),
                         RigidBody::KinematicPositionBased,
@@ -287,12 +287,12 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(profile.color)),
+                        MeshMaterial2d(materials.add(SKIN_COLOR)),
                         BodyParts::new(false, false, true, true, true),
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, 0.0, if id == 0 { 3.0 } else { 1.0 })),
+                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { 3.0 } else { 1.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -304,7 +304,7 @@ pub fn spawn_player(
                                 radius: LIMB_RADIUS,
                                 half_length: LIMB_LENGTH,
                             })),
-                            MeshMaterial2d(materials.add(profile.color)),
+                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, true, false),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
@@ -319,12 +319,12 @@ pub fn spawn_player(
                             radius: LIMB_RADIUS,
                             half_length: LIMB_LENGTH,
                         })),
-                        MeshMaterial2d(materials.add(profile.color)),
+                        MeshMaterial2d(materials.add(SKIN_COLOR)),
                         BodyParts::new(false, false, true, false, true),
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, 0.0, if id == 0 { 1.0 } else { 3.0 })),
+                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { 1.0 } else { 3.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -336,7 +336,7 @@ pub fn spawn_player(
                                 radius: LIMB_RADIUS,
                                 half_length: LIMB_LENGTH,
                             })),
-                            MeshMaterial2d(materials.add(profile.color)),
+                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, false, false),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
@@ -357,7 +357,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which leg is on top
-                        Transform::from_translation(Vec3::new(0.0, -100.0, if id == 0 { 3.0 } else { 1.0 })),
+                        Transform::from_translation(Vec3::new(20.0, -100.0, if id == 0 { 3.0 } else { 1.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -379,6 +379,10 @@ pub fn spawn_player(
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 ActiveEvents::COLLISION_EVENTS,
                                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+                            )).with_child((
+                                Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
+                                MeshMaterial2d(materials.add(SKIN_COLOR)),
+                                Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
                             ));
                         });
                     // Left Upper Leg
@@ -390,7 +394,7 @@ pub fn spawn_player(
                         MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, false, false, true),
                         PlayerID(id),
-                        Transform::from_translation(Vec3::new(0.0, -100.0, if id == 0 { 1.0 } else { 3.0 })),
+                        Transform::from_translation(Vec3::new(-20.0, -100.0, if id == 0 { 1.0 } else { 3.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -411,6 +415,10 @@ pub fn spawn_player(
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 ActiveEvents::COLLISION_EVENTS,
                                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+                            )).with_child((
+                                Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
+                                MeshMaterial2d(materials.add(SKIN_COLOR)),
+                                Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
                             ));
                         });
                 });
@@ -429,11 +437,11 @@ pub fn spawn_player(
 /// 1. Converts degree to radians and sets rotation
 /// 2. Calculates X offset using sin of angle * limb length  
 /// 3. Calculates Y position using cosine and adds vertical offset
-fn rotate_parts(transform: &mut Transform, offset: f32, degree: f32) {
+fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree: f32) {
     let rad = degree.to_radians();
     transform.rotation = Quat::from_rotation_z(rad);
-    transform.translation.x = LIMB_LENGTH * rad.sin();
-    transform.translation.y = offset + LIMB_LENGTH * (1.0-rad.cos());
+    transform.translation.x = x_offset + LIMB_LENGTH * rad.sin();
+    transform.translation.y = y_offset + LIMB_LENGTH * (1.0-rad.cos());
 }
 
 /// Handles player input for character controls.
@@ -475,7 +483,7 @@ fn player_input(
             } else if !player.state.check(PlayerState::WALKING) {
                 player.state |= PlayerState::WALKING;
                 player.state |= PlayerState::DIRECTION;
-                player.set_animation(WALKING_POSE1, 0, 30);
+                player.set_animation(WALKING_POSE1, 0, 10);
             }
         } else if keys.pressed(KeyCode::KeyA) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
@@ -483,12 +491,12 @@ fn player_input(
             } else if !player.state.check(PlayerState::WALKING) {
                 player.state |= PlayerState::WALKING;
                 player.state &= !PlayerState::DIRECTION;
-                player.set_animation(WALKING_POSE1, 0, 30);
+                player.set_animation(WALKING_POSE1, 0, 10);
             }
         } else {
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
-                player.set_animation(IDLE_POSE, 0, 30);
+                player.set_animation(IDLE_POSE, 0, 10);
             }
         }
         if keys.just_pressed(KeyCode::Space) {
@@ -576,7 +584,7 @@ fn player_movement(
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
         for (mut player, id, mut transform) in player_query.iter_mut() {
-            if gamestate.phase == 6 {
+            if gamestate.phase == 6 && player.animation.count != 0 {
                 player.animation.count -= 1;
                 let diff_pose = player.animation.diff_pose;
                 player.pose += diff_pose;
@@ -861,25 +869,25 @@ fn update_pose(
             if player_id.0 == parts_id.0 {
                 match parts.flags {
                     // Head
-                    0b10000 => rotate_parts(&mut transform, HEAD_OFFSET, flip * player.pose.head),
+                    0b10000 => rotate_parts(&mut transform, 0.0, HEAD_OFFSET, flip * player.pose.head),
                     // Body
-                    0b01000 => rotate_parts(&mut transform, BODY_OFFSET, flip * player.pose.body),
+                    0b01000 => rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body),
                     // Right Upper Arm
-                    0b00111 => rotate_parts(&mut transform, UPPER_ARM_OFFSET, flip * player.pose.right_upper_arm),
+                    0b00111 => rotate_parts(&mut transform, -2.0 * flip * BODY_THICKNESS, UPPER_ARM_OFFSET, flip * player.pose.right_upper_arm),
                     // Right Lower Arm
-                    0b00110 => rotate_parts(&mut transform, LOWER_ARM_OFFSET, flip * player.pose.right_lower_arm),
+                    0b00110 => rotate_parts(&mut transform, 0.0, LOWER_ARM_OFFSET, flip * player.pose.right_lower_arm),
                     // Right Upper Leg
-                    0b00011 => rotate_parts(&mut transform, UPPER_LEG_OFFSET, flip * player.pose.right_upper_leg),
+                    0b00011 => rotate_parts(&mut transform, -flip * BODY_THICKNESS, UPPER_LEG_OFFSET, flip * player.pose.right_upper_leg),
                     // Right Lower Leg
-                    0b00010 => rotate_parts(&mut transform, LOWER_LEG_OFFSET, flip * player.pose.right_lower_leg),
+                    0b00010 => rotate_parts(&mut transform, 0.0, LOWER_LEG_OFFSET, flip * player.pose.right_lower_leg),
                     // Left Upper Arm
-                    0b00101 => rotate_parts(&mut transform, UPPER_ARM_OFFSET, flip * player.pose.left_upper_arm),
+                    0b00101 => rotate_parts(&mut transform, 2.0 * flip * BODY_THICKNESS, UPPER_ARM_OFFSET, flip * player.pose.left_upper_arm),
                     // Left Lower Arm
-                    0b00100 => rotate_parts(&mut transform, LOWER_ARM_OFFSET, flip * player.pose.left_lower_arm),
+                    0b00100 => rotate_parts(&mut transform, 0.0, LOWER_ARM_OFFSET, flip * player.pose.left_lower_arm),
                     // Left Upper Leg
-                    0b00001 => rotate_parts(&mut transform, UPPER_LEG_OFFSET, flip * player.pose.left_upper_leg),
+                    0b00001 => rotate_parts(&mut transform, flip * BODY_THICKNESS, UPPER_LEG_OFFSET, flip * player.pose.left_upper_leg),
                     // Left Lower Leg
-                    0b00000 => rotate_parts(&mut transform, LOWER_LEG_OFFSET, flip * player.pose.left_lower_leg),
+                    0b00000 => rotate_parts(&mut transform, 0.0, LOWER_LEG_OFFSET, flip * player.pose.left_lower_leg),
                     _ => {}
                 }
             }
