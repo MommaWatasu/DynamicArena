@@ -584,21 +584,26 @@ fn player_movement(
     mut commands: Commands,
     time: Res<Time>,
     config: Res<GameConfig>,
-    gamestate: Res<GameState>,
+    mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
-    mut player_query: Query<(&mut Player, &mut Transform), Without<BackGround>>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Transform), Without<BackGround>>,
     mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
 ) {
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, mut transform) in player_query.iter_mut() {
-            if gamestate.phase == 7 {
+        for (mut player, id, mut transform) in player_query.iter_mut() {
+            if gamestate.phase == 6 {
                 player.animation.count -= 1;
                 let diff_pose = player.animation.diff_pose;
                 player.pose += diff_pose;
+                if gamestate.winners[gamestate.round as usize - 1] != id.0 + 1 {
+                    transform.translation.y -= 15.0;
+                }
                 if player.animation.count == 0 {
                     player.animation.phase = 1;
                     commands.remove_resource::<Fighting>();
+                    gamestate.phase = 7;
+                    gamestate.count = 0;
                 }
                 continue
             }
@@ -788,7 +793,7 @@ fn player_movement(
         // move player and ground
         let mut ground = ground_query.get_single_mut().unwrap();
         let mut avg_x = 0.0;
-        for (_, transform) in player_query.iter_mut() {
+        for (_, _, transform) in player_query.iter_mut() {
             avg_x += transform.translation.x;
         }
         avg_x /= 2.0;
@@ -802,7 +807,7 @@ fn player_movement(
         // Check if players are at opposite ends of the screen
         let mut at_edges = true;
         let mut x_positions = Vec::new();
-        for (_, transform) in player_query.iter() {
+        for (_, _, transform) in player_query.iter() {
             x_positions.push(transform.translation.x);
             if transform.translation.x > -config.window_size.x / 2.0 + 100.0 && 
                transform.translation.x < config.window_size.x / 2.0 - 100.0 {
@@ -837,7 +842,7 @@ fn player_movement(
             ground.translation.x = 2000.0 - config.window_size.x / 2.0;
         }
 
-        for (_, mut transform) in player_query.iter_mut() {
+        for (_, _, mut transform) in player_query.iter_mut() {
             transform.translation.x -= diff;
             if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
                 transform.translation.x = -config.window_size.x / 2.0 + 100.0;
