@@ -5,6 +5,7 @@ use pose::{LOSER_POSE, WINNER_POSE};
 #[cfg(debug_assertions)]
 mod pause;
 #[cfg(not(target_arch = "wasm32"))]
+mod controller;
 mod bot;
 mod player;
 mod pose;
@@ -15,6 +16,8 @@ use crate::{
 
 #[cfg(debug_assertions)]
 use pause::*;
+#[cfg(not(target_arch = "wasm32"))]
+use controller::*;
 use player::*;
 
 const FPS: f32 = 60.0;
@@ -521,6 +524,8 @@ impl Plugin for GamePlugin {
             .add_plugins(RapierDebugRenderPlugin::default())
             .add_plugins(PausePlugin)
             .add_systems(Update, check_pause);
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_plugins(ControllerPlugin);
         app
             .add_plugins(PlayerPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
