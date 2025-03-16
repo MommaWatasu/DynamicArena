@@ -1,7 +1,14 @@
 use bevy::prelude::*;
 
 use crate::{
-    character_def::*, AppState, GameConfig, PATH_BOLD_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_BOLD_JP_FONT, TITLE_FONT_SIZE, PATH_IMAGE_PREFIX
+    character_def::*,
+    AppState,
+    GameConfig,
+    PATH_BOLD_FONT,
+    PATH_EXTRA_BOLD_JP_FONT,
+    PATH_BOLD_JP_FONT,
+    TITLE_FONT_SIZE,
+    PATH_IMAGE_PREFIX
 };
 
 #[derive(Component)]
@@ -113,7 +120,7 @@ fn setup(
                     ));
                     builder.spawn((
                         Node{
-                            width: Val::Percent(100.0),
+                            width: Val::Percent(90.0),
                             height: Val::Percent(90.0),
                             flex_direction: FlexDirection::Row,
                             align_self: AlignSelf::Center,
@@ -144,7 +151,7 @@ fn create_character_box(
     builder.spawn((
         Node {
             width: Val::Percent(30.0),
-            height: Val::Percent(95.0),
+            height: Val::Percent(90.0),
             flex_direction: FlexDirection::Column,
             ..default()
         },
@@ -265,7 +272,7 @@ fn update(
     }
 }
 
-fn check_back(
+fn check_buttons(
     mut state: ResMut<NextState<AppState>>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<(&Text, &TextColor)>,
@@ -277,6 +284,9 @@ fn check_back(
                     let text = text_query.get(children[0]).unwrap();
                     match text.0.as_str() {
                         "<Back" => {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            state.set(AppState::ConnectController);
+                            #[cfg(target_arch = "wasm32")]
                             state.set(AppState::Mainmenu);
                             break;
                         }
@@ -310,7 +320,7 @@ impl Plugin for ChooseCharacterPlugin {
         app
             .add_systems(OnEnter(AppState::ChooseCharacter), setup)
             .add_systems(OnExit(AppState::ChooseCharacter), exit)
-            .add_systems(Update, check_back)
+            .add_systems(Update, check_buttons.run_if(in_state(AppState::ChooseCharacter)))
             .add_systems(Update, update.run_if(in_state(AppState::ChooseCharacter)));
     }
 }
