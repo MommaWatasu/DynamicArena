@@ -31,15 +31,16 @@ pub struct HealthBar(pub f32, pub f32);
 /// | State          | Bit Pattern | Description                    |
 /// |----------------|-------------|--------------------------------|
 /// | IDLE          | 0b00000000  | Default state, no action      |
-/// | RUNNING       | 0b00000001  | Player is moving horizontally |
+/// | WALKING       | 0b00000001  | Player is moving horizontally |
 /// | JUMPING       | 0b00000010  | Player is in first jump      |
 /// | DOUBLE_JUMPING| 0b00000100  | Player is in second jump     |
 /// | KICKING       | 0b00001000  | Player is performing kick    |
 /// | PUNCHING      | 0b00010000  | Player is performing punch   |
 /// | SPECIAL_ATTACK| 0b00100000  | Player is performing special attack |
 /// | COOLDOWN      | 0b01000000  | Player is in cooldown state  |
+/// | DIRECTION     | 0b10000000  | Player is moving right        |
 #[derive(PartialEq, Eq, Copy, Clone)]
-struct PlayerState(u8);
+pub struct PlayerState(u8);
 
 impl BitOr for PlayerState {
     type Output = Self;
@@ -76,7 +77,7 @@ impl Default for PlayerState {
 impl Debug for PlayerState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let states = [
-            (PlayerState::RUNNING, "RUNNING"),
+            (PlayerState::WALKING, "WALKING"),
             (PlayerState::JUMPING, "JUMPING"),
             (PlayerState::DOUBLE_JUMPING, "DOUBLE_JUMPING"),
             (PlayerState::KICKING, "KICKING"),
@@ -108,19 +109,23 @@ impl Debug for PlayerState {
 
 impl PlayerState {
     pub const IDLE: Self = Self(0b00000000);
-    pub const RUNNING: Self = Self(0b00000001);
+    pub const WALKING: Self = Self(0b00000001);
     pub const JUMPING: Self = Self(0b00000010);
     pub const DOUBLE_JUMPING: Self = Self(0b00000100);
     pub const KICKING: Self = Self(0b00001000);
     pub const PUNCHING: Self = Self(0b00010000);
     pub const SPECIAL_ATTACK: Self = Self(0b00100000);
     pub const COOLDOWN: Self = Self(0b01000000);
+    pub const DIRECTION: Self = Self(0b10000000);
     // ignore cooldown state
     pub fn is_idle(&self) -> bool {
-        self.0 & !Self::COOLDOWN.0 == 0
+        self.0 & !Self::COOLDOWN.0 & !Self::DIRECTION.0 == 0
     }
     pub fn check(&self, state: Self) -> bool {
         self.0 & state.0 != 0
+    }
+    pub fn is_forward(&self) -> bool {
+        self.0 & Self::DIRECTION.0 != 0
     }
 }
 
@@ -141,7 +146,7 @@ pub struct Player {
     character_id: isize,
     pose: Pose,
     animation: PlayerAnimation,
-    state: PlayerState,
+    pub state: PlayerState,
     velocity: Vec2,
     health: u32,
 }
@@ -150,7 +155,7 @@ impl Player {
     pub fn new(character_id: isize) -> Self {
         Self {
             character_id,
-            pose: IDLE_POSE1,
+            pose: IDLE_POSE,
             animation: PlayerAnimation { diff_pose: default(), phase: 1, count: 10 },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
@@ -169,7 +174,7 @@ impl Player {
     }
     pub fn reset(&mut self, id: &PlayerID) {
         if id.0 == 0 {
-            self.pose = IDLE_POSE1;
+            self.pose = IDLE_POSE;
         } else {
             self.pose = OPPOSITE_DEFAULT_POSE;
         }
@@ -467,53 +472,44 @@ fn player_input(
         if keys.pressed(KeyCode::KeyD) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].agility;
-            } else if !player.state.check(PlayerState::RUNNING) {
-                player.state |= PlayerState::RUNNING;
-                player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
-                player.animation.phase = 0;
-                player.animation.count = 10;
+            } else if !player.state.check(PlayerState::WALKING) {
+                player.state |= PlayerState::WALKING;
+                player.state |= PlayerState::DIRECTION;
+                player.set_animation(WALKING_POSE1, 0, 30);
             }
-            player.pose.facing = true;
         } else if keys.pressed(KeyCode::KeyA) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].agility;
-            } else if !player.state.check(PlayerState::RUNNING) {
-                player.state |= PlayerState::RUNNING;
-                player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
-                player.animation.phase = 0;
-                player.animation.count = 10;
+            } else if !player.state.check(PlayerState::WALKING) {
+                player.state |= PlayerState::WALKING;
+                player.state &= !PlayerState::DIRECTION;
+                player.set_animation(WALKING_POSE1, 0, 30);
             }
-            player.pose.facing = false;
         } else {
-            if player.state.check(PlayerState::RUNNING) {
-                player.state &= !PlayerState::RUNNING;
-                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                player.animation.phase = 0;
-                player.animation.count = 30;
+            if player.state.check(PlayerState::WALKING) {
+                player.state &= !PlayerState::WALKING;
+                player.set_animation(IDLE_POSE, 0, 30);
             }
         }
         if keys.just_pressed(KeyCode::Space) {
             if player.character_id == 1 {
                 if !player.state.check(PlayerState::JUMPING | PlayerState::KICKING | PlayerState::PUNCHING) {
                     player.state |= PlayerState::JUMPING;
+                    player.set_animation(JUMPING_POSE1, 0, 30);
                     player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
                     player.animation.phase = 0;
                     player.animation.count = 30;
-                    player.velocity = Vec2::new(0.0, 7.0);
+                    player.velocity = Vec2::new(0.0, 12.0);
                 } else if !player.state.check(PlayerState::DOUBLE_JUMPING) {
                     player.state |= PlayerState::DOUBLE_JUMPING;
-                    player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 30;
+                    player.set_animation(JUMPING_POSE1, 0, 30);
                     player.velocity = Vec2::new(0.0, 7.5);
                 }
             } else {
                 if !player.state.check(PlayerState::JUMPING) {
                     player.state |= PlayerState::JUMPING;
-                    player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 30;
-                    player.velocity = Vec2::new(0.0, 7.0);
+                    player.set_animation(JUMPING_POSE1, 0, 30);
+                    player.velocity = Vec2::new(0.0, 12.0);
                 }
             }
         }
@@ -521,46 +517,34 @@ fn player_input(
             if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
                 if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                     player.state |= PlayerState::KICKING;
-                    player.animation.diff_pose = (JUMPING_KICK_POSE - player.pose) / 10.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 10;
-                } else if !player.state.check(PlayerState::RUNNING) {
+                    player.set_animation(JUMPING_KICK_POSE, 0, 10);
+                } else if !player.state.check(PlayerState::WALKING) {
                     player.state |= PlayerState::KICKING;
-                    player.animation.diff_pose = (KICK_POSE - player.pose) / 10.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 10;
+                    player.set_animation(KICK_POSE, 0, 10);
                 }
             }
         }
         if keys.just_pressed(KeyCode::KeyL) {
-            if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                if !player.state.check(PlayerState::RUNNING) {
+            if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::WALKING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+                if !player.state.check(PlayerState::WALKING) {
                     player.state |= PlayerState::PUNCHING;
-                    player.animation.diff_pose = (PUNCH_POSE - player.pose) / 10.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 10;
+                    player.set_animation(PUNCH_POSE, 0, 10);
                 }
             }
         }
         if keys.just_pressed(KeyCode::KeyJ) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) & !player.state.check(PlayerState::KICKING) {
                 player.state |= PlayerState::KICKING;
-                player.animation.diff_pose = (JUMPING_KICK_POSE - player.pose) / 10.0;
-                player.animation.phase = 0;
-                player.animation.count = 10;
-            } else if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING) {
+                player.set_animation(JUMPING_KICK_POSE, 0, 10);
+            } else if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::WALKING) {
                 player.state |= PlayerState::KICKING | PlayerState::SPECIAL_ATTACK;
-                player.animation.diff_pose = (HIGH_KICK_POSE - player.pose) / 10.0;
-                player.animation.phase = 0;
-                player.animation.count = 10;
+                player.set_animation(HIGH_KICK_POSE, 0, 10);
             }
         }
         if keys.just_pressed(KeyCode::KeyH) {
-            if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
+            if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::WALKING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 player.state |= PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK;
-                player.animation.diff_pose = (UPPER_PUNCH_POSE1 - player.pose) / 5.0;
-                player.animation.phase = 0;
-                player.animation.count = 5;
+                player.set_animation(UPPER_PUNCH_POSE1, 0, 5);
             }
         }
     }
@@ -623,31 +607,13 @@ fn player_movement(
                 } else if player.animation.phase == 1 {
                     player.animation.count -= 1;
                     if player.animation.count == 0 {
-                        player.animation.diff_pose = (IDLE_POSE2 - IDLE_POSE1) / 10.0;
                         player.animation.phase = 2;
-                        player.animation.count = 10;
-                    }
-                } else if player.animation.phase == 2 {
-                    player.animation.count -= 1;
-                    let diff_pose = player.animation.diff_pose;
-                    player.pose += diff_pose;
-                    if player.animation.count == 0 {
-                        player.animation.diff_pose = (IDLE_POSE1 - IDLE_POSE2) / 10.0;
-                        player.animation.phase = 3;
-                        player.animation.count = 10;
-                    }
-                } else if player.animation.phase == 3 {
-                    player.animation.count -= 1;
-                    let diff_pose = player.animation.diff_pose;
-                    player.pose += diff_pose;
-                    if player.animation.count == 0 {
-                        player.animation.phase = 1;
-                        player.animation.count = 10;
+                        player.animation.count = 0;
                     }
                 }
             }
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 1.5 / FPS);
+                player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
                 if player.state.check(PlayerState::KICKING) {
                     if player.animation.phase == 0 {
                         player.animation.count -= 1;
@@ -664,9 +630,7 @@ fn player_movement(
                         let diff_pose = player.animation.diff_pose;
                         player.pose += diff_pose;
                         if player.animation.count == 0 {
-                            player.animation.diff_pose = (JUMPING_POSE2 - JUMPING_POSE1) / 30.0;
-                            player.animation.phase = 1;
-                            player.animation.count = 30;
+                            player.set_animation(JUMPING_POSE2, 1, 30);
                         }
                     } else if player.animation.phase == 1 {
                         player.animation.count -= 1;
@@ -691,9 +655,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                                player.animation.phase = 0;
-                                player.animation.count = 30;
+                                player.set_animation(IDLE_POSE, 0, 30);
                             }
                         }
                     } else {
@@ -703,9 +665,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                                player.animation.phase = 0;
-                                player.animation.count = 30;
+                                player.set_animation(IDLE_POSE, 0, 30);
                             }
                         }
                     }
@@ -717,9 +677,7 @@ fn player_movement(
                             let diff_pose = player.animation.diff_pose;
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
-                                player.animation.diff_pose = (UPPER_PUNCH_POSE2 - UPPER_PUNCH_POSE1) / 5.0;
-                                player.animation.phase = 1;
-                                player.animation.count = 5;
+                                player.set_animation(UPPER_PUNCH_POSE2, 1, 5);
                             }
                         } else if player.animation.phase == 1 {
                             player.animation.count -= 1;
@@ -727,9 +685,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                                player.animation.phase = 0;
-                                player.animation.count = 30;
+                                player.set_animation(IDLE_POSE, 0, 30);
                             }
                         }
                     } else {
@@ -739,17 +695,15 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                                player.animation.phase = 0;
-                                player.animation.count = 30;
+                                player.set_animation(IDLE_POSE, 0, 30);
                             }
                         }
                     }
                 }
-                if player.state.check(PlayerState::RUNNING) {
-                    if player.pose.facing && player.velocity.x < CHARACTER_PROFILES[player.character_id as usize].agility {
+                if player.state.check(PlayerState::WALKING) {
+                    if player.state.is_forward() && player.velocity.x < CHARACTER_PROFILES[player.character_id as usize].agility {
                         player.velocity += Vec2::new(1.0, 0.0) * PIXELS_PER_METER / FPS;
-                    } else if !player.pose.facing && player.velocity.x > -CHARACTER_PROFILES[player.character_id as usize].agility {
+                    } else if !player.state.is_forward() && player.velocity.x > -CHARACTER_PROFILES[player.character_id as usize].agility {
                         player.velocity += Vec2::new(-1.0, 0.0) * PIXELS_PER_METER / FPS;
                     }
                     if player.velocity.x > CHARACTER_PROFILES[player.character_id as usize].agility {
@@ -762,27 +716,21 @@ fn player_movement(
                         let diff_pose = player.animation.diff_pose;
                         player.pose += diff_pose;
                         if player.animation.count == 0 {
-                            player.animation.diff_pose = (RUNNING_POSE2 - RUNNING_POSE1) / 15.0;
-                            player.animation.phase = 1;
-                            player.animation.count = 15;
+                            player.set_animation(WALKING_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
                         player.animation.count -= 1;
                         let diff_pose = player.animation.diff_pose;
                         player.pose += diff_pose;
                         if player.animation.count == 0 {
-                            player.animation.diff_pose = (RUNNING_POSE1 - RUNNING_POSE2) / 15.0;
-                            player.animation.phase = 2;
-                            player.animation.count = 15;
+                            player.set_animation(WALKING_POSE1, 0, 15);
                         }
                     } else if player.animation.phase == 2 {
                         player.animation.count -= 1;
                         let diff_pose = player.animation.diff_pose;
                         player.pose += diff_pose;
                         if player.animation.count == 0 {
-                            player.animation.diff_pose = (RUNNING_POSE2 - RUNNING_POSE1) / 15.0;
-                            player.animation.phase = 1;
-                            player.animation.count = 15;
+                            player.set_animation(WALKING_POSE2, 1, 15);
                         }
                     }
                 }
@@ -883,14 +831,12 @@ fn check_ground(
                                                 PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
                                 
                                 // Set animation based on running state
-                                if player.state.check(PlayerState::RUNNING) {
-                                    player.animation.diff_pose = (RUNNING_POSE1 - player.pose) / 10.0;
+                                if player.state.check(PlayerState::WALKING) {
+                                    player.animation.diff_pose = (WALKING_POSE1 - player.pose) / 10.0;
                                     player.animation.phase = 0;
                                     player.animation.count = 10;
                                 } else {
-                                    player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                                    player.animation.phase = 0;
-                                    player.animation.count = 30;
+                                    player.set_animation(IDLE_POSE, 0, 30);
                                 }
                             }
                         }
@@ -1006,9 +952,7 @@ fn check_attack(
                     );
                     println!("Player {} hit: {} damage", attacker_id.0, damage);
                     player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK);
-                    player.animation.diff_pose = (IDLE_POSE1 - player.pose) / 30.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 30;
+                    player.set_animation(IDLE_POSE, 0, 30);
                 }
                 if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
                     player.health = player.health.saturating_sub(damage);

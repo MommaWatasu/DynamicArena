@@ -35,18 +35,18 @@ fn controller_system(
                     if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                         player.state |= PlayerState::KICKING;
                         player.set_animation(JUMPING_KICK_POSE, 0, 10);
-                    } else if !player.state.check(PlayerState::RUNNING) {
+                    } else if !player.state.check(PlayerState::WALKING) {
                         player.state |= PlayerState::KICKING;
                         player.set_animation(KICK_POSE, 0, 10);
                     }
                 }
             }
-            
+
             if gamepad.pressed(GamepadButton::South) {
                 if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) & !player.state.check(PlayerState::KICKING) {
                     player.state |= PlayerState::KICKING;
                     player.set_animation(JUMPING_KICK_POSE, 0, 10);
-                } else if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::RUNNING) {
+                } else if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::WALKING) {
                     player.state |= PlayerState::KICKING | PlayerState::SPECIAL_ATTACK;
                     player.set_animation(HIGH_KICK_POSE, 0, 10);
                 }
