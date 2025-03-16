@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
+    AppState,
+    GameConfig,
     GAMETITLE,
     TITLE_FONT_SIZE,
     PATH_BOLD_FONT,
     PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX,
-    AppState,
 };
 
 const BUTTON_FONT_SIZE: f32 = 50.0;
@@ -18,6 +19,8 @@ struct Mainmenu;
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut config: ResMut<GameConfig>,
+    gamepads: Query<(&Name, Entity), With<Gamepad>>,
     audio: Query<&AudioPlayer>,
 ) {
     info!("setup");
@@ -29,6 +32,18 @@ fn setup(
             PlaybackSettings::LOOP,
             GlobalTransform::default(),
         ));
+    }
+
+    // detect gamepads
+    for (name, entity) in gamepads.iter() {
+        if **name == *"DynamicArena Controller" {
+            if config.gamepads[0] == Entity::from_raw(0) {
+                config.gamepads[0] = entity;
+            } else {
+                config.gamepads[1] = entity;
+            }
+            info!("detect gamepad: {:?}", entity);
+        }
     }
 
     commands
@@ -168,6 +183,9 @@ fn update(
                     let text = text_query.get(children[0]).unwrap();
                     match text.0.as_str() {
                         "Start" => {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            next_state.set(AppState::ConnectController);
+                            #[cfg(target_arch = "wasm32")]
                             next_state.set(AppState::ChooseCharacter);
                         }
                         "Settings" => {
