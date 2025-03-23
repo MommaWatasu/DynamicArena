@@ -75,9 +75,6 @@ struct Curtain;
 #[derive(Component)]
 struct GameTimer(f32);
 
-#[derive(Component)]
-struct Ground;
-
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -214,17 +211,7 @@ fn setup(
             BackGround,
             Transform::default(),
             InGame
-        ))
-        .with_children(|builder| {
-            builder.spawn((
-                Ground,
-                Transform::from_translation(Vec3::new(0.0, 100.0-config.window_size.y / 2.0, 0.0),),
-                RigidBody::Fixed,
-                Collider::cuboid(2000.0, 10.0),
-                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_STATIC,
-                ActiveEvents::COLLISION_EVENTS,
-            ));
-        });
+        ));
     spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
     spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
     game_state.phase = 0;

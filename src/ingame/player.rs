@@ -1,7 +1,7 @@
 use std::{fmt::Debug, ops::{BitAndAssign, BitOr, BitOrAssign, Not}};
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
-use crate::{character_def::CHARACTER_PROFILES, ingame::{Ground, InGame, GameState}, AppState, GameConfig, GameMode};
+use crate::{character_def::CHARACTER_PROFILES, ingame::{InGame, GameState}, AppState, GameConfig, GameMode};
 use super::{pose::*, BackGround, Fighting};
 
 const LIMB_LENGTH: f32 = 30.0;
@@ -811,59 +811,25 @@ fn player_movement(
 
 /// Checks for collisions between player characters and the ground.
 fn check_ground(
-    mut collision_events: EventReader<CollisionEvent>,
-    parts_query: Query<(&BodyParts, &PlayerID)>,
-    ground_query: Query<Entity, With<Ground>>,
-    mut player_query: Query<(&mut Player, &PlayerID)>,
+    config: Res<GameConfig>,
+    mut player_query: Query<(&mut Player, &mut Transform)>,
 ) {
-    for collision_event in collision_events.read() {
-        match collision_event {
-            CollisionEvent::Started(entity1, entity2, _) => {
-                // Determine which entity is the ground and which is the potential player part
-                let (part_entity, _) = if *entity1 == ground_query.single() {
-                    (*entity2, *entity1)
-                } else if *entity2 == ground_query.single() {
-                    (*entity1, *entity2)
-                } else {
-                    continue // Neither entity is ground, so exit early
-                };
-
-                // Check if we found a collision with the ground
-                if let Ok((parts, id)) = parts_query.get(part_entity) {
-                    // Only process for non-arm and non-upper body parts
-                    if !parts.is_arm() && !parts.is_upper() {
-                        for (mut player, player_id) in player_query.iter_mut() {
-                            if id == player_id && player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
-                                player.velocity = Vec2::ZERO;
-                                player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | 
-                                                PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
-                                
-                                // Set animation based on running state
-                                if player.state.check(PlayerState::WALKING) {
-                                    player.animation.diff_pose = (WALKING_POSE1 - player.pose) / 10.0;
-                                    player.animation.phase = 0;
-                                    player.animation.count = 10;
-                                } else {
-                                    player.set_animation(IDLE_POSE, 0, 30);
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-            CollisionEvent::Stopped(_, _, _) => {
-            }
+    for (mut player, mut transform) in player_query.iter_mut() {
+        if transform.translation.y - player.pose.y_diff < 270.0-config.window_size.y/2.0 {
+            player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
+            player.set_animation(IDLE_POSE1, 0, 10);
+            transform.translation.y = 270.0 - config.window_size.y/2.0 + player.pose.y_diff;
+            player.velocity = Vec2::ZERO;
         }
     }
 }
 
 /// Updates the pose of the player character based on their current state.
 fn update_pose(
-    player_query: Query<(&Player, &PlayerID)>,
-    mut parts_query: Query<(&BodyParts, &PlayerID, &mut Transform)>,
+    mut player_query: Query<(&mut Player, &mut Transform, &PlayerID), Without<BodyParts>>,
+    mut parts_query: Query<(&BodyParts, &PlayerID, &mut Transform), Without<Player>>,
 ) {
-    for (player, player_id) in player_query.iter() {
+    for (mut player, mut player_transform, player_id) in player_query.iter_mut() {
         let flip = if player.pose.facing { 1.0 } else { -1.0 };
         for (parts, parts_id, mut transform) in parts_query.iter_mut() {
             if player_id.0 == parts_id.0 {
