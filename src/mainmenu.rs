@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::GameConfig;
 use crate::{
     AppState,
-    GameConfig,
     GAMETITLE,
     TITLE_FONT_SIZE,
     PATH_BOLD_FONT,
