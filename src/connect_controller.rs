@@ -300,9 +300,10 @@ fn check_buttons(
                             break;
                         }
                         "Next>" => {
-                            if text.1.0 == Color::BLACK {
+                            // NOTE: For now, we will skip the controller check
+                            //if text.1.0 == Color::BLACK {
                                 state.set(AppState::ChooseCharacter);
-                            }
+                            //}
                             break;
                         }
                         _ => {}
