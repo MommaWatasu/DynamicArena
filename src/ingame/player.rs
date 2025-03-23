@@ -158,7 +158,7 @@ impl Player {
     pub fn new(character_id: isize) -> Self {
         Self {
             character_id,
-            pose: IDLE_POSE,
+            pose: IDLE_POSE1,
             animation: PlayerAnimation { diff_pose: default(), phase: 1, count: 10 },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
@@ -177,7 +177,7 @@ impl Player {
     }
     pub fn reset(&mut self, id: &PlayerID) {
         if id.0 == 0 {
-            self.pose = IDLE_POSE;
+            self.pose = IDLE_POSE1;
         } else {
             self.pose = OPPOSITE_DEFAULT_POSE;
         }
@@ -496,27 +496,24 @@ fn player_input(
         } else {
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
-                player.set_animation(IDLE_POSE, 0, 10);
+                player.set_animation(IDLE_POSE1, 0, 10);
             }
         }
         if keys.just_pressed(KeyCode::Space) {
             if player.character_id == 1 {
                 if !player.state.check(PlayerState::JUMPING | PlayerState::KICKING | PlayerState::PUNCHING) {
                     player.state |= PlayerState::JUMPING;
-                    player.set_animation(JUMPING_POSE1, 0, 30);
-                    player.animation.diff_pose = (JUMPING_POSE1 - player.pose) / 30.0;
-                    player.animation.phase = 0;
-                    player.animation.count = 30;
+                    player.set_animation(JUMPING_POSE1, 0, 10);
                     player.velocity = Vec2::new(0.0, 12.0);
                 } else if !player.state.check(PlayerState::DOUBLE_JUMPING) {
                     player.state |= PlayerState::DOUBLE_JUMPING;
-                    player.set_animation(JUMPING_POSE1, 0, 30);
+                    player.set_animation(JUMPING_POSE1, 0, 10);
                     player.velocity = Vec2::new(0.0, 7.5);
                 }
             } else {
                 if !player.state.check(PlayerState::JUMPING) {
                     player.state |= PlayerState::JUMPING;
-                    player.set_animation(JUMPING_POSE1, 0, 30);
+                    player.set_animation(JUMPING_POSE1, 0, 10);
                     player.velocity = Vec2::new(0.0, 12.0);
                 }
             }
@@ -536,7 +533,7 @@ fn player_input(
             if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::WALKING | PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 if !player.state.check(PlayerState::WALKING) {
                     player.state |= PlayerState::PUNCHING;
-                    player.set_animation(PUNCH_POSE, 0, 10);
+                    player.set_animation(PUNCH_POSE, 0, 5);
                 }
             }
         }
@@ -609,14 +606,21 @@ fn player_movement(
                         if player.state.check(PlayerState::COOLDOWN) {
                             player.state &= !PlayerState::COOLDOWN;
                         }
-                        player.animation.phase = 1;
-                        player.animation.count = 10;
+                        player.set_animation(IDLE_POSE2, 1, 15);
                     }
                 } else if player.animation.phase == 1 {
                     player.animation.count -= 1;
+                    let diff_pose = player.animation.diff_pose;
+                    player.pose += diff_pose;
                     if player.animation.count == 0 {
-                        player.animation.phase = 2;
-                        player.animation.count = 0;
+                        player.set_animation(IDLE_POSE1, 2, 15);
+                    }
+                } else if player.animation.phase == 2 {
+                    player.animation.count -= 1;
+                    let diff_pose = player.animation.diff_pose;
+                    player.pose += diff_pose;
+                    if player.animation.count == 0 {
+                        player.set_animation(IDLE_POSE2, 1, 15);
                     }
                 }
             }
@@ -638,7 +642,7 @@ fn player_movement(
                         let diff_pose = player.animation.diff_pose;
                         player.pose += diff_pose;
                         if player.animation.count == 0 {
-                            player.set_animation(JUMPING_POSE2, 1, 30);
+                            player.set_animation(JUMPING_POSE2, 1, 5);
                         }
                     } else if player.animation.phase == 1 {
                         player.animation.count -= 1;
@@ -663,7 +667,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE, 0, 30);
+                                player.set_animation(IDLE_POSE1, 0, 30);
                             }
                         }
                     } else {
@@ -673,7 +677,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE, 0, 30);
+                                player.set_animation(IDLE_POSE1, 0, 30);
                             }
                         }
                     }
@@ -693,7 +697,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE, 0, 30);
+                                player.set_animation(IDLE_POSE1, 0, 30);
                             }
                         }
                     } else {
@@ -703,7 +707,7 @@ fn player_movement(
                             player.pose += diff_pose;
                             if player.animation.count == 0 {
                                 player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE, 0, 30);
+                                player.set_animation(IDLE_POSE1, 0, 30);
                             }
                         }
                     }
@@ -815,10 +819,10 @@ fn check_ground(
     mut player_query: Query<(&mut Player, &mut Transform)>,
 ) {
     for (mut player, mut transform) in player_query.iter_mut() {
-        if transform.translation.y - player.pose.y_diff < 270.0-config.window_size.y/2.0 {
+        if transform.translation.y - player.pose.offset[1] < 270.0-config.window_size.y/2.0 {
             player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
             player.set_animation(IDLE_POSE1, 0, 10);
-            transform.translation.y = 270.0 - config.window_size.y/2.0 + player.pose.y_diff;
+            transform.translation.y = 270.0 - config.window_size.y/2.0 + player.pose.offset[1];
             player.velocity = Vec2::ZERO;
         }
     }
@@ -858,6 +862,9 @@ fn update_pose(
                 }
             }
         }
+        player_transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
+        player_transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
+        player.pose.old_offset = player.pose.offset;
     }
 }
 
@@ -926,7 +933,7 @@ fn check_attack(
                     );
                     println!("Player {} hit: {} damage", attacker_id.0, damage);
                     player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK);
-                    player.set_animation(IDLE_POSE, 0, 30);
+                    player.set_animation(IDLE_POSE1, 0, 30);
                 }
                 if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
                     player.health = player.health.saturating_sub(damage);

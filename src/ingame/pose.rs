@@ -4,6 +4,8 @@ use std::ops::{Add, AddAssign, Div, Sub};
 pub struct Pose {
     // true means right facing, false means left facing
     pub facing: bool,
+    pub offset: [f32;2],
+    pub old_offset: [f32;2],
     pub head: f32,
     pub body: f32,
     pub right_upper_arm: f32,
@@ -22,6 +24,8 @@ impl Add for Pose {
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             facing: self.facing,
+            offset: [self.offset[0] + rhs.offset[0], self.offset[1] + rhs.offset[1]],
+            old_offset: [self.old_offset[0] + rhs.old_offset[0], self.old_offset[1] + rhs.old_offset[1]],
             head: self.head + rhs.head,
             body: self.body + rhs.body,
             right_upper_arm: self.right_upper_arm + rhs.right_upper_arm,
@@ -48,6 +52,8 @@ impl Sub for Pose {
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             facing: self.facing,
+            offset: [self.offset[0] - rhs.offset[0], self.offset[1] - rhs.offset[1]],
+            old_offset: [self.old_offset[0] - rhs.old_offset[0], self.old_offset[1] - rhs.old_offset[1]],
             head: self.head - rhs.head,
             body: self.body - rhs.body,
             right_upper_arm: self.right_upper_arm - rhs.right_upper_arm,
@@ -68,6 +74,8 @@ impl Div<f32> for Pose {
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             facing: self.facing,
+            offset: [self.offset[0] / rhs, self.offset[1] / rhs],
+            old_offset: [self.old_offset[0] / rhs, self.old_offset[1] / rhs],
             head: self.head / rhs,
             body: self.body / rhs,
             right_upper_arm: self.right_upper_arm / rhs,
@@ -84,6 +92,8 @@ impl Div<f32> for Pose {
 
 pub const OPPOSITE_DEFAULT_POSE: Pose = Pose {
     facing: false,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: -50.0,
@@ -96,8 +106,10 @@ pub const OPPOSITE_DEFAULT_POSE: Pose = Pose {
     left_lower_leg: 20.0,
 };
 
-pub const IDLE_POSE: Pose = Pose {
+pub const IDLE_POSE1: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: -50.0,
@@ -108,10 +120,28 @@ pub const IDLE_POSE: Pose = Pose {
     left_lower_arm: -100.0,
     left_upper_leg: 20.0,
     left_lower_leg: 20.0,
+};
+
+pub const IDLE_POSE2: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    head: 0.0,
+    body: 0.0,
+    right_upper_arm: -40.0,
+    right_lower_arm: 150.0,
+    right_upper_leg: -35.0,
+    right_lower_leg: 60.0,
+    left_upper_arm: 40.0,
+    left_lower_arm: -100.0,
+    left_upper_leg: 10.0,
+    left_lower_leg: 35.0,
 };
 
 pub const WALKING_POSE1: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: -50.0,
@@ -126,6 +156,8 @@ pub const WALKING_POSE1: Pose = Pose {
 
 pub const WALKING_POSE2: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: -50.0,
@@ -140,34 +172,40 @@ pub const WALKING_POSE2: Pose = Pose {
 
 pub const JUMPING_POSE1: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
-    right_upper_arm: 20.0,
-    right_lower_arm: -20.0,
-    right_upper_leg: 10.0,
-    right_lower_leg: -10.0,
-    left_upper_arm: -20.0,
-    left_lower_arm: 10.0,
-    left_upper_leg: 60.0,
-    left_lower_leg: -70.0,
+    right_upper_arm: -75.0,
+    right_lower_arm: 135.0,
+    right_upper_leg: -45.0,
+    right_lower_leg: 40.0,
+    left_upper_arm: 75.0,
+    left_lower_arm: -135.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 20.0,
 };
 
 pub const JUMPING_POSE2: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
-    right_upper_arm: 40.0,
-    right_lower_arm: -20.0,
-    right_upper_leg: 10.0,
-    right_lower_leg: -10.0,
-    left_upper_arm: -40.0,
-    left_lower_arm: 20.0,
-    left_upper_leg: 60.0,
-    left_lower_leg: -70.0,
+    right_upper_arm: -75.0,
+    right_lower_arm: 135.0,
+    right_upper_leg: -45.0,
+    right_lower_leg: 40.0,
+    left_upper_arm: 75.0,
+    left_lower_arm: -135.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 20.0,
 };
 
 pub const JUMPING_KICK_POSE: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: -10.0,
     right_upper_arm: -10.0,
@@ -182,6 +220,8 @@ pub const JUMPING_KICK_POSE: Pose = Pose {
 
 pub const KICK_POSE: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 10.0,
     right_upper_arm: 10.0,
@@ -196,6 +236,8 @@ pub const KICK_POSE: Pose = Pose {
 
 pub const HIGH_KICK_POSE: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 10.0,
     right_upper_arm: 10.0,
@@ -210,20 +252,24 @@ pub const HIGH_KICK_POSE: Pose = Pose {
 
 pub const PUNCH_POSE: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
-    right_upper_arm: 90.0,
-    right_lower_arm: 0.0,
-    right_upper_leg: 10.0,
-    right_lower_leg: -40.0,
+    right_upper_arm: 70.0,
+    right_lower_arm: 30.0,
+    right_upper_leg: -45.0,
+    right_lower_leg: 40.0,
     left_upper_arm: 30.0,
-    left_lower_arm: 90.0,
-    left_upper_leg: 40.0,
-    left_lower_leg: -50.0,
+    left_lower_arm: -100.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 20.0,
 };
 
 pub const UPPER_PUNCH_POSE1: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: 90.0,
@@ -238,6 +284,8 @@ pub const UPPER_PUNCH_POSE1: Pose = Pose {
 
 pub const UPPER_PUNCH_POSE2: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: 90.0,
@@ -252,6 +300,8 @@ pub const UPPER_PUNCH_POSE2: Pose = Pose {
 
 pub const WINNER_POSE: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 0.0,
     body: 0.0,
     right_upper_arm: 100.0,
@@ -266,6 +316,8 @@ pub const WINNER_POSE: Pose = Pose {
 
 pub const LOSER_POSE: Pose = Pose {
     facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
     head: 50.0,
     body: 70.0,
     right_upper_arm: -80.0,
