@@ -128,7 +128,7 @@ fn setup(
     }
     // set window config
     if let Ok(mut window) = windows.get_single_mut() {
-        window.mode = WindowMode::Fullscreen(MonitorSelection::Primary);
+        window.mode = WindowMode::BorderlessFullscreen(MonitorSelection::Primary);
         window.resolution = config.window_size.into();
     }
     // camera
