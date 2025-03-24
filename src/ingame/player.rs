@@ -292,7 +292,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { 2.0 } else { -1.0 })),
+                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, 2.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -324,7 +324,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { -1.0 } else { 2.0 })),
+                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, -1.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -357,7 +357,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which leg is on top
-                        Transform::from_translation(Vec3::new(20.0, -100.0, if id == 0 { 3.0 } else { 1.0 })),
+                        Transform::from_translation(Vec3::new(20.0, -100.0, 3.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -394,7 +394,7 @@ pub fn spawn_player(
                         MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, false, false, true),
                         PlayerID(id),
-                        Transform::from_translation(Vec3::new(-20.0, -100.0, if id == 0 { 1.0 } else { 3.0 })),
+                        Transform::from_translation(Vec3::new(-20.0, -100.0, 1.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
