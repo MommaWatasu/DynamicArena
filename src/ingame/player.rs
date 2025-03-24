@@ -750,65 +750,66 @@ fn player_movement(
             transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
         }
 
+        /*
         // move player and ground
+        */
         let mut ground = ground_query.get_single_mut().unwrap();
-        let mut avg_x = 0.0;
-        for (_, _, transform) in player_query.iter_mut() {
-            avg_x += transform.translation.x;
-        }
-        avg_x /= 2.0;
-
-        if avg_x > 0.0 && ground.translation.x == config.window_size.x / 2.0 - 2000.0 {
-            return;
-        } else if avg_x < 0.0 && ground.translation.x == 2000.0 - config.window_size.x / 2.0 {
-            return;
-        }
         
         // Check if players are at opposite ends of the screen
-        let mut at_edges = true;
-        let mut x_positions = Vec::new();
-        for (_, _, transform) in player_query.iter() {
-            x_positions.push(transform.translation.x);
-            if transform.translation.x > -config.window_size.x / 2.0 + 100.0 && 
-               transform.translation.x < config.window_size.x / 2.0 - 100.0 {
-                at_edges = false;
-                break;
+        // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge
+        let mut at_edges: [u8;2] = [0;2];
+        for (_, player_id, transform) in player_query.iter() {
+            if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
+                at_edges[player_id.0 as usize] = 1;
+            } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
+                at_edges[player_id.0 as usize] = 2; 
             }
         }
-        
-        // If both players are at edges and on opposite sides, don't move camera
-        if at_edges && x_positions.len() > 1 && 
-           ((x_positions[0] < 0.0 && x_positions[1] > 0.0) || 
-            (x_positions[0] > 0.0 && x_positions[1] < 0.0))
-        {
-            avg_x = 0.0;
-        }
-        let mut diff = avg_x;
 
-        // Otherwise, move camera to center players
-        if ground.translation.x + avg_x < config.window_size.x / 2.0 - 2000.0 {
-            avg_x = config.window_size.x / 2.0 - 2000.0 - ground.translation.x;
-        } else if ground.translation.x + avg_x > 2000.0 - config.window_size.x / 2.0 {
-            avg_x = 2000.0 - config.window_size.x / 2.0 - ground.translation.x;
-        }
-        ground.translation.x += avg_x;
+        if at_edges[0] != 0 && at_edges[1] == 0 {
+            for (_, player_id, mut transform) in player_query.iter_mut() {
+                // Ignore player 1
+                if player_id.0 != 0 {
+                    continue;
+                }
 
-        // Move players to center of screen
+                if at_edges[0] == 1 {
+                    // If player 0 is at the left edge, move camera to the left and move players to the right
+                    // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
+                    ground.translation.x += -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
+                    transform.translation.x = -config.window_size.x / 2.0 + 100.0;
+                } else {
+                    // If player 0 is at the right edge, move camera to the right and move players to the left
+                    // transform.translation.x - (config.window_size.x / 2.0 - 100.0): difference between player 0 and right edge
+                    ground.translation.x += config.window_size.x / 2.0 - 100.0 - transform.translation.x;
+                    transform.translation.x = config.window_size.x / 2.0 - 100.0;
+                }
+            }
+        } else if at_edges[0] == 0 && at_edges[1] != 0{
+            for (_, player_id, mut transform) in player_query.iter_mut() {
+                // Ignore player 0
+                if player_id.0 != 1 {
+                    continue;
+                }
+
+                if at_edges[1] == 1 {
+                    // If player 1 is at the left edge, move camera to the left and move players to the right
+                    // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 1 and left edge
+                    ground.translation.x += transform.translation.x + config.window_size.x / 2.0 - 100.0;
+                    transform.translation.x = -config.window_size.x / 2.0 + 100.0;
+                } else {
+                    // If player 1 is at the right edge, move camera to the right and move players to the left
+                    // transform.translation.x - (config.window_size.x / 2.0 - 100.0): difference between player 1 and right edge
+                    ground.translation.x += transform.translation.x - config.window_size.x / 2.0 + 100.0;
+                    transform.translation.x = config.window_size.x / 2.0 - 100.0;
+                }
+            }
+        }
+
         if ground.translation.x < config.window_size.x / 2.0 - 2000.0 {
-            diff = config.window_size.x / 2.0 - 2000.0 - ground.translation.x;
             ground.translation.x = config.window_size.x / 2.0 - 2000.0;
         } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
-            diff = 2000.0 - config.window_size.x / 2.0 - ground.translation.x;
             ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-        }
-
-        for (_, _, mut transform) in player_query.iter_mut() {
-            transform.translation.x -= diff;
-            if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
-                transform.translation.x = -config.window_size.x / 2.0 + 100.0;
-            } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
-                transform.translation.x = config.window_size.x / 2.0 - 100.0;
-            }
         }
     }
 }
