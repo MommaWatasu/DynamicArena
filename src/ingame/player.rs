@@ -9,7 +9,7 @@ const LIMB_RADIUS: f32 = 15.0;
 
 const SKIN_COLOR: Color = Color::srgb(0.9, 0.8, 0.7);
 
-const BODY_THICKNESS: f32 = 20.0;
+const BODY_THICKNESS: f32 = 10.0;
 const HEAD_OFFSET: f32 = 100.0;
 const BODY_OFFSET: f32 = 40.0;
 const UPPER_ARM_OFFSET: f32 = 30.0;
@@ -259,12 +259,12 @@ pub fn spawn_player(
         // Body
         .with_children(|builder| {
             builder.spawn((
-                Mesh2d(meshes.add( Rectangle::new(80.0, 130.0))),
+                Mesh2d(meshes.add( Rectangle::new(BODY_THICKNESS * 4.0, 130.0))),
                 MeshMaterial2d(materials.add(profile.color)),
                 Transform::default(),
                 BodyParts::BODY,
                 PlayerID(id),
-                Collider::cuboid(40.0, 65.0),
+                Collider::cuboid(BODY_THICKNESS * 2.0, 65.0),
                 RigidBody::KinematicPositionBased,
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
@@ -275,7 +275,7 @@ pub fn spawn_player(
                         Mesh2d(meshes.add(Circle::new(45.0))),
                         MeshMaterial2d(materials.add(SKIN_COLOR)),
                         BodyParts::HEAD,
-                        Transform::from_translation(Vec3::new(0.0, 100.0, 1.0)),
+                        Transform::from_translation(Vec3::new(0.0, 100.0, 2.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::ball(45.0),
                         ActiveEvents::COLLISION_EVENTS,
@@ -292,7 +292,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { 3.0 } else { 1.0 })),
+                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { 2.0 } else { -1.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -307,7 +307,7 @@ pub fn spawn_player(
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, true, false),
                             PlayerID(id),
-                            Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
+                            Transform::from_translation(Vec3::new(0.0, -60.0, 2.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
@@ -324,7 +324,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { 1.0 } else { 3.0 })),
+                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, if id == 0 { -1.0 } else { 2.0 })),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -339,7 +339,7 @@ pub fn spawn_player(
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, false, false),
                             PlayerID(id),
-                            Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
+                            Transform::from_translation(Vec3::new(0.0, -60.0, 2.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,

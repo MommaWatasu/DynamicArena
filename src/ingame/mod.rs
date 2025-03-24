@@ -185,7 +185,7 @@ fn setup(
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
             ..Default::default()
         },
-        Transform::from_translation(Vec3::new(0.0, 100.0, -1.0)),
+        Transform::from_translation(Vec3::new(0.0, 100.0, -2.0)),
         SkyBackground,
         InGame
     ));
@@ -195,7 +195,7 @@ fn setup(
             flip_x: true,
             ..Default::default()
         },
-        Transform::from_translation(Vec3::new(4800.0, 100.0, -1.0)),
+        Transform::from_translation(Vec3::new(4800.0, 100.0, -2.0)),
         SkyBackground,
         InGame
     ));
@@ -209,7 +209,7 @@ fn setup(
                 ..Default::default()
             },
             BackGround,
-            Transform::default(),
+            Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
             InGame
         ));
     spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
