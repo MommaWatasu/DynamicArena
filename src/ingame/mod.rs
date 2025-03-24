@@ -371,7 +371,7 @@ fn main_game_system(
                 };
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
                 // winner and loser animation
-                if gamestate.winners[gamestate.round as usize - 1] == 0 {
+                if !gamestate.win_types[gamestate.round as usize - 1] {
                     commands.remove_resource::<Fighting>();
                     gamestate.phase = 7;
                     gamestate.count = 0;
