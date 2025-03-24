@@ -1011,6 +1011,32 @@ fn update_health_bar(
     }
 }
 
+fn update_facing(
+    mut player_query: Query<(&mut Player, &PlayerID, &Transform)>,
+) {
+    let mut positions = [0.0;2];
+    for (_, player_id, transform) in player_query.iter_mut() {
+        positions[player_id.0 as usize] = transform.translation.x;
+    }
+    for (mut player, player_id, _) in player_query.iter_mut() {
+        if !player.state.check(!(PlayerState::COOLDOWN | PlayerState::DIRECTION | PlayerState::WALKING)) {
+            if player_id.0 == 0 {
+                if positions[0] < positions[1] {
+                    player.pose.facing = true;
+                } else {
+                    player.pose.facing = false;
+                }
+            } else {
+                if positions[1] < positions[0] {
+                    player.pose.facing = true;
+                } else {
+                    player.pose.facing = false;
+                }
+            }
+        }
+    }
+}
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -1024,6 +1050,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+            .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
     }
 }
