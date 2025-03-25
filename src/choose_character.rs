@@ -1,14 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    character_def::*,
-    AppState,
-    GameConfig,
-    PATH_BOLD_FONT,
-    PATH_EXTRA_BOLD_JP_FONT,
-    PATH_BOLD_JP_FONT,
-    TITLE_FONT_SIZE,
-    PATH_IMAGE_PREFIX
+    character_def::*, AppState, GameConfig, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE
 };
 
 #[derive(Component)]
@@ -53,7 +46,10 @@ fn setup(
                         Node {
                             justify_self: JustifySelf::Start,
                             align_self: AlignSelf::Start,
+                            #[cfg(not(target_arch = "wasm32"))]
                             border: UiRect::all(Val::Px(5.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            border: UiRect::all(Val::Px(2.0)),
                             ..default()
                         },
                         BorderRadius::MAX,
@@ -63,10 +59,7 @@ fn setup(
                         Text::new("<Back"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            font_size: 50.0,
-                            #[cfg(target_arch = "wasm32")]
-                            font_size: 10.0,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
@@ -77,7 +70,10 @@ fn setup(
                         Node {
                             justify_self: JustifySelf::End,
                             align_self: AlignSelf::Start,
+                            #[cfg(not(target_arch = "wasm32"))]
                             border: UiRect::all(Val::Px(5.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            border: UiRect::all(Val::Px(2.0)),
                             ..default()
                         },
                         BorderRadius::MAX,
@@ -87,10 +83,7 @@ fn setup(
                         Text::new("Next>"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            font_size: 50.0,
-                            #[cfg(target_arch = "wasm32")]
-                            font_size: 10.0,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),

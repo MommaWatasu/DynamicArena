@@ -10,8 +10,10 @@ mod bot;
 mod player;
 mod pose;
 
+#[cfg(debug_assertions)]
+use crate::PATH_BOLD_FONT;
 use crate::{
-    AppState, GameConfig, PATH_BOLD_FONT, PATH_BOLD_MONOSPACE_FONT, PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX
+    AppState, GameConfig, DEFAULT_FONT_SIZE, PATH_BOLD_MONOSPACE_FONT, PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE
 };
 
 #[cfg(debug_assertions)]
@@ -90,7 +92,10 @@ fn setup(
         Node {
             justify_self: JustifySelf::Start,
             align_self: AlignSelf::Start,
+            #[cfg(not(target_arch = "wasm32"))]
             border: UiRect::all(Val::Px(5.0)),
+            #[cfg(target_arch = "wasm32")]
+            border: UiRect::all(Val::Px(2.0)),
             ..default()
         },
         BorderRadius::MAX,
@@ -101,7 +106,7 @@ fn setup(
             Text::new("Pause"),
             TextFont {
                 font: asset_server.load(PATH_BOLD_FONT),
-                font_size: 50.0,
+                font_size: DEFAULT_FONT_SIZE,
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Center),
@@ -112,8 +117,14 @@ fn setup(
         .spawn((
             InGame,
             Node {
+                #[cfg(not(target_arch = "wasm32"))]
                 width: Val::Px(300.0),
+                #[cfg(target_arch = "wasm32")]
+                width: Val::Px(150.0),
+                #[cfg(not(target_arch = "wasm32"))]
                 height: Val::Px(100.0),
+                #[cfg(target_arch = "wasm32")]
+                height: Val::Px(50.0),
                 justify_self: JustifySelf::Center,
                 align_self: AlignSelf::Start,
                 justify_content: JustifyContent::Center,
@@ -129,7 +140,7 @@ fn setup(
                     Text::new("60.00"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
@@ -140,7 +151,11 @@ fn setup(
         .spawn((
             InGame,
             PlayerID(1),
+            #[cfg(not(target_arch = "wasm32"))]
             HealthBar(1.0, config.window_size.x / 2.0 - 250.0),
+            #[cfg(target_arch = "wasm32")]
+            HealthBar(1.0, config.window_size.x / 2.0 - 125.0),
+            #[cfg(not(target_arch = "wasm32"))]
             Mesh2d(meshes.add(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
@@ -155,14 +170,36 @@ fn setup(
                             0, 1, 2,
                             1, 2, 3]))
             )),
+            #[cfg(target_arch = "wasm32")]
+            Mesh2d(meshes.add(
+                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
+                    .with_inserted_attribute(
+                        Mesh::ATTRIBUTE_POSITION,
+                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 150.0, 0.0, 1.0], [config.window_size.x / 2.0 - 125.0, 20.0, 1.0]]
+                    )
+                    .with_inserted_attribute(
+                        Mesh::ATTRIBUTE_COLOR,
+                        vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
+                    )
+                    .with_inserted_indices(Indices::U32(vec![
+                        0, 1, 2,
+                        1, 2, 3]))
+            )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
+            #[cfg(not(target_arch = "wasm32"))]
             Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+            #[cfg(target_arch = "wasm32")]
+            Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
         ));
     commands
         .spawn((
             InGame,
             PlayerID(0),
+            #[cfg(not(target_arch = "wasm32"))]
             HealthBar(1.0, 250.0 - config.window_size.x / 2.0),
+            #[cfg(target_arch = "wasm32")]
+            HealthBar(1.0, 125.0 - config.window_size.x / 2.0),
+            #[cfg(not(target_arch = "wasm32"))]
             Mesh2d(meshes.add(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
@@ -177,25 +214,62 @@ fn setup(
                             0, 1, 2,
                             1, 2, 3]))
             )),
+            #[cfg(target_arch = "wasm32")]
+            Mesh2d(meshes.add(
+                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
+                    .with_inserted_attribute(
+                        Mesh::ATTRIBUTE_POSITION,
+                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [150.0 - config.window_size.x / 2.0, 0.0, 1.0], [125.0 - config.window_size.x / 2.0, 20.0, 1.0]]
+                    )
+                    .with_inserted_attribute(
+                        Mesh::ATTRIBUTE_COLOR,
+                        vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
+                    )
+                    .with_inserted_indices(Indices::U32(vec![
+                        0, 1, 2,
+                        1, 2, 3]))
+            )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
+            #[cfg(not(target_arch = "wasm32"))]
             Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+            #[cfg(target_arch = "wasm32")]
+            Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
         ));
     commands.spawn((
+        #[cfg(not(target_arch = "wasm32"))]
         Sprite {
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
             ..Default::default()
         },
+        #[cfg(target_arch = "wasm32")]
+        Sprite {
+            image: asset_server.load(format!("{}web/sky_original.png", PATH_IMAGE_PREFIX)),
+            ..Default::default()
+        },
+        #[cfg(not(target_arch = "wasm32"))]
         Transform::from_translation(Vec3::new(0.0, 100.0, -2.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(0.0, 50.0, -2.0)),
         SkyBackground,
         InGame
     ));
     commands.spawn((
+        #[cfg(not(target_arch = "wasm32"))]
         Sprite {
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
             flip_x: true,
             ..Default::default()
         },
+        #[cfg(target_arch = "wasm32")]
+        Sprite {
+            image: asset_server.load(format!("{}web/sky_original.png", PATH_IMAGE_PREFIX)),
+            flip_x: true,
+            ..Default::default()
+        },
+        #[cfg(not(target_arch = "wasm32"))]
         Transform::from_translation(Vec3::new(4800.0, 100.0, -2.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(1200.0, 50.0, -2.0)),
         SkyBackground,
         InGame
     ));
@@ -209,11 +283,19 @@ fn setup(
                 ..Default::default()
             },
             BackGround,
+            #[cfg(not(target_arch = "wasm32"))]
             Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
+            #[cfg(target_arch = "wasm32")]
+            Transform::from_translation(Vec3::new(0.0, 70.0, -1.0)),
             InGame
         ));
-    spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
-    spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+    if cfg!(target_arch = "wasm32") {
+        spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 135.0-config.window_size.y / 2.0);
+        spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 135.0-config.window_size.y / 2.0);
+    } else {
+        spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+        spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+    }
     game_state.phase = 0;
     game_state.count = 0;
     game_state.round = 1;
@@ -314,7 +396,7 @@ fn main_game_system(
                     Text::new("ROUND 1"),
                     TextFont {
                         font: asset_server.load(PATH_EXTRA_BOLD_FONT),
-                        font_size: 100.0,
+                        font_size: TITLE_FONT_SIZE,
                         ..Default::default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
@@ -428,8 +510,13 @@ fn main_game_system(
                     // reset player
                     for (id, mut player, mut transform) in player_query.iter_mut() {
                         player.reset(id);
-                        transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
-                        transform.translation.y = 270.0 - config.window_size.y / 2.0;
+                        if cfg!(target_arch = "wasm32") {
+                            transform.translation.x = if id.0 == 0 { -250.0 } else { 250.0 };
+                            transform.translation.y = 135.0 - config.window_size.y / 2.0;
+                        } else {
+                            transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
+                            transform.translation.y = 270.0 - config.window_size.y / 2.0;
+                        }
                     }
                     // reset health bar
                     for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
@@ -437,7 +524,11 @@ fn main_game_system(
                         if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
                             if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
                                 positions[3][0] = health_bar.1 * health_bar.0;
-                                positions[2][0] = health_bar.1 * health_bar.0 + if health_id.0 == 0 { 50.0 } else { -50.0 };
+                                if cfg!(target_arch = "wasm32") {
+                                    positions[2][0] = health_bar.1 * health_bar.0 + if health_id.0 == 0 { 25.0 } else { -25.0 };
+                                } else {
+                                    positions[2][0] = health_bar.1 * health_bar.0 + if health_id.0 == 0 { 50.0 } else { -50.0 };
+                                }
                             }
                         }
                     }
@@ -466,8 +557,14 @@ fn move_background(
     // move sky background
     for mut transform in query.iter_mut() {
         transform.translation.x -= 0.25;
-        if transform.translation.x < -4750.0 {
-            transform.translation.x = 4750.0;
+        if cfg!(target_arch = "wasm32") {
+            if transform.translation.x < -1150.0 {
+                transform.translation.x = 1150.0;
+            }
+        } else {
+            if transform.translation.x < -4750.0 {
+                transform.translation.x = 4750.0;
+            }
         }
     }
 }

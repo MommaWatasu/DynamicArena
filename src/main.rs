@@ -21,7 +21,11 @@ const GAMETITLE: &str = "DynamicArena";
 #[cfg(not(target_arch = "wasm32"))]
 const TITLE_FONT_SIZE: f32 = 100.0;
 #[cfg(target_arch = "wasm32")]
-const TITLE_FONT_SIZE: f32 = 20.0;
+const TITLE_FONT_SIZE: f32 = 30.0;
+#[cfg(not(target_arch = "wasm32"))]
+const DEFAULT_FONT_SIZE: f32 = 50.0;
+#[cfg(target_arch = "wasm32")]
+const DEFAULT_FONT_SIZE: f32 = 15.0;
 //const PATH_FONT: &str = "fonts/Orbitron/Orbitron-Regular.ttf";
 const PATH_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-Bold.ttf";
 const PATH_EXTRA_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-ExtraBold.ttf";
@@ -147,12 +151,14 @@ fn setup(
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     info!("main: setup(wasm)");
+    // set window config
     if let Ok(mut window) = windows.get_single_mut() {
         if let Some(win) = web_sys::window() {
             if let Ok(screen) = win.screen() {
                 // set window size
                 let width = screen.width().unwrap_or(800) as f32;
                 let height = screen.height().unwrap_or(600) as f32;
+                window.fit_canvas_to_parent = true;
                 window.resolution.set(width, height);
                 config.window_size = Vec2::new(width, height);
                 info!("Set resolution to: {}x{}", width, height);

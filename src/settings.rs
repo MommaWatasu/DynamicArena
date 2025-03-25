@@ -1,14 +1,7 @@
 use std::fmt::Display;
-use bevy::prelude::*;
+use bevy::{prelude::*, window::{PrimaryWindow, WindowMode}};
 use crate::{
-    AppState,
-    GameConfig,
-    GameMode,
-    PATH_BOLD_FONT,
-    PATH_BOLD_JP_FONT,
-    PATH_EXTRA_BOLD_JP_FONT,
-    TITLE_FONT_SIZE,
-    PATH_IMAGE_PREFIX,
+    AppState, GameConfig, GameMode, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE
 };
 
 #[derive(Component)]
@@ -83,7 +76,10 @@ fn setup(
                         Node {
                             justify_self: JustifySelf::Start,
                             align_self: AlignSelf::Start,
+                            #[cfg(not(target_arch = "wasm32"))]
                             border: UiRect::all(Val::Px(5.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            border: UiRect::all(Val::Px(1.0)),
                             ..default()
                         },
                         BorderRadius::MAX,
@@ -93,7 +89,7 @@ fn setup(
                         Text::new("<Back"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: 50.0,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
@@ -144,6 +140,8 @@ fn setup(
                         .with_children(|builder| {
                             create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, config.sound_volume, None), 0);
                             create_setting_item(&asset_server, builder, SettingItem::new("ゲームモード".to_string(), 1u32, 2, 1, config.mode as u32, Some(vec!["シングル".to_string(), "マルチ".to_string()])), 1);
+                            #[cfg(target_arch = "wasm32")]
+                            create_setting_item(&asset_server, builder, SettingItem::new("フルスクリーン".to_string(), 1u32, 2, 1, 1, Some(vec!["ウィンドウ".to_string(), "フルスクリーン".to_string()])), 2);
                         });
                 });
         });
@@ -186,7 +184,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                         Text::new(item.get_name()),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_JP_FONT),
-                            font_size: 50.0,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
@@ -199,7 +197,10 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                 Node {
                     width: Val::Percent(5.0),
                     height: Val::Percent(100.0),
+                    #[cfg(not(target_arch = "wasm32"))]
                     border: UiRect::all(Val::Px(5.0)),
+                    #[cfg(target_arch = "wasm32")]
+                    border: UiRect::all(Val::Px(1.0)),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     ..default()
@@ -212,7 +213,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     Text::new("-"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
@@ -232,7 +233,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                         Text::new(item.get_string()),
                         TextFont {
                             font: asset_server.load(if item.is_list() {PATH_BOLD_JP_FONT} else {PATH_BOLD_FONT}),
-                            font_size: 50.0,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
@@ -246,7 +247,10 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                 Node {
                     width: Val::Percent(5.0),
                     height: Val::Percent(100.0),
+                    #[cfg(not(target_arch = "wasm32"))]
                     border: UiRect::all(Val::Px(5.0)),
+                    #[cfg(target_arch = "wasm32")]
+                    border: UiRect::all(Val::Px(1.0)),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     ..default()
@@ -259,7 +263,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     Text::new("+"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
@@ -269,6 +273,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
 }
 
 fn update_setting(
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
     button_query: Query<(&Interaction, &ConfigElement, &Children), (Changed<Interaction>, With<Button>)>,
     mut value_query: Query<(&ConfigElement, &mut SettingItem<f32>, &mut Text),(With<ConfigElement>, Without<SettingItem<u32>>),>,
     mut value_query_int: Query<(&ConfigElement, &mut SettingItem<u32>, &mut Text),(With<ConfigElement>, Without<SettingItem<f32>>)>,
@@ -330,6 +335,8 @@ fn update_setting(
                 text.0 = item.get_string();
                 if element.0 == 1 {
                     config.mode = if {new_value} == 1 {GameMode::SinglePlayer} else {GameMode::MultiPlayer};
+                } else if element.0 == 2 {
+                    windows.get_single_mut().unwrap().mode = if {new_value} == 1 {WindowMode::Windowed} else {WindowMode::BorderlessFullscreen(MonitorSelection::Primary)};
                 }
             }
         }

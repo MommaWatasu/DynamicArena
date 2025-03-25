@@ -6,15 +6,12 @@ use crate::{
     AppState,
     GAMETITLE,
     TITLE_FONT_SIZE,
+    DEFAULT_FONT_SIZE,
     PATH_BOLD_FONT,
     PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX,
 };
 
-#[cfg(not(target_arch = "wasm32"))]
-const BUTTON_FONT_SIZE: f32 = 50.0;
-#[cfg(target_arch = "wasm32")]
-const BUTTON_FONT_SIZE: f32 = 10.0;
 const PATH_SOUND_BGM: &str = "sounds/bgm.ogg";
 
 #[derive(Component)]
@@ -109,7 +106,10 @@ fn setup(
                         Node {
                             width: Val::Percent(50.0),
                             height: Val::Percent(10.0),
+                            #[cfg(not(target_arch = "wasm32"))]
                             border: UiRect::all(Val::Px(5.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            border: UiRect::all(Val::Px(2.0)),
                             margin: UiRect::all(Val::Percent(1.0)),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
@@ -122,7 +122,7 @@ fn setup(
                         Text::new("Start"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: BUTTON_FONT_SIZE,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::WHITE),
@@ -132,7 +132,10 @@ fn setup(
                         Node {
                             width: Val::Percent(50.0),
                             height: Val::Percent(10.0),
+                            #[cfg(not(target_arch = "wasm32"))]
                             border: UiRect::all(Val::Px(5.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            border: UiRect::all(Val::Px(2.0)),
                             margin: UiRect::all(Val::Percent(1.0)),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
@@ -145,7 +148,7 @@ fn setup(
                         Text::new("Settings"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: BUTTON_FONT_SIZE,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::WHITE),
@@ -155,7 +158,10 @@ fn setup(
                         Node {
                             width: Val::Percent(50.0),
                             height: Val::Percent(10.0),
+                            #[cfg(not(target_arch = "wasm32"))]
                             border: UiRect::all(Val::Px(5.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            border: UiRect::all(Val::Px(2.0)),
                             margin: UiRect::all(Val::Percent(1.0)),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
@@ -168,7 +174,7 @@ fn setup(
                         Text::new("Exit"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: BUTTON_FONT_SIZE,
+                            font_size: DEFAULT_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::WHITE),

@@ -4,18 +4,48 @@ use bevy_rapier2d::prelude::*;
 use crate::{character_def::CHARACTER_PROFILES, ingame::{InGame, GameState}, AppState, GameConfig, GameMode};
 use super::{pose::*, BackGround, Fighting};
 
-const LIMB_LENGTH: f32 = 30.0;
-const LIMB_RADIUS: f32 = 15.0;
-
 const SKIN_COLOR: Color = Color::srgb(0.9, 0.8, 0.7);
 
+// definition for normal display
+#[cfg(not(target_arch = "wasm32"))]
+const LIMB_LENGTH: f32 = 30.0;
+#[cfg(not(target_arch = "wasm32"))]
+const LIMB_RADIUS: f32 = 15.0;
+#[cfg(not(target_arch = "wasm32"))]
 const BODY_THICKNESS: f32 = 10.0;
+#[cfg(not(target_arch = "wasm32"))]
 const HEAD_OFFSET: f32 = 100.0;
+#[cfg(not(target_arch = "wasm32"))]
 const BODY_OFFSET: f32 = 40.0;
+#[cfg(not(target_arch = "wasm32"))]
 const UPPER_ARM_OFFSET: f32 = 30.0;
+#[cfg(not(target_arch = "wasm32"))]
 const LOWER_ARM_OFFSET: f32 = -60.0;
+#[cfg(not(target_arch = "wasm32"))]
 const UPPER_LEG_OFFSET: f32 = -100.0;
+#[cfg(not(target_arch = "wasm32"))]
 const LOWER_LEG_OFFSET: f32 = -60.0;
+
+// definition for web display
+#[cfg(target_arch = "wasm32")]
+const LIMB_LENGTH: f32 = 15.0;
+#[cfg(target_arch = "wasm32")]
+const LIMB_RADIUS: f32 = 7.5;
+#[cfg(target_arch = "wasm32")]
+const BODY_THICKNESS: f32 = 5.0;
+#[cfg(target_arch = "wasm32")]
+const HEAD_OFFSET: f32 = 50.0;
+#[cfg(target_arch = "wasm32")]
+const BODY_OFFSET: f32 = 20.0;
+#[cfg(target_arch = "wasm32")]
+const UPPER_ARM_OFFSET: f32 = 15.0;
+#[cfg(target_arch = "wasm32")]
+const LOWER_ARM_OFFSET: f32 = -30.0;
+#[cfg(target_arch = "wasm32")]
+const UPPER_LEG_OFFSET: f32 = -50.0;
+#[cfg(target_arch = "wasm32")]
+const LOWER_LEG_OFFSET: f32 = -30.0;
+
 
 const PIXELS_PER_METER: f32 = 100.0;
 const GRAVITY_ACCEL: f32 = 9.80665;
@@ -256,18 +286,27 @@ pub fn spawn_player(
         PlayerID(id),
         InGame,
         // Player 0 is on top of the screen
+        #[cfg(not(target_arch = "wasm32"))]
         Transform::from_translation(Vec3::new(if id == 0 {-500.0} else {500.0}, y_pos, if id == 0 { 10.0 } else {1.0})),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(if id == 0 {-250.0} else {250.0}, y_pos, if id == 0 { 10.0 } else {1.0})),
         Visibility::Visible,
     ))
         // Body
         .with_children(|builder| {
             builder.spawn((
+                #[cfg(not(target_arch = "wasm32"))]
                 Mesh2d(meshes.add( Rectangle::new(BODY_THICKNESS * 4.0, 130.0))),
+                #[cfg(target_arch = "wasm32")]
+                Mesh2d(meshes.add( Rectangle::new(BODY_THICKNESS * 4.0, 65.0))),
                 MeshMaterial2d(materials.add(profile.color)),
                 Transform::default(),
                 BodyParts::BODY,
                 PlayerID(id),
+                #[cfg(not(target_arch = "wasm32"))]
                 Collider::cuboid(BODY_THICKNESS * 2.0, 65.0),
+                #[cfg(target_arch = "wasm32")]
+                Collider::cuboid(BODY_THICKNESS, 32.5),
                 RigidBody::KinematicPositionBased,
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
@@ -275,12 +314,21 @@ pub fn spawn_player(
                 // Head
                 .with_children(|builder| {
                     builder.spawn((
+                        #[cfg(not(target_arch = "wasm32"))]
                         Mesh2d(meshes.add(Circle::new(45.0))),
+                        #[cfg(target_arch = "wasm32")]
+                        Mesh2d(meshes.add(Circle::new(22.5))),
                         MeshMaterial2d(materials.add(SKIN_COLOR)),
                         BodyParts::HEAD,
+                        #[cfg(not(target_arch = "wasm32"))]
                         Transform::from_translation(Vec3::new(0.0, 100.0, 2.0)),
+                        #[cfg(target_arch = "wasm32")]
+                        Transform::from_translation(Vec3::new(0.0, 50.0, 2.0)),
                         RigidBody::KinematicPositionBased,
+                        #[cfg(not(target_arch = "wasm32"))]
                         Collider::ball(45.0),
+                        #[cfg(target_arch = "wasm32")]
+                        Collider::ball(22.5),
                         ActiveEvents::COLLISION_EVENTS,
                         ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                     ));
@@ -310,7 +358,10 @@ pub fn spawn_player(
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, true, false),
                             PlayerID(id),
+                            #[cfg(not(target_arch = "wasm32"))]
                             Transform::from_translation(Vec3::new(0.0, -60.0, 2.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            Transform::from_translation(Vec3::new(0.0, -30.0, 2.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
@@ -342,7 +393,10 @@ pub fn spawn_player(
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, false, false),
                             PlayerID(id),
+                            #[cfg(not(target_arch = "wasm32"))]
                             Transform::from_translation(Vec3::new(0.0, -60.0, 2.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            Transform::from_translation(Vec3::new(0.0, -30.0, 2.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
@@ -360,7 +414,10 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which leg is on top
+                        #[cfg(not(target_arch = "wasm32"))]
                         Transform::from_translation(Vec3::new(20.0, -100.0, 3.0)),
+                        #[cfg(target_arch = "wasm32")]
+                        Transform::from_translation(Vec3::new(10.0, -50.0, 3.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -377,7 +434,10 @@ pub fn spawn_player(
                                 // right lower leg
                                 BodyParts::new(false, false, false, true, false),
                                 PlayerID(id),
+                                #[cfg(not(target_arch = "wasm32"))]
                                 Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                Transform::from_translation(Vec3::new(0.0, -30.0, 1.0)),
                                 RigidBody::KinematicPositionBased,
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 ActiveEvents::COLLISION_EVENTS,
@@ -385,7 +445,10 @@ pub fn spawn_player(
                             )).with_child((
                                 Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
                                 MeshMaterial2d(materials.add(SKIN_COLOR)),
+                                #[cfg(not(target_arch = "wasm32"))]
                                 Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
                             ));
                         });
                     // Left Upper Leg
@@ -397,7 +460,10 @@ pub fn spawn_player(
                         MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, false, false, true),
                         PlayerID(id),
+                        #[cfg(not(target_arch = "wasm32"))]
                         Transform::from_translation(Vec3::new(-20.0, -100.0, 1.0)),
+                        #[cfg(target_arch = "wasm32")]
+                        Transform::from_translation(Vec3::new(-10.0, -50.0, 1.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -421,7 +487,10 @@ pub fn spawn_player(
                             )).with_child((
                                 Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
                                 MeshMaterial2d(materials.add(SKIN_COLOR)),
+                                #[cfg(not(target_arch = "wasm32"))]
                                 Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
                             ));
                         });
                 });
@@ -823,6 +892,7 @@ fn player_movement(
 }
 
 /// Checks for collisions between player characters and the ground.
+#[cfg(not(target_arch = "wasm32"))]
 fn check_ground(
     config: Res<GameConfig>,
     mut player_query: Query<(&mut Player, &mut Transform)>,
@@ -832,6 +902,20 @@ fn check_ground(
             player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
             player.set_animation(IDLE_POSE1, 0, 10);
             transform.translation.y = 270.0 - config.window_size.y/2.0 + player.pose.offset[1];
+            player.velocity = Vec2::ZERO;
+        }
+    }
+}
+#[cfg(target_arch = "wasm32")]
+fn check_ground(
+    config: Res<GameConfig>,
+    mut player_query: Query<(&mut Player, &mut Transform)>,
+) {
+    for (mut player, mut transform) in player_query.iter_mut() {
+        if transform.translation.y - player.pose.offset[1] < 135.0-config.window_size.y/2.0 {
+            player.state &= !(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING | PlayerState::KICKING | PlayerState::SPECIAL_ATTACK);
+            player.set_animation(IDLE_POSE1, 0, 10);
+            transform.translation.y = 135.0 - config.window_size.y/2.0 + player.pose.offset[1];
             player.velocity = Vec2::ZERO;
         }
     }
@@ -1066,7 +1150,11 @@ fn update_health_bar(
                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
                     if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
                         positions[3][0] = health_bar.1 * health_bar.0;
-                        positions[2][0] = health_bar.1 * health_bar.0 + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                        if cfg!(target_arch = "wasm32") {
+                            positions[2][0] = health_bar.1 * health_bar.0 + if player_id.0 == 0 { 25.0 } else { -25.0 };
+                        } else {
+                            positions[2][0] = health_bar.1 * health_bar.0 + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                        }
                     }
                 }
             }

@@ -1,11 +1,6 @@
 use bevy::prelude::*;
 use crate::{
-    ingame::GameState,
-    AppState,
-    PATH_EXTRA_BOLD_FONT,
-    PATH_BOLD_FONT,
-    TITLE_FONT_SIZE,
-    PATH_IMAGE_PREFIX
+    ingame::GameState, AppState, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE
 };
 
 #[derive(Component)]
@@ -86,7 +81,10 @@ fn setup(
                                 height: Val::Percent(10.0),
                                 justify_self: JustifySelf::Center,
                                 align_self: AlignSelf::Center,
+                                #[cfg(not(target_arch = "wasm32"))]
                                 border: UiRect::all(Val::Px(10.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                border: UiRect::all(Val::Px(5.0)),
                                 ..default()
                             },
                             BorderRadius::all(Val::Px(10.0)),
@@ -97,7 +95,7 @@ fn setup(
                                 Text::new("Back to Main Menu"),
                                 TextFont {
                                     font: asset_server.load(PATH_BOLD_FONT),
-                                    font_size: 50.0,
+                                    font_size: DEFAULT_FONT_SIZE,
                                     ..Default::default()
                                 },
                                 TextColor(Color::BLACK),
@@ -135,7 +133,7 @@ fn create_round_result(
                 Text::new(format!("Round {} Result", round)),
                 TextFont {
                     font: asset_server.load(PATH_BOLD_FONT),
-                    font_size: 50.0,
+                    font_size: DEFAULT_FONT_SIZE,
                     ..Default::default()
                 },
                 TextColor(Color::BLACK),
@@ -150,7 +148,7 @@ fn create_round_result(
                     Text::new("DRAW"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     TextColor(Color::BLACK),
@@ -165,7 +163,7 @@ fn create_round_result(
                     Text::new(format!("Player {} WIN!", winner_id)),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     if winner_id == 1 {
@@ -206,7 +204,7 @@ fn create_total_result(
                 Text::new("Total Result"),
                 TextFont {
                     font: asset_server.load(PATH_BOLD_FONT),
-                    font_size: 50.0,
+                    font_size: DEFAULT_FONT_SIZE,
                     ..Default::default()
                 },
                 TextColor(Color::BLACK),
@@ -221,7 +219,7 @@ fn create_total_result(
                     Text::new("DRAW"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     TextColor(Color::BLACK),
@@ -236,7 +234,7 @@ fn create_total_result(
                     Text::new(format!("Player {} WIN!", winner_id)),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        font_size: 50.0,
+                        font_size: DEFAULT_FONT_SIZE,
                         ..Default::default()
                     },
                     TextColor(Color::srgba(1.0, 0.0, 0.0, 0.8)),
