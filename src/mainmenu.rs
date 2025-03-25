@@ -11,7 +11,10 @@ use crate::{
     PATH_IMAGE_PREFIX,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 const BUTTON_FONT_SIZE: f32 = 50.0;
+#[cfg(target_arch = "wasm32")]
+const BUTTON_FONT_SIZE: f32 = 10.0;
 const PATH_SOUND_BGM: &str = "sounds/bgm.ogg";
 
 #[derive(Component)]
@@ -96,7 +99,7 @@ fn setup(
                                 left: Val::Px(0.0),
                                 right: Val::Px(0.0),
                                 top: Val::Px(0.0),
-                                bottom: Val::Percent(20.0),
+                                bottom: Val::Percent(15.0),
                             },
                             ..default()
                         },

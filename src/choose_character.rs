@@ -63,7 +63,10 @@ fn setup(
                         Text::new("<Back"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
+                            #[cfg(not(target_arch = "wasm32"))]
                             font_size: 50.0,
+                            #[cfg(target_arch = "wasm32")]
+                            font_size: 10.0,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
@@ -84,7 +87,10 @@ fn setup(
                         Text::new("Next>"),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_FONT),
+                            #[cfg(not(target_arch = "wasm32"))]
                             font_size: 50.0,
+                            #[cfg(target_arch = "wasm32")]
+                            font_size: 10.0,
                             ..Default::default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
@@ -164,7 +170,10 @@ fn create_character_box(
             Text::new(profile.name),
             TextFont {
                 font: asset_server.load(PATH_BOLD_FONT),
+                #[cfg(not(target_arch = "wasm32"))]
                 font_size: 40.0,
+                #[cfg(target_arch = "wasm32")]
+                font_size: 15.0,
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Center),
@@ -174,7 +183,10 @@ fn create_character_box(
             Text::new(profile.description),
             TextFont {
                 font: asset_server.load(PATH_BOLD_JP_FONT),
+                #[cfg(not(target_arch = "wasm32"))]
                 font_size: 30.0,
+                #[cfg(target_arch = "wasm32")]
+                font_size: 10.0,
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Left),
@@ -184,7 +196,10 @@ fn create_character_box(
             Text::new(format!("<体力>\n{}", profile.health)),
             TextFont {
                 font: asset_server.load(PATH_BOLD_JP_FONT),
+                #[cfg(not(target_arch = "wasm32"))]
                 font_size: 30.0,
+                #[cfg(target_arch = "wasm32")]
+                font_size: 10.0,
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Left),
@@ -194,7 +209,10 @@ fn create_character_box(
             Text::new(format!("<速さ>\n{}", profile.agility)),
             TextFont {
                 font: asset_server.load(PATH_BOLD_JP_FONT),
+                #[cfg(not(target_arch = "wasm32"))]
                 font_size: 30.0,
+                #[cfg(target_arch = "wasm32")]
+                font_size: 10.0,
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Left),
@@ -204,7 +222,10 @@ fn create_character_box(
             Text::new(format!("<力>\n{}", profile.power)),
             TextFont {
                 font: asset_server.load(PATH_BOLD_JP_FONT),
+                #[cfg(not(target_arch = "wasm32"))]
                 font_size: 30.0,
+                #[cfg(target_arch = "wasm32")]
+                font_size: 10.0,
                 ..Default::default()
             },
             TextLayout::new_with_justify(JustifyText::Left),

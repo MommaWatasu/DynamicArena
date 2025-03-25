@@ -18,7 +18,10 @@ mod settings;
 mod result;
 
 const GAMETITLE: &str = "DynamicArena";
+#[cfg(not(target_arch = "wasm32"))]
 const TITLE_FONT_SIZE: f32 = 100.0;
+#[cfg(target_arch = "wasm32")]
+const TITLE_FONT_SIZE: f32 = 20.0;
 //const PATH_FONT: &str = "fonts/Orbitron/Orbitron-Regular.ttf";
 const PATH_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-Bold.ttf";
 const PATH_EXTRA_BOLD_FONT: &str = "fonts/Orbitron/Orbitron-ExtraBold.ttf";
