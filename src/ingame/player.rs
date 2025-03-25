@@ -485,17 +485,17 @@ fn player_input(
                 player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].agility;
             } else if !player.state.check(PlayerState::WALKING) {
                 player.state |= PlayerState::WALKING;
-                player.state |= PlayerState::DIRECTION;
                 player.set_animation(WALKING_POSE1, 0, 10);
             }
+            player.state |= PlayerState::DIRECTION;
         } else if keys.pressed(KeyCode::KeyA) {
             if player.state.check(PlayerState::JUMPING | PlayerState::DOUBLE_JUMPING) {
                 player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].agility;
             } else if !player.state.check(PlayerState::WALKING) {
                 player.state |= PlayerState::WALKING;
-                player.state &= !PlayerState::DIRECTION;
                 player.set_animation(WALKING_POSE1, 0, 10);
             }
+            player.state &= !PlayerState::DIRECTION;
         } else {
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
