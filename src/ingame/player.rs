@@ -223,6 +223,9 @@ impl BodyParts {
     }
 }
 
+#[derive(Resource)]
+struct PlayerCollision(u8);
+
 
 /// Spawns a player character with the specified ID and character profile.
 /// 
@@ -573,6 +576,7 @@ fn player_movement(
     mut commands: Commands,
     time: Res<Time>,
     config: Res<GameConfig>,
+    player_collision: Res<PlayerCollision>,
     mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Transform), Without<BackGround>>,
@@ -747,7 +751,11 @@ fn player_movement(
                     }
                 }
             }
-            transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+            if player_collision.0 == 2 {
+                transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+            } else {
+                transform.translation += Vec3::new(0.0, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+            }
         }
 
         /*
@@ -870,6 +878,7 @@ fn update_pose(
 }
 
 fn check_attack(
+    mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
     mut player_query: Query<(&mut Player, &PlayerID)>,
@@ -923,7 +932,33 @@ fn check_attack(
                         attacker_power = CHARACTER_PROFILES[player.character_id as usize].power;
                     }
                 }
-                if attacker_id == PlayerID(2) { continue; }
+                if attacker_id == PlayerID(2) {
+                    if player_collision.0 != 2 { continue; }
+                    // No attacker found
+                    // If the collision is between one body and another body part, move player to avoid collision
+                    if parts1.is_body() && !parts2.is_body() {
+                        for (player, player_id) in player_query.iter() {
+                            if player_id == id2 {
+                                if player.state.is_idle() {
+                                    player_collision.0 = id1.0;
+                                } else {
+                                    player_collision.0 = id2.0;
+                                }
+                            }
+                        }
+                    } else if parts2.is_body() &&  !parts1.is_body() {
+                        for (player, player_id) in player_query.iter() {
+                            if player_id == id1 {
+                                if player.state.is_idle() {
+                                    player_collision.0 = id2.0;
+                                } else {
+                                    player_collision.0 = id1.0;
+                                }
+                            }
+                        }                   
+                    }
+                    continue;
+                }
 
                 let mut damage: u32 = 0;
                 if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == attacker_id.0) {
@@ -940,9 +975,37 @@ fn check_attack(
                     player.health = player.health.saturating_sub(damage);
                 }
             }
-            CollisionEvent::Stopped(_, _, _) => {
+            CollisionEvent::Stopped(entity1, entity2, _) => {
+                let Ok((parts1, id1)) = parts_query.get(*entity1) else {
+                    continue;
+                };
+                let Ok((parts2, id2)) = parts_query.get(*entity2) else {
+                    continue;
+                };
+
+                // Check if the collision is between two player characters
+                if id1 == id2 { continue }
+
+                // Check if the collision is between one body and another body part
+                if parts1.is_body() != parts2.is_body() {
+                    player_collision.0 = 2;
+                }
             }
         }
+    }
+}
+
+fn avoid_collision(
+    player_collision: Res<PlayerCollision>,
+    mut player_query: Query<(&Player, &PlayerID, &mut Transform)>,
+) {
+    // no collision
+    if player_collision.0 == 2 {
+        return;
+    }
+    // move player to avoid collision
+    if let Some((player, _, mut transform)) = player_query.iter_mut().find(|(_, id, _)| id.0 == player_collision.0) {
+        transform.translation.x += if player.pose.facing { -1.0 } else { 1.0 };
     }
 }
 
@@ -1045,11 +1108,13 @@ impl Plugin for PlayerPlugin {
             .insert_resource(AnimationTimer {
                 timer: Timer::from_seconds(1.0 / FPS, TimerMode::Repeating),
             })
+            .insert_resource(PlayerCollision(2))
             .add_systems(Update, player_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
     }
