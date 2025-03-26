@@ -370,8 +370,6 @@ fn check_gameset(
     }
 }
 
-// HACK: query variable should be renamed into status_bar_query
-// HACK: get_single_mut().unwrap() does no more than single_mut()
 fn main_game_system(
     mut commands: Commands,
     time: Res<Time>,
@@ -380,8 +378,9 @@ fn main_game_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut gamestate: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
+    mut status_bar_query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
     mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
+    mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
     mut player_query: Query<(&PlayerID, &mut Player, &mut Transform)>,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
@@ -427,7 +426,7 @@ fn main_game_system(
                     TextColor(Color::srgba(1.0, 1.0, 1.0, 0.8)),
                 ));
             } else {
-                let (mut bar, mut text, mut text_color) = query.get_single_mut().unwrap();
+                let (mut bar, mut text, mut text_color) = status_bar_query.single_mut();
                 bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
                 text.0 = format!("ROUND {}", gamestate.round);
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
@@ -437,7 +436,7 @@ fn main_game_system(
         } else if gamestate.phase == 1 {
             gamestate.count += 1;
             if gamestate.count == 60 {
-                let (_, mut text, _) = query.get_single_mut().unwrap();
+                let (_, mut text, _) = status_bar_query.single_mut();
                 text.0 = "READY?".to_string();
                 gamestate.phase = 2;
                 gamestate.count = 0;
@@ -445,7 +444,7 @@ fn main_game_system(
         } else if gamestate.phase == 2 {
             gamestate.count += 1;
             if gamestate.count == 90 {
-                let (_, mut text, _) = query.get_single_mut().unwrap();
+                let (_, mut text, _) = status_bar_query.single_mut();
                 text.0 = "FIGHT!".to_string();
                 gamestate.phase = 3;
                 gamestate.count = 0;
@@ -458,7 +457,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 4 {
             gamestate.count += 1;
-            let (mut bar, _, mut text_color) = query.get_single_mut().unwrap();
+            let (mut bar, _, mut text_color) = status_bar_query.single_mut();
             bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8 - gamestate.count as f32/60.0);
             text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8 - gamestate.count as f32/60.0);
             if gamestate.count == 48 {
@@ -468,7 +467,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 6 {
             if gamestate.count == 0 {
-                let (mut bar, mut text, mut text_color) = query.get_single_mut().unwrap();
+                let (mut bar, mut text, mut text_color) = status_bar_query.single_mut();
                 bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
                 text.0 = if gamestate.win_types[gamestate.round as usize - 1] {
                     "KO!".to_string()
@@ -499,7 +498,7 @@ fn main_game_system(
                 gamestate.count = 0;
             }
         } else if gamestate.phase == 8 {
-            let (_, mut text, _) = query.get_single_mut().unwrap();
+            let (_, mut text, _) = status_bar_query.single_mut();
             let winner_id = gamestate.winners[gamestate.round as usize - 1];
             if winner_id == 0 {
                 text.0 = "DRAW".to_string();
@@ -516,7 +515,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 10 {
             gamestate.count += 1;
-            let mut curtain = curtain_query.get_single_mut().unwrap();
+            let mut curtain = curtain_query.single_mut();
             curtain.0 = Color::srgba(0.0, 0.0, 0.0, gamestate.count as f32/60.0);
             if gamestate.count == 60 {
                 gamestate.round += 1;
@@ -528,9 +527,11 @@ fn main_game_system(
                     gamestate.count = 0;
 
                     // remove status bar
-                    let (mut bar, _, mut text_color) = query.get_single_mut().unwrap();
+                    let (mut bar, _, mut text_color) = status_bar_query.single_mut();
                     bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.0);
                     text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.0);
+                    // reset background
+                    background_query.single_mut().translation.x = 0.0;
                     // reset player
                     for (id, mut player, mut transform) in player_query.iter_mut() {
                         player.reset(id);
@@ -557,7 +558,7 @@ fn main_game_system(
                         }
                     }
                     // reset timer
-                    let (mut text, mut color, mut timer) = timer_query.get_single_mut().unwrap();
+                    let (mut text, mut color, mut timer) = timer_query.single_mut();
                     timer.0 = 60.0;
                     text.0 = "60.00".to_string();
                     color.0 = Color::WHITE;
@@ -565,7 +566,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 11 {
             gamestate.count += 1;
-            let mut curtain = curtain_query.get_single_mut().unwrap();
+            let mut curtain = curtain_query.single_mut();
             curtain.0 = Color::srgba(0.0, 0.0, 0.0, 1.0 - gamestate.count as f32/60.0);
             if gamestate.count == 60 {
                 gamestate.phase = 0;
