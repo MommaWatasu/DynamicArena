@@ -662,7 +662,7 @@ fn keyboard_input(
                     PlayerState::JUMP_UP
                     | PlayerState::JUMP_BACKWARD
                     | PlayerState::JUMP_FORWARD
-                ) {
+                ) && !player.state.check(PlayerState::DOUBLE_JUMP) {
                     // player is jumping
                     // then player will double jump
                     player.state |= PlayerState::DOUBLE_JUMP;
