@@ -962,53 +962,94 @@ fn player_movement(
                 at_edges[player_id.0 as usize] = 1;
             } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
                 at_edges[player_id.0 as usize] = 2; 
+            } else if transform.translation.x == -config.window_size.x / 2.0 + 100.0 {
+                at_edges[player_id.0 as usize] = 3;
+            } else if transform.translation.x == config.window_size.x / 2.0 - 100.0 {
+                at_edges[player_id.0 as usize] = 4;
             }
         }
 
-        if at_edges[0] != 0 && at_edges[1] == 0 {
-            for (_, player_id, mut transform) in player_query.iter_mut() {
-                // Ignore player 1
-                if player_id.0 != 0 {
-                    continue;
-                }
-
-                if at_edges[0] == 1 {
+        if (at_edges[0] == 1 || at_edges[0] == 2) && at_edges[1] == 0 {
+            let mut diff = 0.0;
+            if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 0) {
+                if at_edges[0] == 1 ||  at_edges[0] == 3 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
-                    ground.translation.x += -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
+                    diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
+                    ground.translation.x += diff;
                     transform.translation.x = -config.window_size.x / 2.0 + 100.0;
                 } else {
                     // If player 0 is at the right edge, move camera to the right and move players to the left
                     // transform.translation.x - (config.window_size.x / 2.0 - 100.0): difference between player 0 and right edge
-                    ground.translation.x += config.window_size.x / 2.0 - 100.0 - transform.translation.x;
+                    diff = config.window_size.x / 2.0 - 100.0 - transform.translation.x;
+                    ground.translation.x += diff;
                     transform.translation.x = config.window_size.x / 2.0 - 100.0;
                 }
             }
-        } else if at_edges[0] == 0 && at_edges[1] != 0{
-            for (_, player_id, mut transform) in player_query.iter_mut() {
-                // Ignore player 0
-                if player_id.0 != 1 {
-                    continue;
-                }
-
-                if at_edges[1] == 1 {
-                    // If player 1 is at the left edge, move camera to the left and move players to the right
-                    // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 1 and left edge
-                    ground.translation.x += transform.translation.x + config.window_size.x / 2.0 - 100.0;
+            if ground.translation.x < config.window_size.x / 2.0 - 2000.0 {
+                ground.translation.x = config.window_size.x / 2.0 - 2000.0;
+            } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
+                ground.translation.x = 2000.0 - config.window_size.x / 2.0;
+            } else if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 1) {
+                transform.translation.x += diff;
+            }
+        } else if at_edges[0] == 0 && (at_edges[1] == 1 || at_edges[1] == 2) {
+            let mut diff = 0.0;
+            if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 1) {
+                if at_edges[0] == 1 || at_edges[0] == 3 {
+                    // If player 0 is at the left edge, move camera to the left and move players to the right
+                    // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
+                    diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
+                    ground.translation.x += diff;
                     transform.translation.x = -config.window_size.x / 2.0 + 100.0;
                 } else {
-                    // If player 1 is at the right edge, move camera to the right and move players to the left
-                    // transform.translation.x - (config.window_size.x / 2.0 - 100.0): difference between player 1 and right edge
-                    ground.translation.x += transform.translation.x - config.window_size.x / 2.0 + 100.0;
+                    // If player 0 is at the right edge, move camera to the right and move players to the left
+                    // transform.translation.x - (config.window_size.x / 2.0 - 100.0): difference between player 0 and right edge
+                    diff = config.window_size.x / 2.0 - 100.0 - transform.translation.x;
+                    ground.translation.x += diff;
                     transform.translation.x = config.window_size.x / 2.0 - 100.0;
                 }
             }
-        }
-
-        if ground.translation.x < config.window_size.x / 2.0 - 2000.0 {
-            ground.translation.x = config.window_size.x / 2.0 - 2000.0;
-        } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
-            ground.translation.x = 2000.0 - config.window_size.x / 2.0;
+            if ground.translation.x < config.window_size.x / 2.0 - 2000.0 {
+                ground.translation.x = config.window_size.x / 2.0 - 2000.0;
+            } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
+                ground.translation.x = 2000.0 - config.window_size.x / 2.0;
+            } else if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 0) {
+                transform.translation.x += diff;
+            }
+        } else if at_edges[0] != 0 && at_edges[1] != 0 {
+            if (at_edges[0] == 1 && at_edges[1] == 3) || (at_edges[0] == 3 && at_edges[1] == 1) {
+                // If both players are at the same edge, move the camera to the edge
+                let mut diff = 0.0;
+                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 1 { 0 } else { 1 }) {
+                    diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
+                    transform.translation.x = -config.window_size.x / 2.0 + 100.0;
+                }
+                ground.translation.x += diff;
+                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 1 { 1 } else { 0 }) {
+                    transform.translation.x += diff;
+                }
+            } else if (at_edges[0] == 2 && at_edges[1] == 4) || (at_edges[0] == 4 && at_edges[1] == 2) {
+                // If both players are at the same edge, move the camera to the edge
+                let mut diff = 0.0;
+                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 2 { 0 } else { 1 }) {
+                    diff = config.window_size.x / 2.0 - 100.0 - transform.translation.x;
+                    transform.translation.x = config.window_size.x / 2.0 - 100.0;
+                }
+                ground.translation.x += diff;
+                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 2 { 1 } else { 0 }) {
+                    transform.translation.x += diff;
+                }
+            } else {
+                for (_, player_id, mut transform) in player_query.iter_mut() {
+                    // If players are at opposite edges, don't move
+                    if at_edges[player_id.0 as usize] == 1 || at_edges[player_id.0 as usize] == 3 {
+                        transform.translation.x = -config.window_size.x / 2.0 + 100.0;
+                    } else {
+                        transform.translation.x = config.window_size.x / 2.0 - 100.0;
+                    }
+                }
+            }
         }
     }
 }
