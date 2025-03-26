@@ -537,6 +537,7 @@ fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree:
 /// handling state transitions and preventing invalid combinations
 /// of moves. For multiplayer, it processes input for both players
 /// unless in single player mode.
+#[cfg(not(target_arch = "wasm32"))]
 fn keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
@@ -641,7 +642,6 @@ fn keyboard_input(
 /// 2. Iterates through each player and updates their state based on their current state and animation phase.
 /// 3. Adjusts the player's velocity and position based on their state and input.
 /// 4. Ensures the player stays within the game window boundaries.
-#[cfg(not(target_arch = "wasm32"))]
 fn player_movement(
     mut commands: Commands,
     time: Res<Time>,
