@@ -649,6 +649,7 @@ impl Plugin for GamePlugin {
                 start_position: Vec2::ZERO,
                 id: u64::MAX,
             })
+            .insert_resource(DoubleJumpCheck::new())
             .add_systems(Update, touch_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
 
         app

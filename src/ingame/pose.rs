@@ -170,6 +170,54 @@ pub const WALKING_POSE2: Pose = Pose {
     left_lower_leg: 20.0,
 };
 
+pub const BEND_DOWN_POSE: Pose = Pose {
+    facing: true,
+    offset: [0.0, -10.0],
+    old_offset: [0.0, 0.0],
+    head: -20.0,
+    body: 20.0,
+    right_upper_arm: -50.0,
+    right_lower_arm: 150.0,
+    right_upper_leg: -45.0,
+    right_lower_leg: 40.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: -100.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 20.0,
+};
+
+pub const ROLL_BACK_POSE1: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    head: 0.0,
+    body: -10.0,
+    right_upper_arm: -50.0,
+    right_lower_arm: 150.0,
+    right_upper_leg: -45.0,
+    right_lower_leg: 40.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: -100.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 20.0,
+};
+
+pub const ROLL_FORWARD_POSE1: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    head: 0.0,
+    body: 10.0,
+    right_upper_arm: -50.0,
+    right_lower_arm: 150.0,
+    right_upper_leg: -45.0,
+    right_lower_leg: 40.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: -100.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: 20.0,
+};
+
 pub const JUMPING_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
