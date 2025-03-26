@@ -176,11 +176,11 @@ struct PlayerAnimation {
 
 #[derive(Component)]
 pub struct Player {
-    character_id: isize,
+    pub character_id: isize,
     pose: Pose,
     animation: PlayerAnimation,
     pub state: PlayerState,
-    velocity: Vec2,
+    pub velocity: Vec2,
     health: u32,
 }
 
@@ -537,7 +537,7 @@ fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree:
 /// handling state transitions and preventing invalid combinations
 /// of moves. For multiplayer, it processes input for both players
 /// unless in single player mode.
-fn player_input(
+fn keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
     mut query: Query<(&mut Player, &PlayerID)>
@@ -641,6 +641,7 @@ fn player_input(
 /// 2. Iterates through each player and updates their state based on their current state and animation phase.
 /// 3. Adjusts the player's velocity and position based on their state and input.
 /// 4. Ensures the player stays within the game window boundaries.
+#[cfg(not(target_arch = "wasm32"))]
 fn player_movement(
     mut commands: Commands,
     time: Res<Time>,
@@ -1197,7 +1198,6 @@ impl Plugin for PlayerPlugin {
                 timer: Timer::from_seconds(1.0 / FPS, TimerMode::Repeating),
             })
             .insert_resource(PlayerCollision(2))
-            .add_systems(Update, player_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
@@ -1205,5 +1205,9 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app
+            .add_systems(Update, keyboard_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
     }
 }

@@ -6,6 +6,8 @@ use pose::{LOSER_POSE, WINNER_POSE};
 mod pause;
 #[cfg(not(target_arch = "wasm32"))]
 mod controller;
+#[cfg(target_arch = "wasm32")]
+mod wasm;
 mod bot;
 mod player;
 mod pose;
@@ -20,6 +22,8 @@ use crate::{
 use pause::*;
 #[cfg(not(target_arch = "wasm32"))]
 use controller::*;
+#[cfg(target_arch = "wasm32")]
+use wasm::*;
 use player::*;
 
 const FPS: f32 = 60.0;
@@ -296,6 +300,24 @@ fn setup(
         spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
         spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
     }
+
+    // create controller circle
+    #[cfg(target_arch = "wasm32")]
+    commands.spawn((
+        InGame,
+        Mesh2d(meshes.add(Circle::new(CONTROLLER_CIRCLE_RADIUS))),
+        MeshMaterial2d(materials.add(Color::srgba(1.0, 1.0, 1.0, 0.4))),
+        Transform::from_translation(Vec3::new(-config.window_size.x/2.0+100.0, -config.window_size.y/4.0, 20.0)),
+    ))
+        .with_children(|builder| {
+            builder.spawn((
+                ControllerCircle,
+                Mesh2d(meshes.add(Circle::new(CONTROLLER_CIRCLE_RADIUS/3.0))),
+                MeshMaterial2d(materials.add(Color::srgba(1.0, 1.0, 1.0, 1.0))),
+                Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
+            ));
+        });
+
     game_state.phase = 0;
     game_state.count = 0;
     game_state.round = 1;
@@ -348,6 +370,8 @@ fn check_gameset(
     }
 }
 
+// HACK: query variable should be renamed into status_bar_query
+// HACK: get_single_mut().unwrap() does no more than single_mut()
 fn main_game_system(
     mut commands: Commands,
     time: Res<Time>,
@@ -614,8 +638,19 @@ impl Plugin for GamePlugin {
             .add_plugins(RapierDebugRenderPlugin::default())
             .add_plugins(PausePlugin)
             .add_systems(Update, check_pause);
+
         #[cfg(not(target_arch = "wasm32"))]
-        app.add_plugins(ControllerPlugin);
+        app
+            .add_plugins(ControllerPlugin);
+
+        #[cfg(target_arch = "wasm32")]
+        app
+            .insert_resource(TouchState {
+                start_position: Vec2::ZERO,
+                id: u64::MAX,
+            })
+            .add_systems(Update, touch_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+
         app
             .add_plugins(PlayerPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))

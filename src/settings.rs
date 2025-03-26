@@ -139,6 +139,7 @@ fn setup(
                     ))
                         .with_children(|builder| {
                             create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, config.sound_volume, None), 0);
+                            #[cfg(not(target_arch = "wasm32"))]
                             create_setting_item(&asset_server, builder, SettingItem::new("ゲームモード".to_string(), 1u32, 2, 1, config.mode as u32, Some(vec!["シングル".to_string(), "マルチ".to_string()])), 1);
                             #[cfg(target_arch = "wasm32")]
                             create_setting_item(&asset_server, builder, SettingItem::new("フルスクリーン".to_string(), 1u32, 2, 1, 1, Some(vec!["ウィンドウ".to_string(), "フルスクリーン".to_string()])), 2);
