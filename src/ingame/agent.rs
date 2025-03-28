@@ -46,13 +46,14 @@ enum Action {
     JumpLeft,
     Bend,
     Kick,
+    Ignore,
     None
 }
 
 #[derive(Default)]
 struct Environment {
-    agent_health: u32,
-    player_health: u32,
+    agent_health: f32,
+    player_health: f32,
     distance: f32,
     player_state: PlayerState,
     agent_facing: bool
@@ -66,6 +67,15 @@ pub struct Agent {
     policy: Policy
 }
 
+#[cfg(not(target_arch="wasm32"))]
+fn rand() -> f32 {
+    rand::random::<f32>()
+}
+#[cfg(target_arch="wasm32")]
+fn rand() -> f32 {
+    web_sys::js_sys::Math::random() as f32
+}
+
 impl Agent {
     pub fn new(level: Level) -> Self {
         Self {
@@ -76,19 +86,42 @@ impl Agent {
         }
     }
     fn select_policy(&mut self, environment: &Environment) {
-        if environment.agent_health < 50 {
+        if environment.agent_health < 0.3 {
             self.policy = Policy::Defensive;
-        } else if environment.agent_health > 50 {
+        } else if environment.agent_health > 0.6 {
             self.policy = Policy::Offensive;
         } else {
             self.policy = Policy::Neutral;
         }
     }
     fn select_action(&self, environment: &Environment) -> Action {
+        match self.level {
+            Level::Easy => {
+                if rand() > 0.5 {
+                    return Action::Ignore;
+                }
+            }
+            Level::Normal => {
+                if rand() > 0.3 {
+                    return Action::Ignore;
+                }
+            }
+            Level::Hard => {
+                if rand() > 0.1 {
+                    return Action::Ignore;
+                }
+            }
+        }
         match self.policy {
             Policy::Offensive => {
-                if environment.distance < 100.0 {
+                if environment.distance < 150.0 {
                     return Action::Kick;
+                } else if environment.distance > 500.0 && (environment.player_state.check(PlayerState::BEND_DOWN) || environment.player_state.is_idle()) {
+                    if environment.agent_facing {
+                        return Action::JumpRight;
+                    } else {
+                        return Action::JumpLeft;
+                    }
                 } else {
                     if environment.agent_facing {
                         return Action::MoveRight;
@@ -98,6 +131,19 @@ impl Agent {
                 }
             }
             Policy::Defensive => {
+                if environment.player_state.check(PlayerState::KICKING) {
+                    return Action::JumpUP;
+                }
+                if environment.distance < 250.0 {
+                    if environment.agent_facing {
+                        return Action::JumpLeft;
+                    } else {
+                        return Action::MoveRight;
+                    }
+                }
+                if environment.player_state.check(PlayerState::PUNCHING) {
+                    return Action::Bend;
+                }
                 if environment.agent_facing {
                     return Action::MoveLeft;
                 } else {
@@ -126,12 +172,12 @@ pub fn agent_system(
         agent.count += 1;
         let mut environment = Environment::default();
         if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 0) {
-            environment.player_health = player.health;
+            environment.player_health = player.health as f32 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.player_state = player.state;
             environment.distance = transform.translation.x;
         }
         if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 1) {
-            environment.agent_health = player.health;
+            environment.agent_health = player.health as f32 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.agent_facing = player.pose.facing;
             environment.distance = (transform.translation.x - environment.distance).abs();
         }
@@ -193,27 +239,6 @@ pub fn agent_system(
                             player.state |= PlayerState::JUMP_UP;
                             player.set_animation(JUMPING_POSE1, 0, 10);
                             player.velocity = Vec2::new(0.0, 12.0);                    
-                        } else if !player.state.check(
-                            PlayerState::JUMP_UP
-                                | PlayerState::DOUBLE_JUMP
-                                | PlayerState::JUMP_FORWARD
-                                | PlayerState::JUMP_BACKWARD
-                        ) && player.state.check(PlayerState::WALKING) {
-                            if player.state.check(PlayerState::DIRECTION) {
-                                // player is walking right
-                                // then player will jump forward
-                                player.state |= PlayerState::JUMP_FORWARD;
-                                player.set_animation(JUMPING_POSE1, 0, 10);
-                                let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                                player.velocity = Vec2::new(x_vel, 12.0);
-                            } else {
-                                // player is walking left
-                                // then player will jump backward
-                                player.state |= PlayerState::JUMP_BACKWARD;
-                                player.set_animation(JUMPING_POSE1, 0, 10);
-                                let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                                player.velocity = Vec2::new(-x_vel, 12.0);
-                            }
                         } else if player.state.check(
                             PlayerState::JUMP_UP
                             | PlayerState::JUMP_BACKWARD
@@ -257,11 +282,55 @@ pub fn agent_system(
                         }
                     }
                 }
-                Action::JumpRight => {}
-                Action::JumpLeft => {}
-                Action::Bend => {}
-                Action::Kick => {}
-                Action::None => {}
+                Action::JumpRight => {
+                    if player.state.is_idle() {
+                        // agent is walking right
+                        // then player will jump forward
+                        player.state |= PlayerState::JUMP_FORWARD;
+                        player.set_animation(JUMPING_POSE1, 0, 10);
+                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                        player.velocity = Vec2::new(x_vel, 12.0);
+                    }
+                }
+                Action::JumpLeft => {
+                    if player.state.is_idle() {
+                        // agent is walking left
+                        // then player will jump backward
+                        player.state |= PlayerState::JUMP_BACKWARD;
+                        player.set_animation(JUMPING_POSE1, 0, 10);
+                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                        player.velocity = Vec2::new(-x_vel, 12.0);
+                    }
+                }
+                Action::Bend => {
+                    if player.state.is_idle() {
+                        // player is idle
+                        // then player will bend
+                        player.state |= PlayerState::BEND_DOWN;
+                        player.set_animation(BEND_DOWN_POSE, 0, 10);
+                    }
+                }
+                Action::Kick => {
+                    if player.state.is_idle() {
+                        // player is idle
+                        // then player will kick
+                        player.state |= PlayerState::KICKING;
+                        player.set_animation(KICK_POSE, 0, 10);
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                        // player is jumping
+                        // then just adding state
+                        player.state |= PlayerState::KICKING;
+                    }
+                }
+                Action::Ignore => {}
+                Action::None => {
+                    if player.state.check(PlayerState::WALKING) {
+                        // player is walking
+                        // then player will idle
+                        player.state &= !PlayerState::WALKING;
+                        player.set_animation(IDLE_POSE1, 0, 10);
+                    }
+                }
             }
         }
     }
