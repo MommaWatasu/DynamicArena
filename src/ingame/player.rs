@@ -651,7 +651,12 @@ fn keyboard_input(
                     player.state |= PlayerState::JUMP_UP;
                     player.set_animation(JUMPING_POSE1, 0, 10);
                     player.velocity = Vec2::new(0.0, 12.0);                    
-                } else if player.state.check(PlayerState::WALKING) {
+                } else if !player.state.check(
+                    PlayerState::JUMP_UP
+                        | PlayerState::DOUBLE_JUMP
+                        | PlayerState::JUMP_FORWARD
+                        | PlayerState::JUMP_BACKWARD
+                ) && player.state.check(PlayerState::WALKING) {
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will jump forward
@@ -686,7 +691,12 @@ fn keyboard_input(
                     player.state |= PlayerState::JUMP_UP;
                     player.set_animation(JUMPING_POSE1, 0, 10);
                     player.velocity = Vec2::new(0.0, 12.0);                    
-                } else if player.state.check(PlayerState::WALKING) {
+                } else if !player.state.check(
+                    PlayerState::JUMP_UP
+                        | PlayerState::DOUBLE_JUMP
+                        | PlayerState::JUMP_FORWARD
+                        | PlayerState::JUMP_BACKWARD
+                ) && player.state.check(PlayerState::WALKING) {
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will jump forward
