@@ -638,6 +638,8 @@ fn keyboard_input(
                     player.state |= PlayerState::ROLL_BACK;
                     player.set_animation(ROLL_BACK_POSE1, 0, 10);
                 }
+                let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 } * CHARACTER_PROFILES[player.character_id as usize].agility;
+                player.velocity = Vec2::new(x_vel, 0.0);
             }
         }
         if keys.just_pressed(KeyCode::Space) {
@@ -863,6 +865,12 @@ fn player_movement(
                 } else if player.animation.phase == 1 {
                     player.update_animation();
                     if player.animation.count == 0 {
+                        player.set_animation(ROLL_FORWARD_POSE3, 2, 10);
+                    }
+                } else if player.animation.phase == 2 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.pose.body = 0.0;
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
@@ -877,6 +885,12 @@ fn player_movement(
                 } else if player.animation.phase == 1 {
                     player.update_animation();
                     if player.animation.count == 0 {
+                        player.set_animation(ROLL_BACK_POSE3, 2, 10);
+                    }
+                } else if player.animation.phase == 2 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.pose.body = 0.0;
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
