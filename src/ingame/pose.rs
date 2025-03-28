@@ -25,7 +25,7 @@ impl Add for Pose {
         Self {
             facing: self.facing,
             offset: [self.offset[0] + rhs.offset[0], self.offset[1] + rhs.offset[1]],
-            old_offset: [self.old_offset[0] + rhs.old_offset[0], self.old_offset[1] + rhs.old_offset[1]],
+            old_offset: self.old_offset,
             head: self.head + rhs.head,
             body: self.body + rhs.body,
             right_upper_arm: self.right_upper_arm + rhs.right_upper_arm,
@@ -53,7 +53,7 @@ impl Sub for Pose {
         Self {
             facing: self.facing,
             offset: [self.offset[0] - rhs.offset[0], self.offset[1] - rhs.offset[1]],
-            old_offset: [self.old_offset[0] - rhs.old_offset[0], self.old_offset[1] - rhs.old_offset[1]],
+            old_offset: self.old_offset,
             head: self.head - rhs.head,
             body: self.body - rhs.body,
             right_upper_arm: self.right_upper_arm - rhs.right_upper_arm,
@@ -75,7 +75,7 @@ impl Div<f32> for Pose {
         Self {
             facing: self.facing,
             offset: [self.offset[0] / rhs, self.offset[1] / rhs],
-            old_offset: [self.old_offset[0] / rhs, self.old_offset[1] / rhs],
+            old_offset: self.old_offset,
             head: self.head / rhs,
             body: self.body / rhs,
             right_upper_arm: self.right_upper_arm / rhs,
