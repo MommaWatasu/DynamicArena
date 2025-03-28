@@ -17,6 +17,8 @@ mod mainmenu;
 mod settings;
 mod result;
 
+use ingame::agent::Level;
+
 const GAMETITLE: &str = "DynamicArena";
 #[cfg(not(target_arch = "wasm32"))]
 const TITLE_FONT_SIZE: f32 = 100.0;
@@ -41,10 +43,21 @@ enum GameMode {
     MultiPlayer = 2,
 }
 
+impl From<u32> for GameMode {
+    fn from(value: u32) -> Self {
+        match value {
+            1 => GameMode::SinglePlayer,
+            2 => GameMode::MultiPlayer,
+            _ => panic!("Invalid GameMode: {}", value)
+        }
+    }
+}
+
 #[derive(Resource)]
 struct GameConfig {
     window_size: Vec2,
     mode: GameMode,
+    level: Level,
     characters_id: [isize; 2],
     sound_volume: f32,
     #[cfg(not(target_arch = "wasm32"))]
@@ -56,6 +69,7 @@ impl Default for GameConfig {
         GameConfig {
             window_size: Vec2::new(800.0, 600.0),
             mode: GameMode::SinglePlayer,
+            level: Level::Normal,
             characters_id: [-1, -1],
             sound_volume: 1.0,
             #[cfg(not(target_arch = "wasm32"))]

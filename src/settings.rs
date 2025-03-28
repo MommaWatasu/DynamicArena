@@ -1,7 +1,8 @@
 use std::fmt::Display;
 use bevy::{prelude::*, window::{PrimaryWindow, WindowMode}};
 use crate::{
-    AppState, GameConfig, GameMode, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE
+    AppState, GameConfig, GameMode, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
+    ingame::agent::Level,
 };
 
 #[derive(Component)]
@@ -141,8 +142,9 @@ fn setup(
                             create_setting_item(&asset_server, builder, SettingItem::new("音量".to_string(), 0f32, 1.0, 0.1, config.sound_volume, None), 0);
                             #[cfg(not(target_arch = "wasm32"))]
                             create_setting_item(&asset_server, builder, SettingItem::new("ゲームモード".to_string(), 1u32, 2, 1, config.mode as u32, Some(vec!["シングル".to_string(), "マルチ".to_string()])), 1);
+                            create_setting_item(&asset_server, builder, SettingItem::new("ボットの強さ".to_string(), 1u32, 3, 1, config.level as u32, Some(vec!["弱い".to_string(), "普通".to_string(), "強い".to_string()])), 2);
                             #[cfg(target_arch = "wasm32")]
-                            create_setting_item(&asset_server, builder, SettingItem::new("フルスクリーン".to_string(), 1u32, 2, 1, 1, Some(vec!["ウィンドウ".to_string(), "フルスクリーン".to_string()])), 2);
+                            create_setting_item(&asset_server, builder, SettingItem::new("フルスクリーン".to_string(), 1u32, 2, 1, 1, Some(vec!["ウィンドウ".to_string(), "フルスクリーン".to_string()])), 3);
                         });
                 });
         });
@@ -335,8 +337,10 @@ fn update_setting(
                 item.value = new_value.clone();
                 text.0 = item.get_string();
                 if element.0 == 1 {
-                    config.mode = if {new_value} == 1 {GameMode::SinglePlayer} else {GameMode::MultiPlayer};
+                    config.mode = GameMode::from(new_value);
                 } else if element.0 == 2 {
+                    config.level = Level::from(new_value);
+                } else if element.0 == 3 {
                     windows.get_single_mut().unwrap().mode = if {new_value} == 1 {WindowMode::Windowed} else {WindowMode::BorderlessFullscreen(MonitorSelection::Primary)};
                 }
             }

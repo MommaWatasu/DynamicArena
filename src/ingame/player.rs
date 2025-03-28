@@ -193,11 +193,11 @@ struct PlayerAnimation {
 #[derive(Component)]
 pub struct Player {
     pub character_id: isize,
-    pose: Pose,
+    pub pose: Pose,
     animation: PlayerAnimation,
     pub state: PlayerState,
     pub velocity: Vec2,
-    health: u32,
+    pub health: u32,
 }
 
 impl Player {

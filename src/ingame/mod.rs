@@ -8,7 +8,7 @@ mod pause;
 mod controller;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
-mod bot;
+pub mod agent;
 mod player;
 mod pose;
 
@@ -24,6 +24,7 @@ use pause::*;
 use controller::*;
 #[cfg(target_arch = "wasm32")]
 use wasm::*;
+use agent::*;
 use player::*;
 
 const FPS: f32 = 60.0;
@@ -655,6 +656,7 @@ impl Plugin for GamePlugin {
 
         app
             .add_plugins(PlayerPlugin)
+            .add_plugins(AgentPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
             .insert_resource(GameState::default())
             .add_systems(OnEnter(AppState::Ingame), setup)
