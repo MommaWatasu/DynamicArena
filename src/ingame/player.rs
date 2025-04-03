@@ -1019,7 +1019,7 @@ fn player_movement(
         if (at_edges[0] == 1 || at_edges[0] == 2) && at_edges[1] == 0 {
             let mut diff = 0.0;
             if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 0) {
-                if at_edges[0] == 1 ||  at_edges[0] == 3 {
+                if at_edges[0] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
                     diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
@@ -1043,7 +1043,7 @@ fn player_movement(
         } else if at_edges[0] == 0 && (at_edges[1] == 1 || at_edges[1] == 2) {
             let mut diff = 0.0;
             if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 1) {
-                if at_edges[0] == 1 || at_edges[0] == 3 {
+                if at_edges[1] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
                     diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
@@ -1188,7 +1188,6 @@ fn update_pose(
         // update foot position
         for (foot, foot_id, mut transform) in foot_query.iter_mut() {
             if player_id.0 == foot_id.0 {
-                println!("Foot: {:?}", player.pose.foot_offset);
                 if foot.0 {
                     transform.translation.x += player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
                     transform.translation.y += player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
