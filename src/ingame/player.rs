@@ -276,6 +276,11 @@ impl BodyParts {
     }
 }
 
+// Represents a foot Entity
+// true for right foot, false for left foot
+#[derive(Component)]
+struct Foot(bool);
+
 #[derive(Resource)]
 struct PlayerCollision(u8);
 
@@ -466,6 +471,8 @@ pub fn spawn_player(
                                 ActiveEvents::COLLISION_EVENTS,
                                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                             )).with_child((
+                                Foot(true),
+                                PlayerID(id),
                                 Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
                                 MeshMaterial2d(materials.add(SKIN_COLOR)),
                                 #[cfg(not(target_arch = "wasm32"))]
@@ -508,6 +515,8 @@ pub fn spawn_player(
                                 ActiveEvents::COLLISION_EVENTS,
                                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                             )).with_child((
+                                Foot(false),
+                                PlayerID(id),
                                 Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
                                 MeshMaterial2d(materials.add(SKIN_COLOR)),
                                 #[cfg(not(target_arch = "wasm32"))]
@@ -1138,8 +1147,9 @@ fn check_ground(
 
 /// Updates the pose of the player character based on their current state.
 fn update_pose(
-    mut player_query: Query<(&mut Player, &mut Transform, &PlayerID), Without<BodyParts>>,
-    mut parts_query: Query<(&BodyParts, &PlayerID, &mut Transform), Without<Player>>,
+    mut player_query: Query<(&mut Player, &mut Transform, &PlayerID), (Without<BodyParts>, Without<Foot>)>,
+    mut parts_query: Query<(&BodyParts, &PlayerID, &mut Transform), (Without<Player>, Without<Foot>)>,
+    mut foot_query: Query<(&Foot, &PlayerID, &mut Transform), (Without<Player>, Without<BodyParts>)>,
 ) {
     for (mut player, mut player_transform, player_id) in player_query.iter_mut() {
         let flip = if player.pose.facing { 1.0 } else { -1.0 };
@@ -1170,9 +1180,25 @@ fn update_pose(
                 }
             }
         }
+        // update player position offset
         player_transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
         player_transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
         player.pose.old_offset = player.pose.offset;
+
+        // update foot position
+        for (foot, foot_id, mut transform) in foot_query.iter_mut() {
+            if player_id.0 == foot_id.0 {
+                println!("Foot: {:?}", player.pose.foot_offset);
+                if foot.0 {
+                    transform.translation.x += player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
+                    transform.translation.y += player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
+                } else {
+                    transform.translation.x += player.pose.foot_offset[2] - player.pose.old_foot_offset[2];
+                    transform.translation.y += player.pose.foot_offset[3] - player.pose.old_foot_offset[3];
+                }
+            }
+        }
+        player.pose.old_foot_offset = player.pose.foot_offset;
     }
 }
 
