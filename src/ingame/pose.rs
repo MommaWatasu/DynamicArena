@@ -137,7 +137,7 @@ pub const OPPOSITE_DEFAULT_POSE: Pose = Pose {
     left_upper_arm: 30.0,
     left_lower_arm: 90.0,
     left_upper_leg: 60.0,
-    left_lower_leg: -70.0,
+    left_lower_leg: -60.0,
 };
 
 pub const IDLE_POSE1: Pose = Pose {
@@ -155,7 +155,7 @@ pub const IDLE_POSE1: Pose = Pose {
     left_upper_arm: 30.0,
     left_lower_arm: 90.0,
     left_upper_leg: 60.0,
-    left_lower_leg: -70.0,
+    left_lower_leg: -60.0,
 };
 
 pub const IDLE_POSE2: Pose = Pose {
@@ -173,7 +173,7 @@ pub const IDLE_POSE2: Pose = Pose {
     left_upper_arm: 20.0,
     left_lower_arm: 80.0,
     left_upper_leg: 60.0,
-    left_lower_leg: -70.0,
+    left_lower_leg: -60.0,
 };
 
 pub const WALKING_POSE1: Pose = Pose {
@@ -212,22 +212,40 @@ pub const WALKING_POSE2: Pose = Pose {
     left_lower_leg: -70.0,
 };
 
-pub const BEND_DOWN_POSE: Pose = Pose {
+pub const BEND_DOWN_POSE1: Pose = Pose {
     facing: true,
-    offset: [0.0, -10.0],
+    offset: [0.0, -30.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    foot_offset: [0.0, 5.0, 0.0, -10.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
-    body: -20.0,
-    right_upper_arm: -50.0,
-    right_lower_arm: 150.0,
-    right_upper_leg: 45.0,
-    right_lower_leg: -100.0,
-    left_upper_arm: 30.0,
-    left_lower_arm: -100.0,
-    left_upper_leg: 60.0,
+    body: 0.0,
+    right_upper_arm: -60.0,
+    right_lower_arm: 120.0,
+    right_upper_leg: -70.0,
+    right_lower_leg: 70.0,
+    left_upper_arm: 50.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: 90.0,
     left_lower_leg: -90.0,
+};
+
+pub const BEND_DOWN_POSE2: Pose = Pose {
+    facing: true,
+    offset: [0.0, -50.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: 0.0,
+    right_upper_arm: -40.0,
+    right_lower_arm: 120.0,
+    right_upper_leg: -90.0,
+    right_lower_leg: 90.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: 110.0,
+    left_lower_leg: -110.0,
 };
 
 pub const ROLL_BACK_POSE1: Pose = Pose {
@@ -286,20 +304,20 @@ pub const ROLL_BACK_POSE3: Pose = Pose {
 
 pub const ROLL_FORWARD_POSE1: Pose = Pose {
     facing: true,
-    offset: [0.0, -100.0],
+    offset: [0.0, -50.0],
     old_offset: [0.0, 0.0],
     foot_offset: [0.0, 0.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
-    body: 0.0,
-    right_upper_arm: 75.0,
-    right_lower_arm: -80.0,
-    right_upper_leg: 110.0,
-    right_lower_leg: -150.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: -110.0,
-    left_upper_leg: 80.0,
-    left_lower_leg: -120.0,
+    body: -40.0,
+    right_upper_arm: -25.0,
+    right_lower_arm: 100.0,
+    right_upper_leg: 0.0,
+    right_lower_leg: -10.0,
+    left_upper_arm: 70.0,
+    left_lower_arm: -20.0,
+    left_upper_leg: 70.0,
+    left_lower_leg: -70.0,
 };
 
 pub const ROLL_FORWARD_POSE2: Pose = Pose {
@@ -309,33 +327,105 @@ pub const ROLL_FORWARD_POSE2: Pose = Pose {
     foot_offset: [0.0, 0.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
-    body: 180.0,
-    right_upper_arm: 75.0,
-    right_lower_arm: -80.0,
-    right_upper_leg: 110.0,
-    right_lower_leg: -150.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: -110.0,
-    left_upper_leg: 80.0,
-    left_lower_leg: -120.0,
+    body: -80.0,
+    right_upper_arm: -20.0,
+    right_lower_arm: 100.0,
+    right_upper_leg: 20.0,
+    right_lower_leg: -20.0,
+    left_upper_arm: 120.0,
+    left_lower_arm: -60.0,
+    left_upper_leg: 100.0,
+    left_lower_leg: -90.0,
 };
 
 pub const ROLL_FORWARD_POSE3: Pose = Pose {
     facing: true,
-    offset: [0.0, -100.0],
+    offset: [0.0, -150.0],
     old_offset: [0.0, 0.0],
     foot_offset: [0.0, 0.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
-    body: 360.0,
-    right_upper_arm: 75.0,
-    right_lower_arm: -80.0,
-    right_upper_leg: 110.0,
-    right_lower_leg: -150.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: -110.0,
-    left_upper_leg: 80.0,
-    left_lower_leg: -120.0,
+    body: -150.0,
+    right_upper_arm: -20.0,
+    right_lower_arm: 100.0,
+    right_upper_leg: 70.0,
+    right_lower_leg: -110.0,
+    left_upper_arm: 120.0,
+    left_lower_arm: -70.0,
+    left_upper_leg: 120.0,
+    left_lower_leg: -90.0,
+};
+
+pub const ROLL_FORWARD_POSE4: Pose = Pose {
+    facing: true,
+    offset: [0.0, -150.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: -210.0,
+    right_upper_arm: -20.0,
+    right_lower_arm: 100.0,
+    right_upper_leg: 90.0,
+    right_lower_leg: -100.0,
+    left_upper_arm: 120.0,
+    left_lower_arm: -70.0,
+    left_upper_leg: 120.0,
+    left_lower_leg: -40.0,
+};
+
+pub const ROLL_FORWARD_POSE5: Pose = Pose {
+    facing: true,
+    offset: [0.0, -200.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: -270.0,
+    right_upper_arm: 0.0,
+    right_lower_arm: 10.0,
+    right_upper_leg: 90.0,
+    right_lower_leg: -100.0,
+    left_upper_arm: 100.0,
+    left_lower_arm: 20.0,
+    left_upper_leg: 120.0,
+    left_lower_leg: -40.0,
+};
+
+pub const ROLL_FORWARD_POSE6: Pose = Pose {
+    facing: true,
+    offset: [0.0, -50.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: -300.0,
+    right_upper_arm: -20.0,
+    right_lower_arm: 100.0,
+    right_upper_leg: 90.0,
+    right_lower_leg: -100.0,
+    left_upper_arm: 120.0,
+    left_lower_arm: -70.0,
+    left_upper_leg: 120.0,
+    left_lower_leg: -40.0,
+};
+
+pub const ROLL_FORWARD_POSE7: Pose = Pose {
+    facing: true,
+    offset: [0.0, -20.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: -360.0,
+    right_upper_arm: -20.0,
+    right_lower_arm: 100.0,
+    right_upper_leg: 90.0,
+    right_lower_leg: -100.0,
+    left_upper_arm: 120.0,
+    left_lower_arm: -70.0,
+    left_upper_leg: 120.0,
+    left_lower_leg: -40.0,
 };
 
 pub const JUMPING_POSE1: Pose = Pose {

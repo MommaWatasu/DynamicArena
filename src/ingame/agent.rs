@@ -307,7 +307,7 @@ pub fn agent_system(
                         // player is idle
                         // then player will bend
                         player.state |= PlayerState::BEND_DOWN;
-                        player.set_animation(BEND_DOWN_POSE, 0, 10);
+                        player.set_animation(BEND_DOWN_POSE1, 0, 5);
                     }
                 }
                 Action::Kick => {

@@ -626,7 +626,9 @@ fn keyboard_input(
             // player is not walking
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
-                player.set_animation(IDLE_POSE1, 0, 10);
+                if player.state.is_idle() {
+                    player.set_animation(IDLE_POSE1, 0, 10);
+                }
             }
         }
         if keys.just_pressed(KeyCode::KeyS) {
@@ -634,7 +636,7 @@ fn keyboard_input(
                 // player is idle
                 // then player will bend down
                 player.state |= PlayerState::BEND_DOWN;
-                player.set_animation(BEND_DOWN_POSE, 0, 10);
+                player.set_animation(BEND_DOWN_POSE1, 0, 5);
             } else if player.state.check(PlayerState::WALKING) {
                 if player.state.check(PlayerState::DIRECTION) {
                     // player is walking right
@@ -870,6 +872,11 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
+                        player.set_animation(BEND_DOWN_POSE2, 1, 10);
+                    }
+                } else if player.animation.phase == 1 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
@@ -879,14 +886,34 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE2, 1, 10);
+                        player.set_animation(ROLL_FORWARD_POSE2, 1, 60);
                     }
                 } else if player.animation.phase == 1 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE3, 2, 10);
+                        player.set_animation(ROLL_FORWARD_POSE3, 2, 60);
                     }
                 } else if player.animation.phase == 2 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_FORWARD_POSE4, 3, 60);
+                    }
+                } else if player.animation.phase == 3 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_FORWARD_POSE5, 4, 60);
+                    }
+                } else if player.animation.phase == 4 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_FORWARD_POSE6, 5, 60);
+                    }
+                } else if player.animation.phase == 5 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_FORWARD_POSE7, 6, 60);
+                    }
+                } else if player.animation.phase == 6 {
                     player.update_animation();
                     if player.animation.count == 0 {
                         player.pose.body = 0.0;
