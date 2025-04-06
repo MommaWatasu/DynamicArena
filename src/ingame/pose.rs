@@ -248,60 +248,6 @@ pub const BEND_DOWN_POSE2: Pose = Pose {
     left_lower_leg: -110.0,
 };
 
-pub const ROLL_BACK_POSE1: Pose = Pose {
-    facing: true,
-    offset: [0.0, -100.0],
-    old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 0.0,
-    body: 0.0,
-    right_upper_arm: 75.0,
-    right_lower_arm: -80.0,
-    right_upper_leg: 110.0,
-    right_lower_leg: -150.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: -110.0,
-    left_upper_leg: 80.0,
-    left_lower_leg: -120.0,
-};
-
-pub const ROLL_BACK_POSE2: Pose = Pose {
-    facing: true,
-    offset: [0.0, -100.0],
-    old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 0.0,
-    body: -180.0,
-    right_upper_arm: 75.0,
-    right_lower_arm: -80.0,
-    right_upper_leg: 110.0,
-    right_lower_leg: -150.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: -110.0,
-    left_upper_leg: 80.0,
-    left_lower_leg: -120.0,
-};
-
-pub const ROLL_BACK_POSE3: Pose = Pose {
-    facing: true,
-    offset: [0.0, -100.0],
-    old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 0.0,
-    body: -360.0,
-    right_upper_arm: 75.0,
-    right_lower_arm: -80.0,
-    right_upper_leg: 110.0,
-    right_lower_leg: -150.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: -110.0,
-    left_upper_leg: 80.0,
-    left_lower_leg: -120.0,
-};
-
 pub const ROLL_FORWARD_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, -50.0],
@@ -427,6 +373,19 @@ pub const ROLL_FORWARD_POSE7: Pose = Pose {
     left_upper_leg: 90.0,
     left_lower_leg: -50.0,
 };
+
+// roll back movement is just playing the forward movement in reverse
+pub const ROLL_BACK_POSE1: Pose = {
+    let mut pose = ROLL_FORWARD_POSE7;
+    pose.body = -20.0;
+    pose
+};
+pub const ROLL_BACK_POSE2: Pose = ROLL_FORWARD_POSE6;
+pub const ROLL_BACK_POSE3: Pose = ROLL_FORWARD_POSE5;
+pub const ROLL_BACK_POSE4: Pose = ROLL_FORWARD_POSE4;
+pub const ROLL_BACK_POSE5: Pose = ROLL_FORWARD_POSE3;
+pub const ROLL_BACK_POSE6: Pose = ROLL_FORWARD_POSE2;
+pub const ROLL_BACK_POSE7: Pose = ROLL_FORWARD_POSE1;
 
 pub const JUMPING_POSE1: Pose = Pose {
     facing: true,

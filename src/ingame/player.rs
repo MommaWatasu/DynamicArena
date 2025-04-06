@@ -909,17 +909,37 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE2, 1, 10);
+                        player.pose.body = -380.0;
+                        player.set_animation(ROLL_BACK_POSE2, 1, 5);
                     }
                 } else if player.animation.phase == 1 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE3, 2, 10);
+                        player.set_animation(ROLL_BACK_POSE3, 2, 5);
                     }
                 } else if player.animation.phase == 2 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.pose.body = 0.0;
+                        player.set_animation(ROLL_BACK_POSE4, 3, 5);
+                    }
+                } else if player.animation.phase == 3 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_BACK_POSE5, 4, 5);
+                    }
+                } else if player.animation.phase == 4 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_BACK_POSE6, 5, 5);
+                    }
+                } else if player.animation.phase == 5 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.set_animation(ROLL_BACK_POSE7, 6, 5);
+                    }
+                } else if player.animation.phase == 6 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
