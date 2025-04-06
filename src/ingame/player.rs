@@ -15,11 +15,13 @@ const SKIN_COLOR: Color = Color::srgb(0.9, 0.8, 0.7);
 #[cfg(not(target_arch = "wasm32"))]
 const LIMB_LENGTH: f32 = 30.0;
 #[cfg(not(target_arch = "wasm32"))]
+const NECK_LENGTH: f32 = 40.0;
+#[cfg(not(target_arch = "wasm32"))]
 const LIMB_RADIUS: f32 = 15.0;
 #[cfg(not(target_arch = "wasm32"))]
 const BODY_THICKNESS: f32 = 10.0;
 #[cfg(not(target_arch = "wasm32"))]
-const HEAD_OFFSET: f32 = 100.0;
+const HEAD_OFFSET: f32 = 80.0;
 #[cfg(not(target_arch = "wasm32"))]
 const BODY_OFFSET: f32 = 40.0;
 #[cfg(not(target_arch = "wasm32"))]
@@ -35,11 +37,13 @@ const LOWER_LEG_OFFSET: f32 = -60.0;
 #[cfg(target_arch = "wasm32")]
 const LIMB_LENGTH: f32 = 15.0;
 #[cfg(target_arch = "wasm32")]
+const NECK_LENGTH: f32 = 20.0;
+#[cfg(target_arch = "wasm32")]
 const LIMB_RADIUS: f32 = 7.5;
 #[cfg(target_arch = "wasm32")]
 const BODY_THICKNESS: f32 = 5.0;
 #[cfg(target_arch = "wasm32")]
-const HEAD_OFFSET: f32 = 50.0;
+const HEAD_OFFSET: f32 = 40.0;
 #[cfg(target_arch = "wasm32")]
 const BODY_OFFSET: f32 = 20.0;
 #[cfg(target_arch = "wasm32")]
@@ -345,33 +349,31 @@ pub fn spawn_player(
                     // Neck is invisible(completely transparent)
                     builder.spawn((
                         #[cfg(not(target_arch = "wasm32"))]
-                        Mesh2d(meshes.add(Rectangle::new(1.0, 20.0))),
+                        Mesh2d(meshes.add(Rectangle::new(10.0, 40.0))),
                         #[cfg(target_arch = "wasm32")]
-                        Mesh2d(meshes.add(Rectangle::new(1.0, 10.0))),
+                        Mesh2d(meshes.add(Rectangle::new(1.0, 20.0))),
                         MeshMaterial2d(materials.add(Color::srgba(0.0, 0.0, 0.0, 0.0))),
                         BodyParts::HEAD,
-                        #[cfg(not(target_arch = "wasm32"))]
-                        Transform::from_translation(Vec3::new(0.0, 100.0, 2.0)),
-                        #[cfg(target_arch = "wasm32")]
-                        Transform::from_translation(Vec3::new(0.0, 50.0, 2.0)),                        
+                        PlayerID(id),
+                        Transform::from_translation(Vec3::new(0.0, HEAD_OFFSET, 2.0)),                      
                     ))
                         // Head
                         .with_child((
                             #[cfg(not(target_arch = "wasm32"))]
-                            Mesh2d(meshes.add(Circle::new(45.0))),
+                            Mesh2d(meshes.add(Circle::new(40.0))),
                             #[cfg(target_arch = "wasm32")]
-                            Mesh2d(meshes.add(Circle::new(22.5))),
+                            Mesh2d(meshes.add(Circle::new(20.0))),
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             //BodyParts::HEAD,
                             #[cfg(not(target_arch = "wasm32"))]
-                            Transform::from_translation(Vec3::new(0.0, 10.0, 0.0)),
+                            Transform::from_translation(Vec3::new(0.0, 20.0, -1.0)),
                             #[cfg(target_arch = "wasm32")]
-                            Transform::from_translation(Vec3::new(0.0, 5.0, 0.0)),
+                            Transform::from_translation(Vec3::new(0.0, 10.0, 0.0)),
                             RigidBody::KinematicPositionBased,
                             #[cfg(not(target_arch = "wasm32"))]
-                            Collider::ball(45.0),
+                            Collider::ball(40.0),
                             #[cfg(target_arch = "wasm32")]
-                            Collider::ball(22.5),
+                            Collider::ball(20.0),
                             ActiveEvents::COLLISION_EVENTS,
                             ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
                         ));
@@ -401,10 +403,7 @@ pub fn spawn_player(
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, true, false),
                             PlayerID(id),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            Transform::from_translation(Vec3::new(0.0, -60.0, 2.0)),
-                            #[cfg(target_arch = "wasm32")]
-                            Transform::from_translation(Vec3::new(0.0, -30.0, 2.0)),
+                            Transform::from_translation(Vec3::new(0.0, LOWER_ARM_OFFSET, 2.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
@@ -436,10 +435,7 @@ pub fn spawn_player(
                             MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, false, false),
                             PlayerID(id),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            Transform::from_translation(Vec3::new(0.0, -60.0, 2.0)),
-                            #[cfg(target_arch = "wasm32")]
-                            Transform::from_translation(Vec3::new(0.0, -30.0, 2.0)),
+                            Transform::from_translation(Vec3::new(0.0, LOWER_ARM_OFFSET, 2.0)),
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
@@ -457,10 +453,7 @@ pub fn spawn_player(
                         PlayerID(id),
                         // player 0 is right facing, and player 1 is left facing
                         // so we need to change which leg is on top
-                        #[cfg(not(target_arch = "wasm32"))]
-                        Transform::from_translation(Vec3::new(20.0, -100.0, 3.0)),
-                        #[cfg(target_arch = "wasm32")]
-                        Transform::from_translation(Vec3::new(10.0, -50.0, 3.0)),
+                        Transform::from_translation(Vec3::new(20.0, UPPER_LEG_OFFSET, 3.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -477,10 +470,7 @@ pub fn spawn_player(
                                 // right lower leg
                                 BodyParts::new(false, false, false, true, false),
                                 PlayerID(id),
-                                #[cfg(not(target_arch = "wasm32"))]
-                                Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
-                                #[cfg(target_arch = "wasm32")]
-                                Transform::from_translation(Vec3::new(0.0, -30.0, 1.0)),
+                                Transform::from_translation(Vec3::new(0.0, LOWER_LEG_OFFSET, 1.0)),
                                 RigidBody::KinematicPositionBased,
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 ActiveEvents::COLLISION_EVENTS,
@@ -505,10 +495,7 @@ pub fn spawn_player(
                         MeshMaterial2d(materials.add(profile.color)),
                         BodyParts::new(false, false, false, false, true),
                         PlayerID(id),
-                        #[cfg(not(target_arch = "wasm32"))]
-                        Transform::from_translation(Vec3::new(-20.0, -100.0, 1.0)),
-                        #[cfg(target_arch = "wasm32")]
-                        Transform::from_translation(Vec3::new(-10.0, -50.0, 1.0)),
+                        Transform::from_translation(Vec3::new(-20.0, UPPER_LEG_OFFSET, 1.0)),
                         RigidBody::KinematicPositionBased,
                         Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                         ActiveEvents::COLLISION_EVENTS,
@@ -524,7 +511,7 @@ pub fn spawn_player(
                                 MeshMaterial2d(materials.add(profile.color)),
                                 BodyParts::new(false, false, false, false, false),
                                 PlayerID(id),
-                                Transform::from_translation(Vec3::new(0.0, -60.0, 1.0)),
+                                Transform::from_translation(Vec3::new(0.0, LOWER_LEG_OFFSET, 1.0)),
                                 RigidBody::KinematicPositionBased,
                                 Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                                 ActiveEvents::COLLISION_EVENTS,
@@ -542,25 +529,6 @@ pub fn spawn_player(
                         });
                 });
         });
-}
-
-/// Rotates and positions a body part based on given parameters.
-/// 
-/// # Arguments
-/// 
-/// * `transform` - The Transform component to modify
-/// * `offset` - Vertical offset from the parent joint
-/// * `degree` - Rotation angle in degrees (positive is counterclockwise)
-/// 
-/// This function:
-/// 1. Converts degree to radians and sets rotation
-/// 2. Calculates X offset using sin of angle * limb length  
-/// 3. Calculates Y position using cosine and adds vertical offset
-fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree: f32) {
-    let rad = degree.to_radians();
-    transform.rotation = Quat::from_rotation_z(rad);
-    transform.translation.x = x_offset + LIMB_LENGTH * rad.sin();
-    transform.translation.y = y_offset + LIMB_LENGTH * (1.0-rad.cos());
 }
 
 /// Handles player input for character controls.
@@ -1187,6 +1155,46 @@ fn check_ground(
     }
 }
 
+/// Rotates and positions a body part based on given parameters.
+/// 
+/// # Arguments
+/// 
+/// * `transform` - The Transform component to modify
+/// * `offset` - Vertical offset from the parent joint
+/// * `degree` - Rotation angle in degrees (positive is counterclockwise)
+/// 
+/// This function:
+/// 1. Converts degree to radians and sets rotation
+/// 2. Calculates X offset using sin of angle * limb length  
+/// 3. Calculates Y position using cosine and adds vertical offset
+fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree: f32) {
+    let rad = degree.to_radians();
+    transform.rotation = Quat::from_rotation_z(rad);
+    transform.translation.x = x_offset + LIMB_LENGTH * rad.sin();
+    transform.translation.y = y_offset + LIMB_LENGTH * (1.0-rad.cos());
+}
+
+/// Rotates and positions the neck based on given parameters.
+///
+/// # Arguments
+/// * `transform` - The Transform component to modify
+/// * `degree` - Rotation angle in degrees (positive is counterclockwise)
+///
+/// This function:
+/// 1. Converts degree to radians and sets rotation
+/// 2. Calculates X offset using sin of angle * neck length
+/// 3. Calculates Y position using cosine and adds vertical offset
+///
+/// # Note
+/// The neck length is divided by 2.0 to position the neck correctly.
+/// The head offset is subtracted from the Y position to align the head correctly.
+fn rotate_neck(transform: &mut Transform, degree: f32) {
+    let rad = degree.to_radians();
+    transform.rotation = Quat::from_rotation_z(-rad);
+    transform.translation.x = NECK_LENGTH/2.0 * rad.sin();
+    transform.translation.y = HEAD_OFFSET - NECK_LENGTH/2.0 * (1.0-rad.cos());
+}
+
 /// Updates the pose of the player character based on their current state.
 fn update_pose(
     mut player_query: Query<(&mut Player, &mut Transform, &PlayerID), (Without<BodyParts>, Without<Foot>)>,
@@ -1199,7 +1207,7 @@ fn update_pose(
             if player_id.0 == parts_id.0 {
                 match parts.flags {
                     // Head(Neck)
-                    0b10000 => rotate_parts(&mut transform, 0.0, HEAD_OFFSET, flip * player.pose.head),
+                    0b10000 => rotate_neck(&mut transform, flip * player.pose.head),
                     // Body
                     0b01000 => rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body),
                     // Right Upper Arm
