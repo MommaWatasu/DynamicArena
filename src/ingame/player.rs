@@ -643,8 +643,7 @@ fn keyboard_input(
                     // player is idle
                     // then player will jump up
                     player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMPING_POSE1, 0, 10);
-                    player.velocity = Vec2::new(0.0, 12.0);                    
+                    player.set_animation(JUMPUP_POSE1, 0, 10);
                 } else if !player.state.check(
                     PlayerState::JUMP_UP
                         | PlayerState::DOUBLE_JUMP
@@ -655,16 +654,16 @@ fn keyboard_input(
                         // player is walking right
                         // then player will jump forward
                         player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                        player.velocity = Vec2::new(x_vel, 12.0);
+                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
                     } else {
                         // player is walking left
                         // then player will jump backward
                         player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                        player.velocity = Vec2::new(-x_vel, 12.0);
+                        player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
                     }
                 } else if player.state.check(
                     PlayerState::JUMP_UP
@@ -674,7 +673,7 @@ fn keyboard_input(
                     // player is jumping
                     // then player will double jump
                     player.state |= PlayerState::DOUBLE_JUMP;
-                    player.set_animation(JUMPING_POSE1, 0, 10);
+                    player.set_animation(JUMPUP_POSE1, 0, 10);
                     player.velocity.y = 7.5;
                 }
             } else {
@@ -683,8 +682,7 @@ fn keyboard_input(
                     // player is idle
                     // then player will jump up
                     player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMPING_POSE1, 0, 10);
-                    player.velocity = Vec2::new(0.0, 12.0);                    
+                    player.set_animation(JUMPUP_POSE1, 0, 10);
                 } else if !player.state.check(
                     PlayerState::JUMP_UP
                         | PlayerState::DOUBLE_JUMP
@@ -695,16 +693,16 @@ fn keyboard_input(
                         // player is walking right
                         // then player will jump forward
                         player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                        player.velocity = Vec2::new(x_vel, 12.0);
+                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
                     } else {
                         // player is walking left
                         // then player will jump backward
                         player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                        player.velocity = Vec2::new(-x_vel, 12.0);
+                        player.set_animation(JUMPUP_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
                     }
                 }
             }
@@ -823,9 +821,14 @@ fn player_movement(
                     }
                 }
             }
-            if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+            if player.state.check(PlayerState::JUMP_UP) {
                 // player is jumping
-                player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
+
+                // prepare for jump
+                if player.animation.phase != 0 {
+                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
+                }
+
                 if player.state.check(PlayerState::KICKING) {
                     if player.animation.phase == 0 {
                         player.update_animation();
@@ -838,7 +841,8 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMPING_POSE2, 1, 5);
+                            player.velocity = Vec2::new(0.0, 12.0);
+                            player.set_animation(JUMPUP_POSE2, 1, 5);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation();
@@ -850,6 +854,104 @@ fn player_movement(
                         player.update_animation();
                     }
                 }
+            } else if player.state.check(PlayerState::JUMP_FORWARD) {
+                // player is jumping forward
+
+                // prepare for jump
+                if player.animation.phase != 0 {
+                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
+                }
+
+                if player.state.check(PlayerState::KICKING) {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.animation.phase = 1;
+                            player.animation.count = 0;
+                        }
+                    }
+                } else {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                            player.velocity = Vec2::new(x_vel, 12.0);
+                            player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
+                        }
+                    } else if player.animation.phase == 1 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
+                        }
+                    } else if player.animation.phase == 2 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
+                        }
+                    } else if player.animation.phase == 3 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(JUMP_FORWARD_POSE5, 4, 10);
+                        }
+                    } else if player.animation.phase == 4 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.pose.body = 0.0;
+                        }
+                    }
+                }
+            } else if player.state.check(PlayerState::JUMP_BACKWARD) {
+                // player is jumping backward
+
+                // prepare for jump
+                if player.animation.phase != 0 {
+                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
+                }
+
+                if player.state.check(PlayerState::KICKING) {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.animation.phase = 1;
+                            player.animation.count = 0;
+                        }
+                    }
+                } else {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                            player.velocity = Vec2::new(-x_vel, 12.0);
+                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
+                        }
+                    } else if player.animation.phase == 1 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
+                        }
+                    } else if player.animation.phase == 2 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
+                        }
+                    } else if player.animation.phase == 3 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
+                        }
+                    } else if player.animation.phase == 4 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.pose.body = -20.0;
+                        }
+                    }
+                }
+            } else if !player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) && !player.state.is_idle() && !player.state.check(PlayerState::WALKING) && !player.state.check(PlayerState::BEND_DOWN) && !player.state.check(PlayerState::ROLL_FORWARD) && !player.state.check(PlayerState::ROLL_BACK) {
+                // reset the state
+                // this is for when the state is not idle and not walking
+                // then we need to reset the state
+                // but we need to check the cooldown state
+                // so we need to set the cooldown state
             } else if player.state.check(PlayerState::BEND_DOWN) {
                 // player is bending down
                 if player.animation.phase == 0 {
@@ -1143,7 +1245,9 @@ fn check_ground(
             | PlayerState::DOUBLE_JUMP
             | PlayerState::JUMP_BACKWARD
             | PlayerState::JUMP_FORWARD
-        ) && transform.translation.y - player.pose.offset[1] < 270.0-config.window_size.y/2.0 {
+        )
+        && player.animation.phase != 0
+        && transform.translation.y - player.pose.offset[1] < 270.0-config.window_size.y/2.0 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
             transform.translation.y = 270.0 - config.window_size.y/2.0 + player.pose.offset[1];
@@ -1164,7 +1268,9 @@ fn check_ground(
             | PlayerState::DOUBLE_JUMP
             | PlayerState::JUMP_BACKWARD
             | PlayerState::JUMP_FORWARD
-        ) && transform.translation.y - player.pose.offset[1] < 135.0-config.window_size.y/2.0 {
+        )
+        && player.animation.phase != 0
+        && transform.translation.y - player.pose.offset[1] < 135.0-config.window_size.y/2.0 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
             transform.translation.y = 135.0 - config.window_size.y/2.0 + player.pose.offset[1];

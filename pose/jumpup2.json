@@ -1,0 +1,13 @@
+{
+    "facing": true,
+    "head": 20.0,
+    "body": 0.0,
+    "right_upper_arm": -64.28571428571428,
+    "right_lower_arm": -132.85714285714286,
+    "right_upper_leg": -98.57142857142857,
+    "right_lower_leg": 109.28571428571428,
+    "left_upper_arm": 77.14285714285717,
+    "left_lower_arm": 62.14285714285717,
+    "left_upper_leg": 115.71428571428572,
+    "left_lower_leg": -126.42857142857143
+}
