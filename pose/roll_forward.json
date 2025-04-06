@@ -1,0 +1,13 @@
+{
+    "facing": true,
+    "head": 0.0,
+    "body": -60.0,
+    "right_upper_arm": -20.0,
+    "right_lower_arm": 100.0,
+    "right_upper_leg": 90.0,
+    "right_lower_leg": -100.0,
+    "left_upper_arm": 120.0,
+    "left_lower_arm": -70.0,
+    "left_upper_leg": 120.0,
+    "left_lower_leg": -40.0
+}
