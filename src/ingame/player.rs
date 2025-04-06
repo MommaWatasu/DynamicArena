@@ -339,27 +339,42 @@ pub fn spawn_player(
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
             ))
-                // Head
+                // Head and Neck
                 .with_children(|builder| {
+                    // Neck
+                    // Neck is invisible(completely transparent)
                     builder.spawn((
                         #[cfg(not(target_arch = "wasm32"))]
-                        Mesh2d(meshes.add(Circle::new(45.0))),
+                        Mesh2d(meshes.add(Rectangle::new(1.0, 20.0))),
                         #[cfg(target_arch = "wasm32")]
-                        Mesh2d(meshes.add(Circle::new(22.5))),
-                        MeshMaterial2d(materials.add(SKIN_COLOR)),
+                        Mesh2d(meshes.add(Rectangle::new(1.0, 10.0))),
+                        MeshMaterial2d(materials.add(Color::srgba(0.0, 0.0, 0.0, 0.0))),
                         BodyParts::HEAD,
                         #[cfg(not(target_arch = "wasm32"))]
                         Transform::from_translation(Vec3::new(0.0, 100.0, 2.0)),
                         #[cfg(target_arch = "wasm32")]
-                        Transform::from_translation(Vec3::new(0.0, 50.0, 2.0)),
-                        RigidBody::KinematicPositionBased,
-                        #[cfg(not(target_arch = "wasm32"))]
-                        Collider::ball(45.0),
-                        #[cfg(target_arch = "wasm32")]
-                        Collider::ball(22.5),
-                        ActiveEvents::COLLISION_EVENTS,
-                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                    ));
+                        Transform::from_translation(Vec3::new(0.0, 50.0, 2.0)),                        
+                    ))
+                        // Head
+                        .with_child((
+                            #[cfg(not(target_arch = "wasm32"))]
+                            Mesh2d(meshes.add(Circle::new(45.0))),
+                            #[cfg(target_arch = "wasm32")]
+                            Mesh2d(meshes.add(Circle::new(22.5))),
+                            MeshMaterial2d(materials.add(SKIN_COLOR)),
+                            //BodyParts::HEAD,
+                            #[cfg(not(target_arch = "wasm32"))]
+                            Transform::from_translation(Vec3::new(0.0, 10.0, 0.0)),
+                            #[cfg(target_arch = "wasm32")]
+                            Transform::from_translation(Vec3::new(0.0, 5.0, 0.0)),
+                            RigidBody::KinematicPositionBased,
+                            #[cfg(not(target_arch = "wasm32"))]
+                            Collider::ball(45.0),
+                            #[cfg(target_arch = "wasm32")]
+                            Collider::ball(22.5),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+                        ));
                     // Right Upper Arm
                     builder.spawn((
                         Mesh2d(meshes.add(Capsule2d {
@@ -1183,7 +1198,7 @@ fn update_pose(
         for (parts, parts_id, mut transform) in parts_query.iter_mut() {
             if player_id.0 == parts_id.0 {
                 match parts.flags {
-                    // Head
+                    // Head(Neck)
                     0b10000 => rotate_parts(&mut transform, 0.0, HEAD_OFFSET, flip * player.pose.head),
                     // Body
                     0b01000 => rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body),
