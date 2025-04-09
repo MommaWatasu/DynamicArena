@@ -190,6 +190,7 @@ struct AnimationTimer {
 
 struct PlayerAnimation {
     diff_pose: Pose,
+    diff_y: f32,
     phase: u8,
     count: u8,
 }
@@ -209,7 +210,7 @@ impl Player {
         Self {
             character_id,
             pose: IDLE_POSE1,
-            animation: PlayerAnimation { diff_pose: default(), phase: 1, count: 10 },
+            animation: PlayerAnimation { diff_pose: default(), diff_y: 0.0, phase: 1, count: 10 },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
@@ -219,7 +220,7 @@ impl Player {
         Self {
             character_id,
             pose: OPPOSITE_DEFAULT_POSE,
-            animation: PlayerAnimation { diff_pose: default(), phase: 1, count: 10 },
+            animation: PlayerAnimation { diff_pose: default(), diff_y: 0.0, phase: 1, count: 10 },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
@@ -231,13 +232,13 @@ impl Player {
         } else {
             self.pose = OPPOSITE_DEFAULT_POSE;
         }
-        self.animation = PlayerAnimation { diff_pose: default(), phase: 1, count: 10 };
+        self.animation = PlayerAnimation { diff_pose: default(), diff_y: 0.0, phase: 1, count: 10 };
         self.state = PlayerState::default();
         self.velocity = Vec2::ZERO;
         self.health = CHARACTER_PROFILES[self.character_id as usize].health;
     }
     pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
-        self.animation = PlayerAnimation { diff_pose: (pose - self.pose) / count as f32, phase, count };
+        self.animation = PlayerAnimation { diff_pose: (pose - self.pose) / count as f32, diff_y: 0.0, phase, count };
     }
     pub fn update_animation(&mut self) {
         if self.animation.count == 0 {
@@ -245,6 +246,14 @@ impl Player {
         }
         self.pose += self.animation.diff_pose;
         self.animation.count -= 1;
+    }
+    pub fn update_animation_idle(&mut self, transform: &mut Transform) {
+        if self.animation.count == 0 {
+            return;
+        }
+        self.pose += self.animation.diff_pose;
+        self.animation.count -= 1;
+        transform.translation.y += self.animation.diff_y;
     }
 }
 
@@ -802,7 +811,7 @@ fn player_movement(
             if player.state.is_idle() {
                 player.velocity = Vec2::ZERO;
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation_idle(&mut transform);
                     if player.animation.count == 0 {
                         if player.state.check(PlayerState::COOLDOWN) {
                             player.state &= !PlayerState::COOLDOWN;
@@ -946,12 +955,6 @@ fn player_movement(
                         }
                     }
                 }
-            } else if !player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) && !player.state.is_idle() && !player.state.check(PlayerState::WALKING) && !player.state.check(PlayerState::BEND_DOWN) && !player.state.check(PlayerState::ROLL_FORWARD) && !player.state.check(PlayerState::ROLL_BACK) {
-                // reset the state
-                // this is for when the state is not idle and not walking
-                // then we need to reset the state
-                // but we need to check the cooldown state
-                // so we need to set the cooldown state
             } else if player.state.check(PlayerState::BEND_DOWN) {
                 // player is bending down
                 if player.animation.phase == 0 {
@@ -1240,21 +1243,31 @@ fn check_ground(
     mut player_query: Query<(&mut Player, &mut Transform)>,
 ) {
     for (mut player, mut transform) in player_query.iter_mut() {
-        if player.state.check(
-            PlayerState::JUMP_UP
-            | PlayerState::DOUBLE_JUMP
-            | PlayerState::JUMP_BACKWARD
-            | PlayerState::JUMP_FORWARD
-        )
-        && player.animation.phase != 0
-        && transform.translation.y - player.pose.offset[1] < 270.0-config.window_size.y/2.0 {
+        // phase 0 is the preliminary motion
+        if player.animation.phase == 0 { continue }
+        // change offset based on the type of jump
+        if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
+        && transform.translation.y + 80.0 < 270.0-config.window_size.y/2.0
+        && player.animation.phase == 4 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
-            transform.translation.y = 270.0 - config.window_size.y/2.0 + player.pose.offset[1];
+            player.animation.diff_y = 8.0;
+            //transform.translation.y = 270.0 - config.window_size.y/2.0 - 80.0;
+            transform.translation.y = 190.0 - config.window_size.y/2.0;
+            player.velocity = Vec2::ZERO;
+        } else if player.state.check(PlayerState::JUMP_UP)
+        && transform.translation.y + 70.0 < 270.0-config.window_size.y/2.0
+        && player.animation.phase == 2 {
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.set_animation(IDLE_POSE1, 0, 10);
+            player.animation.diff_y = 7.0;
+            //transform.translation.y = 270.0 - config.window_size.y/2.0 - 70.0;
+            transform.translation.y = 200.0 - config.window_size.y/2.0;
             player.velocity = Vec2::ZERO;
         }
     }
 }
+
 // check if the player is grounding
 #[cfg(target_arch = "wasm32")]
 fn check_ground(
@@ -1263,20 +1276,27 @@ fn check_ground(
     mut player_query: Query<(&mut Player, &mut Transform)>,
 ) {
     for (mut player, mut transform) in player_query.iter_mut() {
-        if player.state.check(
-            PlayerState::JUMP_UP
-            | PlayerState::DOUBLE_JUMP
-            | PlayerState::JUMP_BACKWARD
-            | PlayerState::JUMP_FORWARD
-        )
-        && player.animation.phase != 0
-        && transform.translation.y - player.pose.offset[1] < 135.0-config.window_size.y/2.0 {
+        // phase 0 is the preliminary motion
+        if player.animation.phase == 0 { continue }
+        // change offset based on the type of jump
+        if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
+        && transform.translation.y + 40.0 < 135.0-config.window_size.y/2.0
+        && player.animation.phase == 4 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
-            transform.translation.y = 135.0 - config.window_size.y/2.0 + player.pose.offset[1];
+            player.animation.diff_y = 4.0;
+            //transform.translation.y = 135.0 - config.window_size.y/2.0 - 40.0;
+            transform.translation.y = 95.0 - config.window_size.y/2.0;
             player.velocity = Vec2::ZERO;
-
-            double_jump_check.reset();
+        } else if player.state.check(PlayerState::JUMP_UP)
+        && transform.translation.y + 35.0 < 135.0-config.window_size.y/2.0
+        && player.animation.phase == 2 {
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.set_animation(IDLE_POSE1, 0, 10);
+            player.animation.diff_y = 3.5;
+            //transform.translation.y = 135.0 - config.window_size.y/2.0 - 35.0;
+            transform.translation.y = 100.0 - config.window_size.y/2.0;
+            player.velocity = Vec2::ZERO;
         }
     }
 }

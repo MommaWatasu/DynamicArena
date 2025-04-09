@@ -445,7 +445,7 @@ pub const JUMP_FORWARD_POSE2: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    foot_offset: [0.0, 2.5, 0.0, -5.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 20.0,
     body: -30.0,
@@ -463,7 +463,7 @@ pub const JUMP_FORWARD_POSE3: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    foot_offset: [0.0, 0.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 40.0,
     body: -90.0,
@@ -481,7 +481,7 @@ pub const JUMP_FORWARD_POSE4: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    foot_offset: [0.0, 0.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 50.0,
     body: -300.0,
@@ -497,9 +497,9 @@ pub const JUMP_FORWARD_POSE4: Pose = Pose {
 
 pub const JUMP_FORWARD_POSE5: Pose = Pose {
     facing: true,
-    offset: [0.0, -100.0],
+    offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    foot_offset: [0.0, -10.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 50.0,
     body: -360.0,
@@ -588,7 +588,7 @@ pub const JUMP_BACKWARD_POSE4: Pose = Pose {
 
 pub const JUMP_BACKWARD_POSE5: Pose = Pose {
     facing: true,
-    offset: [0.0, -100.0],
+    offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
     foot_offset: [0.0, 5.0, 0.0, -10.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
