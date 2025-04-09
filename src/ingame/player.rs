@@ -850,7 +850,11 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.velocity = Vec2::new(0.0, 12.0);
+                            if cfg!(not(target_arch = "wasm32")) {
+                                player.velocity = Vec2::new(0.0, 12.0);
+                            } else {
+                                player.velocity = Vec2::new(0.0, 6.0);
+                            }
                             player.set_animation(JUMP_UP_POSE2, 1, 5);
                         }
                     } else if player.animation.phase == 1 {
@@ -884,7 +888,11 @@ fn player_movement(
                         player.update_animation();
                         if player.animation.count == 0 {
                             let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                            player.velocity = Vec2::new(x_vel, 12.0);
+                            if cfg!(not(target_arch = "wasm32")) {
+                                player.velocity = Vec2::new(x_vel, 12.0);
+                            } else {
+                                player.velocity = Vec2::new(x_vel, 6.0);
+                            }
                             player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
@@ -930,7 +938,11 @@ fn player_movement(
                         player.update_animation();
                         if player.animation.count == 0 {
                             let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                            player.velocity = Vec2::new(-x_vel, 12.0);
+                            if cfg!(not(target_arch = "wasm32")) {
+                                player.velocity = Vec2::new(-x_vel, 12.0);
+                            } else {
+                                player.velocity = Vec2::new(-x_vel, 6.0);
+                            }
                             player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {

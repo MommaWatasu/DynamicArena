@@ -173,45 +173,45 @@ pub fn touch_input(
                         && double_jump_check.touch_end
                     {
                         player.state |= PlayerState::DOUBLE_JUMP;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        player.velocity.y = 7.5;
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.velocity.y = 3.0;
                     } else if player.state.is_idle() {
                         player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        player.velocity = Vec2::new(0.0, 8.0);
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.velocity = Vec2::ZERO;
                         
                         double_jump_check.jumping = true;
                     }
                 } else {
                     if player.state.is_idle() {
                         player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMPING_POSE1, 0, 10);
-                        player.velocity = Vec2::new(0.0, 8.0);
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.velocity = Vec2::ZERO;
                     }
                 }
             }
             CircleState::UpRight => {
                 if player.state.is_idle() {
                     player.state |= PlayerState::JUMP_FORWARD;
-                    player.set_animation(JUMPING_POSE1, 0, 10);
+                    player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                     let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                    player.velocity = Vec2::new(x_vel, 8.0);
+                    player.velocity = Vec2::ZERO;
                 }
                 double_jump_check.jumping = true;
             }
             CircleState::UpLeft => {
                 if player.state.is_idle() {
                     player.state |= PlayerState::JUMP_BACKWARD;
-                    player.set_animation(JUMPING_POSE1, 0, 10);
+                    player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
                     let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                    player.velocity = Vec2::new(-x_vel, 8.0);
+                    player.velocity = Vec2::ZERO;
                 }
                 double_jump_check.jumping = true;
             }
             CircleState::Down => {
                 if player.state.is_idle() {
                     player.state |= PlayerState::BEND_DOWN;
-                    player.set_animation(BEND_DOWN_POSE, 0, 10);
+                    player.set_animation(BEND_DOWN_POSE1, 0, 10);
                 }
             }
             CircleState::DownRight => {
