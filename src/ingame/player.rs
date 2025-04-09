@@ -885,22 +885,22 @@ fn player_movement(
                         if player.animation.count == 0 {
                             let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                             player.velocity = Vec2::new(x_vel, 12.0);
-                            player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
+                            player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
+                            player.set_animation(JUMP_FORWARD_POSE3, 2, 15);
                         }
                     } else if player.animation.phase == 2 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
+                            player.set_animation(JUMP_FORWARD_POSE4, 3, 30);
                         }
                     } else if player.animation.phase == 3 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMP_FORWARD_POSE5, 4, 10);
+                            player.set_animation(JUMP_FORWARD_POSE5, 4, 15);
                         }
                     } else if player.animation.phase == 4 {
                         player.update_animation();
@@ -931,27 +931,27 @@ fn player_movement(
                         if player.animation.count == 0 {
                             let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                             player.velocity = Vec2::new(-x_vel, 12.0);
-                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
+                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
+                            player.set_animation(JUMP_BACKWARD_POSE3, 2, 15);
                         }
                     } else if player.animation.phase == 2 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
+                            player.set_animation(JUMP_BACKWARD_POSE4, 3, 30);
                         }
                     } else if player.animation.phase == 3 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
+                            player.set_animation(JUMP_BACKWARD_POSE5, 4, 15);
                         }
                     } else if player.animation.phase == 4 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.pose.body = -20.0;
+                            player.pose.body = 0.0;
                         }
                     }
                 }
@@ -1247,13 +1247,13 @@ fn check_ground(
         if player.animation.phase == 0 { continue }
         // change offset based on the type of jump
         if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
-        && transform.translation.y + 80.0 < 270.0-config.window_size.y/2.0
+        && transform.translation.y + 50.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 4 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 8.0;
-            //transform.translation.y = 270.0 - config.window_size.y/2.0 - 80.0;
-            transform.translation.y = 190.0 - config.window_size.y/2.0;
+            player.animation.diff_y = 5.0;
+            //transform.translation.y = 270.0 - config.window_size.y/2.0 - 50.0;
+            transform.translation.y = 220.0 - config.window_size.y/2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
         && transform.translation.y + 70.0 < 270.0-config.window_size.y/2.0
@@ -1280,13 +1280,13 @@ fn check_ground(
         if player.animation.phase == 0 { continue }
         // change offset based on the type of jump
         if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
-        && transform.translation.y + 40.0 < 135.0-config.window_size.y/2.0
+        && transform.translation.y + 25.0 < 135.0-config.window_size.y/2.0
         && player.animation.phase == 4 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 4.0;
-            //transform.translation.y = 135.0 - config.window_size.y/2.0 - 40.0;
-            transform.translation.y = 95.0 - config.window_size.y/2.0;
+            player.animation.diff_y = 2.5;
+            //transform.translation.y = 135.0 - config.window_size.y/2.0 - 25.0;
+            transform.translation.y = 110.0 - config.window_size.y/2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
         && transform.translation.y + 35.0 < 135.0-config.window_size.y/2.0
