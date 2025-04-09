@@ -652,7 +652,7 @@ fn keyboard_input(
                     // player is idle
                     // then player will jump up
                     player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMPUP_POSE1, 0, 10);
+                    player.set_animation(JUMP_UP_POSE1, 0, 10);
                 } else if !player.state.check(
                     PlayerState::JUMP_UP
                         | PlayerState::DOUBLE_JUMP
@@ -682,7 +682,7 @@ fn keyboard_input(
                     // player is jumping
                     // then player will double jump
                     player.state |= PlayerState::DOUBLE_JUMP;
-                    player.set_animation(JUMPUP_POSE1, 0, 10);
+                    player.set_animation(JUMP_UP_POSE1, 0, 10);
                     player.velocity.y = 7.5;
                 }
             } else {
@@ -691,7 +691,7 @@ fn keyboard_input(
                     // player is idle
                     // then player will jump up
                     player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMPUP_POSE1, 0, 10);
+                    player.set_animation(JUMP_UP_POSE1, 0, 10);
                 } else if !player.state.check(
                     PlayerState::JUMP_UP
                         | PlayerState::DOUBLE_JUMP
@@ -709,7 +709,7 @@ fn keyboard_input(
                         // player is walking left
                         // then player will jump backward
                         player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMPUP_POSE1, 0, 10);
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                     }
@@ -851,7 +851,7 @@ fn player_movement(
                         player.update_animation();
                         if player.animation.count == 0 {
                             player.velocity = Vec2::new(0.0, 12.0);
-                            player.set_animation(JUMPUP_POSE2, 1, 5);
+                            player.set_animation(JUMP_UP_POSE2, 1, 5);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation();

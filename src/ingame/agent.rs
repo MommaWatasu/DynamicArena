@@ -237,7 +237,7 @@ pub fn agent_system(
                             // player is idle
                             // then player will jump up
                             player.state |= PlayerState::JUMP_UP;
-                            player.set_animation(JUMPUP_POSE1, 0, 10);
+                            player.set_animation(JUMP_UP_POSE1, 0, 10);
                             player.velocity = Vec2::new(0.0, 12.0);                    
                         } else if player.state.check(
                             PlayerState::JUMP_UP
@@ -247,7 +247,7 @@ pub fn agent_system(
                             // player is jumping
                             // then player will double jump
                             player.state |= PlayerState::DOUBLE_JUMP;
-                            player.set_animation(JUMPUP_POSE1, 0, 10);
+                            player.set_animation(JUMP_UP_POSE1, 0, 10);
                             player.velocity.y = 7.5;
                         }
                     } else {
@@ -256,7 +256,7 @@ pub fn agent_system(
                             // player is idle
                             // then player will jump up
                             player.state |= PlayerState::JUMP_UP;
-                            player.set_animation(JUMPUP_POSE1, 0, 10);
+                            player.set_animation(JUMP_UP_POSE1, 0, 10);
                             player.velocity = Vec2::new(0.0, 12.0);                    
                         } else if !player.state.check(
                             PlayerState::JUMP_UP
@@ -268,14 +268,14 @@ pub fn agent_system(
                                 // player is walking right
                                 // then player will jump forward
                                 player.state |= PlayerState::JUMP_FORWARD;
-                                player.set_animation(JUMPUP_POSE1, 0, 10);
+                                player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                                 let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                                 player.velocity = Vec2::new(x_vel, 12.0);
                             } else {
                                 // player is walking left
                                 // then player will jump backward
                                 player.state |= PlayerState::JUMP_BACKWARD;
-                                player.set_animation(JUMPUP_POSE1, 0, 10);
+                                player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
                                 let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                                 player.velocity = Vec2::new(-x_vel, 12.0);
                             }

@@ -387,7 +387,7 @@ pub const ROLL_BACK_POSE5: Pose = ROLL_FORWARD_POSE3;
 pub const ROLL_BACK_POSE6: Pose = ROLL_FORWARD_POSE2;
 pub const ROLL_BACK_POSE7: Pose = ROLL_FORWARD_POSE1;
 
-pub const JUMPUP_POSE1: Pose = Pose {
+pub const JUMP_UP_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, -10.0],
     old_offset: [0.0, 0.0],
@@ -405,7 +405,7 @@ pub const JUMPUP_POSE1: Pose = Pose {
     left_lower_leg: -80.0,
 };
 
-pub const JUMPUP_POSE2: Pose = Pose {
+pub const JUMP_UP_POSE2: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
