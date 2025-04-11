@@ -78,14 +78,15 @@ pub struct HealthBar(pub f32, pub f32);
 /// | DOUBLE_JUMP    | 0b0000000000000100  | Player is in second jump            |
 /// | KICKING        | 0b0000000000001000  | Player is performing kick           |
 /// | PUNCHING       | 0b0000000000010000  | Player is performing punch          |
-/// | SPECIAL_ATTACK | 0b0000000000100000  | Player is performing special attack |
-/// | COOLDOWN       | 0b0000000001000000  | Player is in cooldown state         |
-/// | DIRECTION      | 0b0000000010000000  | Player is moving right              |
-/// | JUMP FORWARD   | 0b0000000100000000  | Player is jumping forward           |
-/// | JUMP BACKWARD  | 0b0000001000000000  | Player is jumping backward          |
-/// | BEND DOWN      | 0b0000010000000000  | Player is bending down              |
-/// | ROLL BACK      | 0b0000100000000000  | Player is rolling back              |
-/// | ROLL FORWARD   | 0b0001000000000000  | Player is rolling forward           |
+/// | FRONT_KICKING   | 0b0000000000100000  | Player is performing knee kick      |
+/// | BACK_KICKING   | 0b0000000001000000  | Player is performing back kick      |
+/// | COOLDOWN       | 0b0000000010000000  | Player is in cooldown state         |
+/// | DIRECTION      | 0b0000000100000000  | Player is moving right              |
+/// | JUMP FORWARD   | 0b0000001000000000  | Player is jumping forward           |
+/// | JUMP BACKWARD  | 0b0000010000000000  | Player is jumping backward          |
+/// | BEND DOWN      | 0b0000100000000000  | Player is bending down              |
+/// | ROLL BACK      | 0b0001000000000000  | Player is rolling back              |
+/// | ROLL FORWARD   | 0b0010000000000000  | Player is rolling forward           |
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub struct PlayerState(u16);
 
@@ -129,7 +130,8 @@ impl Debug for PlayerState {
             (PlayerState::DOUBLE_JUMP, "DOUBLE_JUMPING"),
             (PlayerState::KICKING, "KICKING"),
             (PlayerState::PUNCHING, "PUNCHING"),
-            (PlayerState::SPECIAL_ATTACK, "SPECIAL_ATTACK"),
+            (PlayerState::FRONT_KICKING, "FRONT_KICKING"),
+            (PlayerState::BACK_KICKING, "BACK_KICKING"),
             (PlayerState::COOLDOWN, "COOLDOWN"),
         ];
         
@@ -161,14 +163,15 @@ impl PlayerState {
     pub const DOUBLE_JUMP: Self    = Self(0b0000000000000100);
     pub const KICKING: Self        = Self(0b0000000000001000);
     pub const PUNCHING: Self       = Self(0b0000000000010000);
-    pub const SPECIAL_ATTACK: Self = Self(0b0000000000100000);
-    pub const COOLDOWN: Self       = Self(0b0000000001000000);
-    pub const DIRECTION: Self      = Self(0b0000000010000000);
-    pub const JUMP_FORWARD: Self   = Self(0b0000000100000000);
-    pub const JUMP_BACKWARD: Self  = Self(0b0000001000000000);
-    pub const BEND_DOWN: Self      = Self(0b0000010000000000);
-    pub const ROLL_BACK: Self      = Self(0b0000100000000000);
-    pub const ROLL_FORWARD: Self   = Self(0b0001000000000000);
+    pub const FRONT_KICKING: Self   = Self(0b0000000000100000);
+    pub const BACK_KICKING: Self   = Self(0b0000000001000000);
+    pub const COOLDOWN: Self       = Self(0b0000000010000000);
+    pub const DIRECTION: Self      = Self(0b0000000100000000);
+    pub const JUMP_FORWARD: Self   = Self(0b0000001000000000);
+    pub const JUMP_BACKWARD: Self  = Self(0b0000010000000000);
+    pub const BEND_DOWN: Self      = Self(0b0000100000000000);
+    pub const ROLL_BACK: Self      = Self(0b0001000000000000);
+    pub const ROLL_FORWARD: Self   = Self(0b0010000000000000);
 
     // ignore cooldown state
     pub fn is_idle(&self) -> bool {
@@ -554,8 +557,8 @@ pub fn spawn_player(
 /// - Combat moves:
 ///   - K key for kicks
 ///   - L key for punches
-///   - J key for special kick attack
-///   - H key for special punch attack
+///   - J key for front kicks
+///   - H key for back kicks
 ///
 /// The function updates player state and animations based on input,
 /// handling state transitions and preventing invalid combinations
@@ -739,9 +742,9 @@ fn keyboard_input(
         if keys.just_pressed(KeyCode::KeyJ) {
             if player.state.is_idle() {
                 // player is idle
-                // then player will special kick
-                player.state |= PlayerState::KICKING | PlayerState::SPECIAL_ATTACK;
-                player.set_animation(HIGH_KICK_POSE, 0, 10);
+                // then player will front kick
+                player.state |= PlayerState::FRONT_KICKING;
+                player.set_animation(FRONT_KICK_POSE, 0, 10);
             } else if player.state.check(
                 PlayerState::JUMP_UP
                 | PlayerState::DOUBLE_JUMP
@@ -756,9 +759,9 @@ fn keyboard_input(
         if keys.just_pressed(KeyCode::KeyH) {
             if player.state.is_idle() {
                 // player is idle
-                // then player will special punch
-                player.state |= PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK;
-                player.set_animation(UPPER_PUNCH_POSE1, 0, 5);
+                // then player will back kick
+                player.state |= PlayerState::BACK_KICKING;
+                player.set_animation(BACK_KICK_POSE1, 0, 5);
             }
         }
     }
@@ -1083,45 +1086,40 @@ fn player_movement(
                 }
             } else {
                 if player.state.check(PlayerState::KICKING) {
-                    if player.state.check(PlayerState::SPECIAL_ATTACK) {
-                        if player.animation.phase == 0 {
-                            player.update_animation();
-                            if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE1, 0, 30);
-                            }
-                        }
-                    } else {
-                        if player.animation.phase == 0 {
-                            player.update_animation();
-                            if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE1, 0, 30);
-                            }
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
-                }
-                if player.state.check(PlayerState::PUNCHING) {
-                    if player.state.check(PlayerState::SPECIAL_ATTACK) {
-                        if player.animation.phase == 0 {
-                            player.update_animation();
-                            if player.animation.count == 0 {
-                                player.set_animation(UPPER_PUNCH_POSE2, 1, 5);
-                            }
-                        } else if player.animation.phase == 1 {
-                            player.update_animation();
-                            if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE1, 0, 30);
-                            }
+                } else if player.state.check(PlayerState::FRONT_KICKING) {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.set_animation(IDLE_POSE1, 0, 30);
                         }
-                    } else {
-                        if player.animation.phase == 0 {
-                            player.update_animation();
-                            if player.animation.count == 0 {
-                                player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
-                                player.set_animation(IDLE_POSE1, 0, 30);
-                            }
+                    }
+                } else if player.state.check(PlayerState::BACK_KICKING) {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(BACK_KICK_POSE2, 1, 5);
+                        }
+                    } else if player.animation.phase == 1 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.set_animation(IDLE_POSE1, 0, 30);
+                        }
+                    }
+                } else if player.state.check(PlayerState::PUNCHING) {
+                    if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
                 }
@@ -1535,7 +1533,7 @@ fn check_attack(
                         opponent_parts,
                     );
                     println!("Player {} hit: {} damage", attacker_id.0, damage);
-                    player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::SPECIAL_ATTACK);
+                    player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING);
                     player.set_animation(IDLE_POSE1, 0, 30);
                 }
                 if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
@@ -1594,11 +1592,6 @@ fn calculate_damage(
 
     // If attacker is performes a jumping kick or double jump kick, double the damage
     if attacker_info.1.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
-        damage *= 2.0;
-    }
-
-    // If attacker is performing a special attack, double the damage
-    if attacker_info.1.check(PlayerState::SPECIAL_ATTACK) {
         damage *= 2.0;
     }
 

@@ -640,22 +640,59 @@ pub const KICK_POSE: Pose = Pose {
     left_lower_leg: -10.0,
 };
 
-pub const HIGH_KICK_POSE: Pose = Pose {
+pub const BACK_KICK_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    foot_offset: [0.0, 10.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
-    body: 10.0,
-    right_upper_arm: 10.0,
+    body: -10.0,
+    right_upper_arm: -40.0,
+    right_lower_arm: -80.0,
+    right_upper_leg: 0.0,
+    right_lower_leg: 0.0,
+    left_upper_arm: -10.0,
+    left_lower_arm: -90.0,
+    left_upper_leg: -60.0,
+    left_lower_leg: 130.0,
+};
+
+// TODO: This pose is not adjusted. I have to fix it
+pub const BACK_KICK_POSE2: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 10.0, 0.0, 0.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 20.0,
+    body: -10.0,
+    right_upper_arm: -40.0,
+    right_lower_arm: -80.0,
+    right_upper_leg: -20.0,
+    right_lower_leg: 20.0,
+    left_upper_arm: -10.0,
+    left_lower_arm: -90.0,
+    left_upper_leg: -60.0,
+    left_lower_leg: 130.0,
+};
+
+pub const FRONT_KICK_POSE: Pose = Pose {
+    facing: true,
+    offset: [20.0, 10.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 0.0, 0.0, -10.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 10.0,
+    body: 0.0,
+    right_upper_arm: -30.0,
     right_lower_arm: 90.0,
-    right_upper_leg: 150.0,
-    right_lower_leg: 10.0,
-    left_upper_arm: 30.0,
+    right_upper_leg: 10.0,
+    right_lower_leg: -40.0,
+    left_upper_arm: -40.0,
     left_lower_arm: 90.0,
-    left_upper_leg: -20.0,
-    left_lower_leg: -10.0,
+    left_upper_leg: 110.0,
+    left_lower_leg: -20.0,
 };
 
 pub const PUNCH_POSE: Pose = Pose {
@@ -674,42 +711,6 @@ pub const PUNCH_POSE: Pose = Pose {
     left_lower_arm: -100.0,
     left_upper_leg: 20.0,
     left_lower_leg: 20.0,
-};
-
-pub const UPPER_PUNCH_POSE1: Pose = Pose {
-    facing: true,
-    offset: [0.0, 0.0],
-    old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 0.0,
-    body: 0.0,
-    right_upper_arm: 90.0,
-    right_lower_arm: 0.0,
-    right_upper_leg: 10.0,
-    right_lower_leg: -40.0,
-    left_upper_arm: 30.0,
-    left_lower_arm: 90.0,
-    left_upper_leg: 40.0,
-    left_lower_leg: -50.0,
-};
-
-pub const UPPER_PUNCH_POSE2: Pose = Pose {
-    facing: true,
-    offset: [0.0, 0.0],
-    old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 0.0,
-    body: 0.0,
-    right_upper_arm: 90.0,
-    right_lower_arm: 90.0,
-    right_upper_leg: 10.0,
-    right_lower_leg: -40.0,
-    left_upper_arm: 30.0,
-    left_lower_arm: 90.0,
-    left_upper_leg: 40.0,
-    left_lower_leg: -50.0,
 };
 
 pub const WINNER_POSE: Pose = Pose {

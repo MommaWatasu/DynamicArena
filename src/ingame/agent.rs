@@ -46,6 +46,9 @@ enum Action {
     JumpLeft,
     Bend,
     Kick,
+    BackKick,
+    FrontKick,
+    Punch,
     Ignore,
     None
 }
@@ -320,6 +323,42 @@ pub fn agent_system(
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::KICKING;
+                    }
+                }
+                Action::BackKick => {
+                    if player.state.is_idle() {
+                        // player is idle
+                        // then player will back kick
+                        player.state |= PlayerState::BACK_KICKING;
+                        player.set_animation(BACK_KICK_POSE1, 0, 10);
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                        // player is jumping
+                        // then just adding state
+                        player.state |= PlayerState::BACK_KICKING;
+                    }
+                }
+                Action::FrontKick => {
+                    if player.state.is_idle() {
+                        // player is idle
+                        // then player will knee kick
+                        player.state |= PlayerState::FRONT_KICKING;
+                        player.set_animation(FRONT_KICK_POSE, 0, 10);
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                        // player is jumping
+                        // then just adding state
+                        player.state |= PlayerState::FRONT_KICKING;
+                    }
+                }
+                Action::Punch => {
+                    if player.state.is_idle() {
+                        // player is idle
+                        // then player will punch
+                        player.state |= PlayerState::PUNCHING;
+                        player.set_animation(PUNCH_POSE, 0, 10);
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                        // player is jumping
+                        // then just adding state
+                        player.state |= PlayerState::PUNCHING;
                     }
                 }
                 Action::Ignore => {}

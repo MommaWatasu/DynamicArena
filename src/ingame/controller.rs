@@ -46,9 +46,6 @@ fn controller_system(
                 if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP) & !player.state.check(PlayerState::KICKING) {
                     player.state |= PlayerState::KICKING;
                     player.set_animation(JUMPING_KICK_POSE, 0, 10);
-                } else if !player.state.check(PlayerState::SPECIAL_ATTACK | PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::WALKING) {
-                    player.state |= PlayerState::KICKING | PlayerState::SPECIAL_ATTACK;
-                    player.set_animation(HIGH_KICK_POSE, 0, 10);
                 }
             }
         }
