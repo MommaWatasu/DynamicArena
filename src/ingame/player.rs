@@ -853,7 +853,7 @@ fn player_movement(
                             if cfg!(not(target_arch = "wasm32")) {
                                 player.velocity = Vec2::new(0.0, 12.0);
                             } else {
-                                player.velocity = Vec2::new(0.0, 6.0);
+                                player.velocity = Vec2::new(0.0, 8.0);
                             }
                             player.set_animation(JUMP_UP_POSE2, 1, 5);
                         }
@@ -890,25 +890,35 @@ fn player_movement(
                             let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                             if cfg!(not(target_arch = "wasm32")) {
                                 player.velocity = Vec2::new(x_vel, 12.0);
+                                player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
                             } else {
-                                player.velocity = Vec2::new(x_vel, 6.0);
+                                player.velocity = Vec2::new(x_vel, 8.0);
+                                player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
                             }
-                            player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
                             player.set_animation(JUMP_FORWARD_POSE3, 2, 15);
+                            #[cfg(target_arch = "wasm32")]
+                            player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
                         }
                     } else if player.animation.phase == 2 {
                         player.update_animation();
                         if player.animation.count == 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
                             player.set_animation(JUMP_FORWARD_POSE4, 3, 30);
+                            #[cfg(target_arch = "wasm32")]
+                            player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
                         }
                     } else if player.animation.phase == 3 {
                         player.update_animation();
                         if player.animation.count == 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
                             player.set_animation(JUMP_FORWARD_POSE5, 4, 15);
+                            #[cfg(target_arch = "wasm32")]
+                            player.set_animation(JUMP_FORWARD_POSE5, 4, 10);
                         }
                     } else if player.animation.phase == 4 {
                         player.update_animation();
@@ -940,25 +950,35 @@ fn player_movement(
                             let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                             if cfg!(not(target_arch = "wasm32")) {
                                 player.velocity = Vec2::new(-x_vel, 12.0);
+                                player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
                             } else {
-                                player.velocity = Vec2::new(-x_vel, 6.0);
+                                player.velocity = Vec2::new(-x_vel, 8.0);
+                                player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
                             }
-                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
                             player.set_animation(JUMP_BACKWARD_POSE3, 2, 15);
+                            #[cfg(target_arch = "wasm32")]
+                            player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
                         }
                     } else if player.animation.phase == 2 {
                         player.update_animation();
                         if player.animation.count == 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
                             player.set_animation(JUMP_BACKWARD_POSE4, 3, 30);
+                            #[cfg(target_arch = "wasm32")]
+                            player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
                         }
                     } else if player.animation.phase == 3 {
                         player.update_animation();
                         if player.animation.count == 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
                             player.set_animation(JUMP_BACKWARD_POSE5, 4, 15);
+                            #[cfg(target_arch = "wasm32")]
+                            player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
                         }
                     } else if player.animation.phase == 4 {
                         player.update_animation();
@@ -1389,19 +1409,34 @@ fn update_pose(
             }
         }
         // update player position offset
-        player_transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
-        player_transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
+        if cfg!(not(target_arch = "wasm32")) {
+            player_transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
+            player_transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
+        } else {
+            player_transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0;
+            player_transform.translation.y += (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
+        }
         player.pose.old_offset = player.pose.offset;
 
         // update foot position
         for (foot, foot_id, mut transform) in foot_query.iter_mut() {
             if player_id.0 == foot_id.0 {
-                if foot.0 {
-                    transform.translation.x += player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
-                    transform.translation.y += player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
+                if cfg!(not(target_arch = "wasm32")) {
+                    if foot.0 {
+                        transform.translation.x += player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
+                        transform.translation.y += player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
+                    } else {
+                        transform.translation.x += player.pose.foot_offset[2] - player.pose.old_foot_offset[2];
+                        transform.translation.y += player.pose.foot_offset[3] - player.pose.old_foot_offset[3];
+                    }
                 } else {
-                    transform.translation.x += player.pose.foot_offset[2] - player.pose.old_foot_offset[2];
-                    transform.translation.y += player.pose.foot_offset[3] - player.pose.old_foot_offset[3];
+                    if foot.0 {
+                        transform.translation.x += (player.pose.foot_offset[0] - player.pose.old_foot_offset[0])/2.0;
+                        transform.translation.y += (player.pose.foot_offset[1] - player.pose.old_foot_offset[1])/2.0;
+                    } else {
+                        transform.translation.x += (player.pose.foot_offset[2] - player.pose.old_foot_offset[2])/2.0;
+                        transform.translation.y += (player.pose.foot_offset[3] - player.pose.old_foot_offset[3])/2.0;
+                    }
                 }
             }
         }

@@ -16,7 +16,10 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         description: "このゲームの開発者で、俊足が自慢のファイター。その代わり力は弱めなようだ。",
         color: Color::srgb(0.0, 0.0, 1.0),
         health: 400,
+        #[cfg(not(target_arch = "wasm32"))]
         agility: 4.0,
+        #[cfg(target_arch = "wasm32")]
+        agility: 2.0,
         power: 100.0,
         defense: 40.0
     },
@@ -25,7 +28,10 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         description: "身軽なアサシン。体力こそ少ないものの、二段ジャンプができるため回避に長けている。",
         color: Color::srgb(0.0, 1.0, 0.0),
         health: 300,
+        #[cfg(not(target_arch = "wasm32"))]
         agility: 3.0,
+        #[cfg(target_arch = "wasm32")]
+        agility: 1.5,
         power: 150.0,
         defense: 30.0
     },
@@ -34,7 +40,10 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         description: "体力の多いレスラー。スピードは遅いが強靭な肉体とパワーで全てを解決する。",
         color: Color::srgb(1.0, 0.0, 0.0),
         health: 500,
+        #[cfg(not(target_arch = "wasm32"))]
         agility: 2.0,
+        #[cfg(target_arch = "wasm32")]
+        agility: 1.0,
         power: 250.0,
         defense: 50.0
     },

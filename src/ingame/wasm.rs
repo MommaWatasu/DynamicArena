@@ -174,7 +174,7 @@ pub fn touch_input(
                     {
                         player.state |= PlayerState::DOUBLE_JUMP;
                         player.set_animation(JUMP_UP_POSE1, 0, 10);
-                        player.velocity.y = 3.0;
+                        player.velocity.y = 5.0;
                     } else if player.state.is_idle() {
                         player.state |= PlayerState::JUMP_UP;
                         player.set_animation(JUMP_UP_POSE1, 0, 10);
