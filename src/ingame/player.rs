@@ -577,8 +577,8 @@ fn keyboard_input(
         if player.state.check(PlayerState::COOLDOWN) {
             continue;
         }
-        if keys.pressed(KeyCode::KeyD) {
-            if player.state.check(
+        if keys.pressed(KeyCode::KeyD) && !player.state.check(PlayerState::COOLDOWN) {
+            if !player.state.check(
                 PlayerState::JUMP_UP
                 | PlayerState::DOUBLE_JUMP
                 | PlayerState::JUMP_BACKWARD
@@ -586,19 +586,16 @@ fn keyboard_input(
                 | PlayerState::BEND_DOWN
                 | PlayerState::ROLL_BACK
                 | PlayerState::ROLL_FORWARD
+                | PlayerState::WALKING
             ) {
-                // player is jumping or bending or rolling
-                // then just adding state
-                player.state |= PlayerState::WALKING;
-            } else if !player.state.check(PlayerState::WALKING) {
                 // player is just walking
                 player.state |= PlayerState::WALKING;
                 player.set_animation(WALKING_POSE1, 0, 10);
             }
             // direction is right
             player.state |= PlayerState::DIRECTION;
-        } else if keys.pressed(KeyCode::KeyA) {
-            if player.state.check(
+        } else if keys.pressed(KeyCode::KeyA) && !player.state.check(PlayerState::COOLDOWN) {
+            if !player.state.check(
                 PlayerState::JUMP_UP
                 | PlayerState::DOUBLE_JUMP
                 | PlayerState::JUMP_BACKWARD
@@ -606,11 +603,8 @@ fn keyboard_input(
                 | PlayerState::BEND_DOWN
                 | PlayerState::ROLL_BACK
                 | PlayerState::ROLL_FORWARD
+                | PlayerState::WALKING
             ) {
-                // player is jumping or bending or rolling
-                // then just adding state
-                player.state |= PlayerState::WALKING;
-            } else if !player.state.check(PlayerState::WALKING) {
                 // player is just walking
                 player.state |= PlayerState::WALKING;
                 player.set_animation(WALKING_POSE1, 0, 10);
@@ -665,6 +659,7 @@ fn keyboard_input(
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will jump forward
+                        player.state &= !PlayerState::WALKING;
                         player.state |= PlayerState::JUMP_FORWARD;
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
@@ -672,6 +667,7 @@ fn keyboard_input(
                     } else {
                         // player is walking left
                         // then player will jump backward
+                        player.state &= !PlayerState::WALKING;
                         player.state |= PlayerState::JUMP_BACKWARD;
                         player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
@@ -811,7 +807,7 @@ fn player_movement(
                 continue
             }
             // player is idle
-            if player.state.is_idle() {
+            if player.state.is_idle() | player.state.check(PlayerState::COOLDOWN) {
                 player.velocity = Vec2::ZERO;
                 if player.animation.phase == 0 {
                     player.update_animation_idle(&mut transform);
@@ -1280,6 +1276,7 @@ fn check_ground(
         && transform.translation.y + 50.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 4 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 5.0;
             //transform.translation.y = 270.0 - config.window_size.y/2.0 - 50.0;
@@ -1289,6 +1286,7 @@ fn check_ground(
         && transform.translation.y + 70.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 2 {
             player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 7.0;
             //transform.translation.y = 270.0 - config.window_size.y/2.0 - 70.0;
