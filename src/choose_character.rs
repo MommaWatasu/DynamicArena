@@ -186,7 +186,7 @@ fn create_character_box(
             TextColor(Color::BLACK),
         ));
         builder.spawn((
-            Text::new(format!("<体力>\n{}", profile.health)),
+            Text::new(format!("<スキル> {}\n{}", profile.skill_name, profile.skill_description)),
             TextFont {
                 font: asset_server.load(PATH_BOLD_JP_FONT),
                 #[cfg(not(target_arch = "wasm32"))]
@@ -199,30 +199,7 @@ fn create_character_box(
             TextColor(Color::BLACK),
         ));
         builder.spawn((
-            Text::new(format!("<速さ>\n{}", profile.agility)),
-            TextFont {
-                font: asset_server.load(PATH_BOLD_JP_FONT),
-                #[cfg(not(target_arch = "wasm32"))]
-                font_size: 30.0,
-                #[cfg(target_arch = "wasm32")]
-                font_size: 10.0,
-                ..Default::default()
-            },
-            TextLayout::new_with_justify(JustifyText::Left),
-            TextColor(Color::BLACK),
-        ));
-        builder.spawn((
-            Text::new(format!("<力>\n{}", profile.power)),
-            TextFont {
-                font: asset_server.load(PATH_BOLD_JP_FONT),
-                #[cfg(not(target_arch = "wasm32"))]
-                font_size: 30.0,
-                #[cfg(target_arch = "wasm32")]
-                font_size: 10.0,
-                ..Default::default()
-            },
-            TextLayout::new_with_justify(JustifyText::Left),
-            TextColor(Color::BLACK),
+            ImageNode::new(asset_server.load(format!("{}character_{}_chart.png", PATH_IMAGE_PREFIX, character_id))),
         ));
     });
 }
