@@ -100,7 +100,7 @@ impl Agent {
     fn select_action(&self, environment: &Environment) -> Action {
         match self.level {
             Level::Easy => {
-                if rand() > 0.5 {
+                if rand() > 0.7 {
                     return Action::Ignore;
                 }
             }
