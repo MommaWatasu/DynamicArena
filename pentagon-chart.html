@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五角形レーダーチャート編集ツール</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            max-width: 1000px;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .value-display {
+            font-weight: bold;
+            margin-left: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .axis-name-input {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>五角形レーダーチャート編集ツール</h1>
+    
+    <div class="container">
+        <div class="chart-container">
+            <canvas id="radarChart" width="360" height="360"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>
+                    軸1: <input type="text" class="axis-name-input" id="axis1Name" value="能力A" placeholder="軸の名前">
+                </label>
+                <label>
+                    <input type="range" id="value1" min="1" max="5" value="3" step="1">
+                    <span class="value-display" id="value1Display">3</span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    軸2: <input type="text" class="axis-name-input" id="axis2Name" value="能力B" placeholder="軸の名前">
+                </label>
+                <label>
+                    <input type="range" id="value2" min="1" max="5" value="4" step="1">
+                    <span class="value-display" id="value2Display">4</span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    軸3: <input type="text" class="axis-name-input" id="axis3Name" value="能力C" placeholder="軸の名前">
+                </label>
+                <label>
+                    <input type="range" id="value3" min="1" max="5" value="2" step="1">
+                    <span class="value-display" id="value3Display">2</span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    軸4: <input type="text" class="axis-name-input" id="axis4Name" value="能力D" placeholder="軸の名前">
+                </label>
+                <label>
+                    <input type="range" id="value4" min="1" max="5" value="5" step="1">
+                    <span class="value-display" id="value4Display">5</span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label>
+                    軸5: <input type="text" class="axis-name-input" id="axis5Name" value="能力E" placeholder="軸の名前">
+                </label>
+                <label>
+                    <input type="range" id="value5" min="1" max="5" value="3" step="1">
+                    <span class="value-display" id="value5Display">3</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // キャンバスと2Dコンテキストを取得
+        const canvas = document.getElementById('radarChart');
+        const ctx = canvas.getContext('2d');
+        
+        // チャートの中心点と最大半径
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const maxRadius = Math.min(centerX, centerY) - 40;
+        
+        // スライダーとその表示値への参照を取得
+        const sliders = [
+            document.getElementById('value1'),
+            document.getElementById('value2'),
+            document.getElementById('value3'),
+            document.getElementById('value4'),
+            document.getElementById('value5')
+        ];
+        
+        const valueDisplays = [
+            document.getElementById('value1Display'),
+            document.getElementById('value2Display'),
+            document.getElementById('value3Display'),
+            document.getElementById('value4Display'),
+            document.getElementById('value5Display')
+        ];
+        
+        const axisNameInputs = [
+            document.getElementById('axis1Name'),
+            document.getElementById('axis2Name'),
+            document.getElementById('axis3Name'),
+            document.getElementById('axis4Name'),
+            document.getElementById('axis5Name')
+        ];
+        
+        // イベントリスナーを設定
+        sliders.forEach((slider, index) => {
+            slider.addEventListener('input', () => {
+                valueDisplays[index].textContent = slider.value;
+                drawChart();
+            });
+        });
+        
+        axisNameInputs.forEach(input => {
+            input.addEventListener('input', drawChart);
+        });
+        
+
+        // レーダーチャートを描画する関数
+        function drawChart() {
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景グリッドの描画
+            drawGrid();
+            
+            // 軸の値を取得
+            const values = sliders.map(slider => parseInt(slider.value));
+            
+            // 軸の名前を取得
+            const axisNames = axisNameInputs.map(input => input.value);
+            
+            // 軸のラベルを描画
+            drawAxisLabels(axisNames);
+            
+            // データのポリゴンを描画
+            drawDataPolygon(values);
+        }
+        
+        // 背景グリッドを描画する関数
+        function drawGrid() {
+            const maxValue = 5;
+            
+            // 5つの同心円を描画（値の1〜5に対応）
+            for (let value = 1; value <= maxValue; value++) {
+                const radius = (value / maxValue) * maxRadius;
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // 値のラベルを描画（最も外側の円のみ）
+                if (value === maxValue) {
+                    ctx.fillStyle = '#999';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(value.toString(), centerX, centerY - radius - 5);
+                }
+            }
+            
+            // 5つの軸線を描画
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const x = centerX + maxRadius * Math.cos(angle);
+                const y = centerY + maxRadius * Math.sin(angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+        
+        // 軸のラベルを描画する関数
+        function drawAxisLabels(axisNames) {
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const labelDistance = maxRadius + 25;
+                const x = centerX + labelDistance * Math.cos(angle);
+                const y = centerY + labelDistance * Math.sin(angle);
+                
+                ctx.fillText(axisNames[i], x, y);
+            }
+        }
+        
+        // データのポリゴンを描画する関数
+        function drawDataPolygon(values) {
+            const maxValue = 5;
+            
+            // ポリゴンを描画
+            ctx.beginPath();
+            
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const value = values[i];
+                const radius = (value / maxValue) * maxRadius;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            // ポリゴンを閉じる
+            ctx.closePath();
+            
+            // ポリゴンを塗りつぶす
+            ctx.fillStyle = 'rgba(78, 115, 223, 0.5)';
+            ctx.fill();
+            
+            // ポリゴンの境界線を描画
+            ctx.strokeStyle = 'rgba(78, 115, 223, 1)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // データポイントを描画
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const value = values[i];
+                const radius = (value / maxValue) * maxRadius;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(78, 115, 223, 1)';
+                ctx.fill();
+                ctx.stroke();
+                
+                // 値を表示
+                const labelRadius = radius + 15;
+                const labelX = centerX + labelRadius * Math.cos(angle);
+                const labelY = centerY + labelRadius * Math.sin(angle);
+                
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(value.toString(), labelX, labelY);
+            }
+        }
+        
+        // 初期描画
+        drawChart();
+    </script>
+</body>
+</html>
