@@ -78,7 +78,7 @@ pub struct HealthBar(pub f32, pub f32);
 /// | DOUBLE_JUMP    | 0b0000000000000100  | Player is in second jump            |
 /// | KICKING        | 0b0000000000001000  | Player is performing kick           |
 /// | PUNCHING       | 0b0000000000010000  | Player is performing punch          |
-/// | FRONT_KICKING   | 0b0000000000100000  | Player is performing knee kick      |
+/// | FRONT_KICKING  | 0b0000000000100000  | Player is performing knee kick      |
 /// | BACK_KICKING   | 0b0000000001000000  | Player is performing back kick      |
 /// | COOLDOWN       | 0b0000000010000000  | Player is in cooldown state         |
 /// | DIRECTION      | 0b0000000100000000  | Player is moving right              |
@@ -127,6 +127,8 @@ impl Debug for PlayerState {
         let states = [
             (PlayerState::WALKING, "WALKING"),
             (PlayerState::JUMP_UP, "JUMPING"),
+            (PlayerState::JUMP_BACKWARD, "JUMP_BACKWARD"),
+            (PlayerState::JUMP_FORWARD, "JUMP_FORWARD"),
             (PlayerState::DOUBLE_JUMP, "DOUBLE_JUMPING"),
             (PlayerState::KICKING, "KICKING"),
             (PlayerState::PUNCHING, "PUNCHING"),
@@ -163,7 +165,7 @@ impl PlayerState {
     pub const DOUBLE_JUMP: Self    = Self(0b0000000000000100);
     pub const KICKING: Self        = Self(0b0000000000001000);
     pub const PUNCHING: Self       = Self(0b0000000000010000);
-    pub const FRONT_KICKING: Self   = Self(0b0000000000100000);
+    pub const FRONT_KICKING: Self  = Self(0b0000000000100000);
     pub const BACK_KICKING: Self   = Self(0b0000000001000000);
     pub const COOLDOWN: Self       = Self(0b0000000010000000);
     pub const DIRECTION: Self      = Self(0b0000000100000000);
@@ -727,8 +729,8 @@ fn keyboard_input(
                 // player is idle
                 // then player will kick
                 player.state |= PlayerState::KICKING;
-                player.set_animation(KICK_POSE, 0, 10);
-            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                player.set_animation(KICK_POSE1, 0, 5);
+            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD) {
                 // player is jumping
                 // then just adding state
                 player.state |= PlayerState::KICKING;
@@ -748,15 +750,6 @@ fn keyboard_input(
                 // then player will front kick
                 player.state |= PlayerState::FRONT_KICKING;
                 player.set_animation(FRONT_KICK_POSE, 0, 10);
-            } else if player.state.check(
-                PlayerState::JUMP_UP
-                | PlayerState::DOUBLE_JUMP
-                | PlayerState::JUMP_FORWARD
-                | PlayerState::JUMP_BACKWARD
-            ) {
-                // player is jumping
-                // then just adding state
-                player.state |= PlayerState::KICKING;
             }
         }
         if keys.just_pressed(KeyCode::KeyH) {
@@ -839,34 +832,35 @@ fn player_movement(
                     player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
                 }
 
-                if player.state.check(PlayerState::KICKING) {
-                    if player.animation.phase == 0 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            player.animation.phase = 1;
-                            player.animation.count = 0;
+                if player.animation.phase == 0 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        if cfg!(not(target_arch = "wasm32")) {
+                            player.velocity = Vec2::new(0.0, 12.0);
+                        } else {
+                            player.velocity = Vec2::new(0.0, 8.0);
                         }
+                        player.set_animation(JUMP_UP_POSE2, 1, 5);
                     }
-                } else {
-                    if player.animation.phase == 0 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            if cfg!(not(target_arch = "wasm32")) {
-                                player.velocity = Vec2::new(0.0, 12.0);
-                            } else {
-                                player.velocity = Vec2::new(0.0, 8.0);
-                            }
-                            player.set_animation(JUMP_UP_POSE2, 1, 5);
-                        }
-                    } else if player.animation.phase == 1 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
+                } else if player.animation.phase == 1 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        if player.state.check(PlayerState::KICKING) {
+                            let mut jumping_kick_pose = JUMPING_KICK_POSE;
+                            jumping_kick_pose.body = 0.0;
+                            player.set_animation(jumping_kick_pose, 2, 5);
+                        } else {
                             player.animation.phase = 2;
                             player.animation.count = 0;
                         }
-                    } else if player.animation.phase == 2 {
-                        player.update_animation();
                     }
+                } else if player.animation.phase == 2 {
+                    if player.state.check(PlayerState::KICKING) {
+                        let mut jumping_kick_pose = JUMPING_KICK_POSE;
+                        jumping_kick_pose.body = 0.0;
+                        player.set_animation(jumping_kick_pose, 2, 5);
+                    }
+                    player.update_animation();
                 }
             } else if player.state.check(PlayerState::JUMP_FORWARD) {
                 // player is jumping forward
@@ -876,56 +870,78 @@ fn player_movement(
                     player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
                 }
 
-                if player.state.check(PlayerState::KICKING) {
-                    if player.animation.phase == 0 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            player.animation.phase = 1;
-                            player.animation.count = 0;
-                        }
-                    }
-                } else {
-                    if player.animation.phase == 0 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                            if cfg!(not(target_arch = "wasm32")) {
-                                player.velocity = Vec2::new(x_vel, 12.0);
-                                player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
+                if player.animation.phase == 0 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                        if cfg!(not(target_arch = "wasm32")) {
+                            player.velocity = Vec2::new(x_vel, 12.0);
+                            if player.state.check(PlayerState::KICKING) {
+                                player.set_animation(JUMPING_KICK_POSE, 1, 10);
                             } else {
-                                player.velocity = Vec2::new(x_vel, 8.0);
+                                player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
+                            }
+                        } else {
+                            player.velocity = Vec2::new(x_vel, 8.0);
+                            if player.state.check(PlayerState::KICKING) {
+                                player.set_animation(JUMP_FORWARD_POSE2, 1, 6);
+                            } else {
                                 player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
                             }
                         }
-                    } else if player.animation.phase == 1 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            #[cfg(not(target_arch = "wasm32"))]
+                    }
+                } else if player.animation.phase == 1 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        if player.state.check(PlayerState::KICKING) {
+                            player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
+                        } else {
                             player.set_animation(JUMP_FORWARD_POSE3, 2, 15);
-                            #[cfg(target_arch = "wasm32")]
+                        }
+                        #[cfg(target_arch = "wasm32")]
+                        if player.state.check(PlayerState::KICKING) {
+                            player.set_animation(JUMP_FORWARD_POSE3, 2, 6);
+                        } else {
                             player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
                         }
-                    } else if player.animation.phase == 2 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            #[cfg(not(target_arch = "wasm32"))]
+                    }
+                } else if player.animation.phase == 2 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        if player.state.check(PlayerState::KICKING) {
+                            player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
+                        } else {
                             player.set_animation(JUMP_FORWARD_POSE4, 3, 30);
-                            #[cfg(target_arch = "wasm32")]
+                        }
+                        #[cfg(target_arch = "wasm32")]
+                        if player.state.check(PlayerState::KICKING) {
+                            player.set_animation(JUMP_FORWARD_POSE4, 3, 13);
+                        } else {
                             player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
                         }
-                    } else if player.animation.phase == 3 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            #[cfg(not(target_arch = "wasm32"))]
+                    }
+                } else if player.animation.phase == 3 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        if player.state.check(PlayerState::KICKING) {
+                            player.set_animation(JUMPING_KICK_POSE, 4, 10);
+                        } else {
                             player.set_animation(JUMP_FORWARD_POSE5, 4, 15);
-                            #[cfg(target_arch = "wasm32")]
+                        }
+                        #[cfg(target_arch = "wasm32")]
+                        if player.state.check(PlayerState::KICKING) {
+                            player.set_animation(JUMPING_KICK_POSE, 4, 6);
+                        } else {
                             player.set_animation(JUMP_FORWARD_POSE5, 4, 10);
                         }
-                    } else if player.animation.phase == 4 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            player.pose.body = 0.0;
-                        }
+                    }
+                } else if player.animation.phase == 4 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.pose.body = 0.0;
                     }
                 }
             } else if player.state.check(PlayerState::JUMP_BACKWARD) {
@@ -936,56 +952,46 @@ fn player_movement(
                     player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
                 }
 
-                if player.state.check(PlayerState::KICKING) {
-                    if player.animation.phase == 0 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            player.animation.phase = 1;
-                            player.animation.count = 0;
+                if player.animation.phase == 0 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                        if cfg!(not(target_arch = "wasm32")) {
+                            player.velocity = Vec2::new(-x_vel, 12.0);
+                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
+                        } else {
+                            player.velocity = Vec2::new(-x_vel, 8.0);
+                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
                         }
                     }
-                } else {
-                    if player.animation.phase == 0 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
-                            if cfg!(not(target_arch = "wasm32")) {
-                                player.velocity = Vec2::new(-x_vel, 12.0);
-                                player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
-                            } else {
-                                player.velocity = Vec2::new(-x_vel, 8.0);
-                                player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
-                            }
-                        }
-                    } else if player.animation.phase == 1 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            #[cfg(not(target_arch = "wasm32"))]
-                            player.set_animation(JUMP_BACKWARD_POSE3, 2, 15);
-                            #[cfg(target_arch = "wasm32")]
-                            player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
-                        }
-                    } else if player.animation.phase == 2 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            #[cfg(not(target_arch = "wasm32"))]
-                            player.set_animation(JUMP_BACKWARD_POSE4, 3, 30);
-                            #[cfg(target_arch = "wasm32")]
-                            player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
-                        }
-                    } else if player.animation.phase == 3 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            #[cfg(not(target_arch = "wasm32"))]
-                            player.set_animation(JUMP_BACKWARD_POSE5, 4, 15);
-                            #[cfg(target_arch = "wasm32")]
-                            player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
-                        }
-                    } else if player.animation.phase == 4 {
-                        player.update_animation();
-                        if player.animation.count == 0 {
-                            player.pose.body = 0.0;
-                        }
+                } else if player.animation.phase == 1 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        player.set_animation(JUMP_BACKWARD_POSE3, 2, 15);
+                        #[cfg(target_arch = "wasm32")]
+                        player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
+                    }
+                } else if player.animation.phase == 2 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        player.set_animation(JUMP_BACKWARD_POSE4, 3, 30);
+                        #[cfg(target_arch = "wasm32")]
+                        player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
+                    }
+                } else if player.animation.phase == 3 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        player.set_animation(JUMP_BACKWARD_POSE5, 4, 15);
+                        #[cfg(target_arch = "wasm32")]
+                        player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
+                    }
+                } else if player.animation.phase == 4 {
+                    player.update_animation();
+                    if player.animation.count == 0 {
+                        player.pose.body = 0.0;
                     }
                 }
             } else if player.state.check(PlayerState::BEND_DOWN) {
@@ -1085,6 +1091,11 @@ fn player_movement(
             } else {
                 if player.state.check(PlayerState::KICKING) {
                     if player.animation.phase == 0 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.set_animation(KICK_POSE2, 1, 10);
+                        }
+                    } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
@@ -1277,7 +1288,7 @@ fn check_ground(
         if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
         && transform.translation.y + 50.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 4 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 5.0;
@@ -1287,7 +1298,7 @@ fn check_ground(
         } else if player.state.check(PlayerState::JUMP_UP)
         && transform.translation.y + 70.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 2 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 7.0;

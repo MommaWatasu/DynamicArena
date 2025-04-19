@@ -1,5 +1,11 @@
 use std::ops::{Add, AddAssign, Div, Sub};
 
+// The pose of a character
+// facing: true means right facing, false means left facing
+// offset: the offset of the character from the center of the body([x, y])
+// old_offset: the offset of the character from the center of the body in the previous frame
+// foot_offset: the offset of the feet from the toe([left_x, left_y, right_x, right_y])
+// old_foot_offset: the offset of the feet from the toe in the previous frame
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Pose {
     // true means right facing, false means left facing
@@ -513,7 +519,6 @@ pub const JUMP_FORWARD_POSE5: Pose = Pose {
     left_lower_leg: -130.0,
 };
 
-// TODO: Backward jump poses aren't adjusted. I have to fix them
 pub const JUMP_BACKWARD_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
@@ -608,35 +613,54 @@ pub const JUMPING_KICK_POSE: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    foot_offset: [0.0, -10.0, 0.0, 0.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 0.0,
-    body: -10.0,
-    right_upper_arm: -10.0,
-    right_lower_arm: 20.0,
-    right_upper_leg: 70.0,
-    right_lower_leg: -110.0,
-    left_upper_arm: -20.0,
-    left_lower_arm: 10.0,
-    left_upper_leg: 10.0,
-    left_lower_leg: -10.0,
+    head: 50.0,
+    body: -360.0,
+    right_upper_arm: -40.0,
+    right_lower_arm: 120.0,
+    right_upper_leg: 110.0,
+    right_lower_leg: -10.0,
+    left_upper_arm: -10.0,
+    left_lower_arm: 100.0,
+    left_upper_leg: 80.0,
+    left_lower_leg: -130.0,
 };
 
-pub const KICK_POSE: Pose = Pose {
+
+pub const KICK_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    foot_offset: [0.0, 0.0, 5.0, -10.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
-    body: 10.0,
-    right_upper_arm: 10.0,
-    right_lower_arm: 90.0,
+    body: 0.0,
+    right_upper_arm: 100.0,
+    right_lower_arm: 150.0,
     right_upper_leg: 100.0,
-    right_lower_leg: 10.0,
-    left_upper_arm: 30.0,
+    right_lower_leg: -150.0,
+    left_upper_arm: -10.0,
     left_lower_arm: 90.0,
-    left_upper_leg: -20.0,
+    left_upper_leg: 0.0,
+    left_lower_leg: -10.0,
+};
+
+pub const KICK_POSE2: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, -10.0, 5.0, -10.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 20.0,
+    body: 40.0,
+    right_upper_arm: -100.0,
+    right_lower_arm: 150.0,
+    right_upper_leg: 80.0,
+    right_lower_leg: 0.0,
+    left_upper_arm: 10.0,
+    left_lower_arm: 150.0,
+    left_upper_leg: -30.0,
     left_lower_leg: -10.0,
 };
 
@@ -658,7 +682,6 @@ pub const BACK_KICK_POSE1: Pose = Pose {
     left_lower_leg: 120.0,
 };
 
-// TODO: This pose is not adjusted. I have to fix it
 pub const BACK_KICK_POSE2: Pose = Pose {
     facing: true,
     offset: [0.0, -20.0],
@@ -699,18 +722,18 @@ pub const PUNCH_POSE: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, 0.0],
+    foot_offset: [0.0, 5.0, 0.0, -10.0],
     old_foot_offset: [0.0, 0.0, 0.0, 0.0],
     head: 0.0,
     body: 0.0,
-    right_upper_arm: 70.0,
-    right_lower_arm: 30.0,
-    right_upper_leg: -45.0,
+    right_upper_arm: -40.0,
+    right_lower_arm: 120.0,
+    right_upper_leg: -40.0,
     right_lower_leg: 40.0,
-    left_upper_arm: 30.0,
-    left_lower_arm: -100.0,
-    left_upper_leg: 20.0,
-    left_lower_leg: 20.0,
+    left_upper_arm: 90.0,
+    left_lower_arm: 0.0,
+    left_upper_leg: 60.0,
+    left_lower_leg: -60.0,
 };
 
 pub const WINNER_POSE: Pose = Pose {

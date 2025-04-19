@@ -37,7 +37,7 @@ fn controller_system(
                         player.set_animation(JUMPING_KICK_POSE, 0, 10);
                     } else if !player.state.check(PlayerState::WALKING) {
                         player.state |= PlayerState::KICKING;
-                        player.set_animation(KICK_POSE, 0, 10);
+                        player.set_animation(KICK_POSE1, 0, 10);
                     }
                 }
             }

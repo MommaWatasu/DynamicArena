@@ -318,7 +318,7 @@ pub fn agent_system(
                         // player is idle
                         // then player will kick
                         player.state |= PlayerState::KICKING;
-                        player.set_animation(KICK_POSE, 0, 10);
+                        player.set_animation(KICK_POSE1, 0, 10);
                     } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
                         // player is jumping
                         // then just adding state
