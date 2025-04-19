@@ -571,6 +571,13 @@ fn keyboard_input(
     mut query: Query<(&mut Player, &PlayerID)>
 ) {
     for (mut player, player_id) in query.iter_mut() {
+        // skip player 1(opponent) in order to control player 0
+        // this is for debugging purpose
+        #[cfg(debug_assertions)]
+        if player_id.0 == 1 {
+            continue;
+        }
+
         if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
             continue;
         }
