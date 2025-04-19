@@ -295,7 +295,7 @@ impl BodyParts {
 // Represents a foot Entity
 // true for right foot, false for left foot
 #[derive(Component)]
-struct Foot(bool);
+pub struct Foot(bool);
 
 #[derive(Resource)]
 struct PlayerCollision(u8);
@@ -789,15 +789,10 @@ fn player_movement(
 ) {
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, id, mut transform) in player_query.iter_mut() {
+        for (mut player, _, mut transform) in player_query.iter_mut() {
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
-                player.animation.count -= 1;
-                let diff_pose = player.animation.diff_pose;
-                player.pose += diff_pose;
-                if gamestate.winners[gamestate.round as usize - 1] != id.0 + 1 {
-                    transform.translation.y -= 15.0;
-                }
+                player.update_animation();
                 if player.animation.count == 0 {
                     player.animation.phase = 1;
                     commands.remove_resource::<Fighting>();
