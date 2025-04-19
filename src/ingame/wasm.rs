@@ -36,25 +36,6 @@ pub struct TouchState {
     pub id: u64,
 }
 
-#[derive(Resource)]
-pub struct DoubleJumpCheck{
-    pub jumping: bool,
-    pub touch_end: bool,
-}
-
-impl DoubleJumpCheck {
-    pub fn new() -> Self {
-        DoubleJumpCheck {
-            jumping: false,
-            touch_end: false,
-        }
-    }
-    pub fn reset(&mut self) {
-        self.jumping = false;
-        self.touch_end = false;
-    }
-}
-
 /// Convert the touch position to the world position
 fn convert_touch_to_world(touch_position: Vec2, window_size: Vec2) -> Vec2 {
     Vec2::new(touch_position.x - window_size.x/2.0, - touch_position.y + window_size.y/2.0)
@@ -62,7 +43,6 @@ fn convert_touch_to_world(touch_position: Vec2, window_size: Vec2) -> Vec2 {
 
 pub fn touch_input(
     config: Res<GameConfig>,
-    mut double_jump_check: ResMut<DoubleJumpCheck>,
     mut touch_state: ResMut<TouchState>,
     mut touch_evr: EventReader<TouchInput>,
     mut circle_query: Query<&mut Transform, With<ControllerCircle>>,
@@ -98,8 +78,6 @@ pub fn touch_input(
                     touch_state.id = u64::MAX;
                     let mut circle_transform = circle_query.single_mut();
                     circle_transform.translation = Vec3::new(0.0, 0.0, 1.0);
-
-                    double_jump_check.touch_end = true;
                 }
             }
             TouchPhase::Canceled => {
@@ -162,32 +140,10 @@ pub fn touch_input(
                 player.state &= !PlayerState::DIRECTION;
             }
             CircleState::Up => {
-                if player.character_id == 1 {
-                    if player.state.check(
-                        PlayerState::JUMP_UP
-                        | PlayerState::JUMP_BACKWARD
-                        | PlayerState::JUMP_FORWARD
-                    )
-                        && !player.state.check(PlayerState::DOUBLE_JUMP)
-                        && double_jump_check.jumping
-                        && double_jump_check.touch_end
-                    {
-                        player.state |= PlayerState::DOUBLE_JUMP;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
-                        player.velocity.y = 5.0;
-                    } else if player.state.is_idle() {
-                        player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
-                        player.velocity = Vec2::ZERO;
-                        
-                        double_jump_check.jumping = true;
-                    }
-                } else {
-                    if player.state.is_idle() {
-                        player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
-                        player.velocity = Vec2::ZERO;
-                    }
+                if player.state.is_idle() {
+                    player.state |= PlayerState::JUMP_UP;
+                    player.set_animation(JUMP_UP_POSE1, 0, 10);
+                    player.velocity = Vec2::ZERO;
                 }
             }
             CircleState::UpRight => {
@@ -197,7 +153,6 @@ pub fn touch_input(
                     let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                     player.velocity = Vec2::ZERO;
                 }
-                double_jump_check.jumping = true;
             }
             CircleState::UpLeft => {
                 if player.state.is_idle() {
@@ -206,7 +161,6 @@ pub fn touch_input(
                     let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                     player.velocity = Vec2::ZERO;
                 }
-                double_jump_check.jumping = true;
             }
             CircleState::Down => {
                 if player.state.is_idle() {

@@ -75,7 +75,7 @@ pub struct HealthBar(pub f32, pub f32);
 /// | IDLE           | 0b0000000000000000  | Default state, no action            |
 /// | WALKING        | 0b0000000000000001  | Player is moving horizontally       |
 /// | JUMP UP        | 0b0000000000000010  | Player is in first jump             |
-/// | DOUBLE_JUMP    | 0b0000000000000100  | Player is in second jump            |
+/// | SKILL          | 0b0000000000000100  | Player is performing skill attack   |
 /// | KICKING        | 0b0000000000001000  | Player is performing kick           |
 /// | PUNCHING       | 0b0000000000010000  | Player is performing punch          |
 /// | FRONT_KICKING  | 0b0000000000100000  | Player is performing knee kick      |
@@ -129,7 +129,6 @@ impl Debug for PlayerState {
             (PlayerState::JUMP_UP, "JUMPING"),
             (PlayerState::JUMP_BACKWARD, "JUMP_BACKWARD"),
             (PlayerState::JUMP_FORWARD, "JUMP_FORWARD"),
-            (PlayerState::DOUBLE_JUMP, "DOUBLE_JUMPING"),
             (PlayerState::KICKING, "KICKING"),
             (PlayerState::PUNCHING, "PUNCHING"),
             (PlayerState::FRONT_KICKING, "FRONT_KICKING"),
@@ -162,7 +161,7 @@ impl PlayerState {
     pub const IDLE: Self           = Self(0b0000000000000000);
     pub const WALKING: Self        = Self(0b0000000000000001);
     pub const JUMP_UP: Self        = Self(0b0000000000000010);
-    pub const DOUBLE_JUMP: Self    = Self(0b0000000000000100);
+    pub const SKILL: Self    = Self(0b0000000000000100);
     pub const KICKING: Self        = Self(0b0000000000001000);
     pub const PUNCHING: Self       = Self(0b0000000000010000);
     pub const FRONT_KICKING: Self  = Self(0b0000000000100000);
@@ -589,7 +588,6 @@ fn keyboard_input(
         if keys.pressed(KeyCode::KeyD) && !player.state.check(PlayerState::COOLDOWN) {
             if !player.state.check(
                 PlayerState::JUMP_UP
-                | PlayerState::DOUBLE_JUMP
                 | PlayerState::JUMP_BACKWARD
                 | PlayerState::JUMP_FORWARD
                 | PlayerState::BEND_DOWN
@@ -606,7 +604,6 @@ fn keyboard_input(
         } else if keys.pressed(KeyCode::KeyA) && !player.state.check(PlayerState::COOLDOWN) {
             if !player.state.check(
                 PlayerState::JUMP_UP
-                | PlayerState::DOUBLE_JUMP
                 | PlayerState::JUMP_BACKWARD
                 | PlayerState::JUMP_FORWARD
                 | PlayerState::BEND_DOWN
@@ -652,75 +649,30 @@ fn keyboard_input(
             }
         }
         if keys.just_pressed(KeyCode::Space) {
-            if player.character_id == 1 {
-                // character 1 can double jump
-                if player.state.is_idle() {
-                    // player is idle
-                    // then player will jump up
-                    player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMP_UP_POSE1, 0, 10);
-                } else if !player.state.check(
-                    PlayerState::JUMP_UP
-                        | PlayerState::DOUBLE_JUMP
-                        | PlayerState::JUMP_FORWARD
-                        | PlayerState::JUMP_BACKWARD
-                ) && player.state.check(PlayerState::WALKING) {
-                    if player.state.check(PlayerState::DIRECTION) {
-                        // player is walking right
-                        // then player will jump forward
-                        player.state &= !PlayerState::WALKING;
-                        player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                    } else {
-                        // player is walking left
-                        // then player will jump backward
-                        player.state &= !PlayerState::WALKING;
-                        player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                    }
-                } else if player.state.check(
-                    PlayerState::JUMP_UP
-                    | PlayerState::JUMP_BACKWARD
+            if player.state.is_idle() {
+                // player is idle
+                // then player will jump up
+                player.state |= PlayerState::JUMP_UP;
+                player.set_animation(JUMP_UP_POSE1, 0, 10);
+            } else if !player.state.check(
+                PlayerState::JUMP_UP
                     | PlayerState::JUMP_FORWARD
-                ) && !player.state.check(PlayerState::DOUBLE_JUMP) {
-                    // player is jumping
-                    // then player will double jump
-                    player.state |= PlayerState::DOUBLE_JUMP;
+                    | PlayerState::JUMP_BACKWARD
+            ) && player.state.check(PlayerState::WALKING) {
+                if player.state.check(PlayerState::DIRECTION) {
+                    // player is walking right
+                    // then player will jump forward
+                    player.state |= PlayerState::JUMP_FORWARD;
+                    player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                    // stop moving for preparing motion
+                    player.velocity = Vec2::ZERO;
+                } else {
+                    // player is walking left
+                    // then player will jump backward
+                    player.state |= PlayerState::JUMP_BACKWARD;
                     player.set_animation(JUMP_UP_POSE1, 0, 10);
-                    player.velocity.y = 7.5;
-                }
-            } else {
-                // character 0 and 2 can only single jump
-                if player.state.is_idle() {
-                    // player is idle
-                    // then player will jump up
-                    player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMP_UP_POSE1, 0, 10);
-                } else if !player.state.check(
-                    PlayerState::JUMP_UP
-                        | PlayerState::DOUBLE_JUMP
-                        | PlayerState::JUMP_FORWARD
-                        | PlayerState::JUMP_BACKWARD
-                ) && player.state.check(PlayerState::WALKING) {
-                    if player.state.check(PlayerState::DIRECTION) {
-                        // player is walking right
-                        // then player will jump forward
-                        player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                    } else {
-                        // player is walking left
-                        // then player will jump backward
-                        player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                    }
+                    // stop moving for preparing motion
+                    player.velocity = Vec2::ZERO;
                 }
             }
         }
@@ -730,7 +682,7 @@ fn keyboard_input(
                 // then player will kick
                 player.state |= PlayerState::KICKING;
                 player.set_animation(KICK_POSE1, 0, 5);
-            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD) {
+            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
                 // player is jumping
                 // then just adding state
                 player.state |= PlayerState::KICKING;
@@ -1288,7 +1240,7 @@ fn check_ground(
         if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
         && transform.translation.y + 50.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 4 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 5.0;
@@ -1298,7 +1250,7 @@ fn check_ground(
         } else if player.state.check(PlayerState::JUMP_UP)
         && transform.translation.y + 70.0 < 270.0-config.window_size.y/2.0
         && player.animation.phase == 2 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 7.0;
@@ -1323,7 +1275,7 @@ fn check_ground(
         if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
         && transform.translation.y + 25.0 < 135.0-config.window_size.y/2.0
         && player.animation.phase == 4 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 2.5;
             //transform.translation.y = 135.0 - config.window_size.y/2.0 - 25.0;
@@ -1332,7 +1284,7 @@ fn check_ground(
         } else if player.state.check(PlayerState::JUMP_UP)
         && transform.translation.y + 35.0 < 135.0-config.window_size.y/2.0
         && player.animation.phase == 2 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 3.5;
             //transform.translation.y = 135.0 - config.window_size.y/2.0 - 35.0;
@@ -1602,7 +1554,7 @@ fn calculate_damage(
     }
 
     // If attacker is performes a jumping kick or double jump kick, double the damage
-    if attacker_info.1.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+    if attacker_info.1.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
         damage *= 2.0;
     }
 

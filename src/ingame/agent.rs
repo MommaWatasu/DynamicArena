@@ -194,7 +194,7 @@ pub fn agent_system(
                 Action::MoveRight => {
                     if player.state.check(
                         PlayerState::JUMP_UP
-                        | PlayerState::DOUBLE_JUMP
+                       
                         | PlayerState::JUMP_BACKWARD
                         | PlayerState::JUMP_FORWARD
                         | PlayerState::BEND_DOWN
@@ -215,7 +215,7 @@ pub fn agent_system(
                 Action::MoveLeft => {
                     if player.state.check(
                         PlayerState::JUMP_UP
-                        | PlayerState::DOUBLE_JUMP
+                       
                         | PlayerState::JUMP_BACKWARD
                         | PlayerState::JUMP_FORWARD
                         | PlayerState::BEND_DOWN
@@ -242,16 +242,6 @@ pub fn agent_system(
                             player.state |= PlayerState::JUMP_UP;
                             player.set_animation(JUMP_UP_POSE1, 0, 10);
                             player.velocity = Vec2::new(0.0, 12.0);                    
-                        } else if player.state.check(
-                            PlayerState::JUMP_UP
-                            | PlayerState::JUMP_BACKWARD
-                            | PlayerState::JUMP_FORWARD
-                        ) && !player.state.check(PlayerState::DOUBLE_JUMP) {
-                            // player is jumping
-                            // then player will double jump
-                            player.state |= PlayerState::DOUBLE_JUMP;
-                            player.set_animation(JUMP_UP_POSE1, 0, 10);
-                            player.velocity.y = 7.5;
                         }
                     } else {
                         // character 0 and 2 can only single jump
@@ -263,7 +253,7 @@ pub fn agent_system(
                             player.velocity = Vec2::new(0.0, 12.0);                    
                         } else if !player.state.check(
                             PlayerState::JUMP_UP
-                                | PlayerState::DOUBLE_JUMP
+                               
                                 | PlayerState::JUMP_FORWARD
                                 | PlayerState::JUMP_BACKWARD
                         ) && player.state.check(PlayerState::WALKING) {
@@ -319,7 +309,7 @@ pub fn agent_system(
                         // then player will kick
                         player.state |= PlayerState::KICKING;
                         player.set_animation(KICK_POSE1, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::KICKING;
@@ -331,7 +321,7 @@ pub fn agent_system(
                         // then player will back kick
                         player.state |= PlayerState::BACK_KICKING;
                         player.set_animation(BACK_KICK_POSE1, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::BACK_KICKING;
@@ -343,7 +333,7 @@ pub fn agent_system(
                         // then player will knee kick
                         player.state |= PlayerState::FRONT_KICKING;
                         player.set_animation(FRONT_KICK_POSE, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::FRONT_KICKING;
@@ -355,7 +345,7 @@ pub fn agent_system(
                         // then player will punch
                         player.state |= PlayerState::PUNCHING;
                         player.set_animation(PUNCH_POSE, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::PUNCHING;

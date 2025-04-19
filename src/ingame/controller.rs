@@ -32,7 +32,7 @@ fn controller_system(
 
             if gamepad.just_pressed(GamepadButton::South) {
                 if !player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
-                    if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP) {
+                    if player.state.check(PlayerState::JUMP_UP) {
                         player.state |= PlayerState::KICKING;
                         player.set_animation(JUMPING_KICK_POSE, 0, 10);
                     } else if !player.state.check(PlayerState::WALKING) {
@@ -43,7 +43,7 @@ fn controller_system(
             }
 
             if gamepad.pressed(GamepadButton::South) {
-                if player.state.check(PlayerState::JUMP_UP | PlayerState::DOUBLE_JUMP) & !player.state.check(PlayerState::KICKING) {
+                if player.state.check(PlayerState::JUMP_UP) & !player.state.check(PlayerState::KICKING) {
                     player.state |= PlayerState::KICKING;
                     player.set_animation(JUMPING_KICK_POSE, 0, 10);
                 }
