@@ -1405,6 +1405,7 @@ fn update_pose(
     }
 }
 
+/// Checks for collisions between players and updates their states accordingly.
 fn check_attack(
     mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
@@ -1434,7 +1435,12 @@ fn check_attack(
                 let mut opponent_parts: &BodyParts = &BodyParts::NULL;
                 let mut attacker_power: f32 = 0.0;
                 for (player, player_id) in player_query.iter() {
-                    if player.state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
+                    if player.state.check(
+                        PlayerState::KICKING
+                        | PlayerState::BACK_KICKING
+                        | PlayerState::FRONT_KICKING
+                        | PlayerState::PUNCHING)
+                    {
                         // Check if the attacker is already set
                         if id1 == player_id {
                             attacker_parts = parts1;
@@ -1445,7 +1451,7 @@ fn check_attack(
                         }
 
                         // Check if the attacker is in a valid state
-                        if player.state.check(PlayerState::KICKING) && attacker_parts.is_arm(){
+                        if player.state.check(PlayerState::KICKING | PlayerState::BACK_KICKING | PlayerState::FRONT_KICKING) && attacker_parts.is_arm(){
                             continue;
                         } else if player.state.check(PlayerState::PUNCHING) &&  !attacker_parts.is_arm(){
                             continue;
@@ -1496,8 +1502,7 @@ fn check_attack(
                         opponent_parts,
                     );
                     println!("Player {} hit: {} damage", attacker_id.0, damage);
-                    player.state &= !(PlayerState::KICKING | PlayerState::PUNCHING);
-                    player.set_animation(IDLE_POSE1, 0, 30);
+                    player.state &= !(PlayerState::KICKING | PlayerState::BACK_KICKING | PlayerState::FRONT_KICKING | PlayerState::PUNCHING);
                 }
                 if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
                     player.health = player.health.saturating_sub(damage);
@@ -1537,6 +1542,24 @@ fn avoid_collision(
     }
 }
 
+// coefficiency for each attack
+const SKILL_COEFFICIENT: [f32; 5] = [
+    1.0, // punch
+    1.2, // kick
+    1.0, // front kick
+    1.5, // back kick
+    2.0, // skill attack
+];
+// coefficiency for each body part
+const PARTS_COEFFICIENT: [f32; 4] = [
+    0.9, // head
+    0.8, // body
+    1.0, // arm
+    1.5, // leg
+];
+const DEFENCE_COEFICIENCY: f32 = 100.0;
+const DEFENCE_OFFSET: f32 = 50.0;
+
 fn calculate_damage(
     attacker_info: (isize, PlayerState),
     opponent_info: (isize, PlayerState),
@@ -1547,30 +1570,36 @@ fn calculate_damage(
     let mut damage = attacker_profile.power;
     
     // Apply damage multipliers based on player states
-    if attacker_info.1.check(PlayerState::KICKING) {
-        damage *= 1.3;
-    } else if attacker_info.1.check(PlayerState::PUNCHING) {
-        damage *= 1.0;
+    if attacker_info.1.check(PlayerState::PUNCHING) {
+        damage *= SKILL_COEFFICIENT[0];
+    } else if attacker_info.1.check(PlayerState::KICKING) {
+        damage *= SKILL_COEFFICIENT[1];
+    } else if attacker_info.1.check(PlayerState::FRONT_KICKING) {
+        damage *= SKILL_COEFFICIENT[2];
+    } else if attacker_info.1.check(PlayerState::BACK_KICKING) {
+        damage *= SKILL_COEFFICIENT[3];
+    } else if attacker_info.1.check(PlayerState::SKILL) {
+        damage *= SKILL_COEFFICIENT[4];
     }
 
     // If attacker is performes a jumping kick or double jump kick, double the damage
-    if attacker_info.1.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
-        damage *= 2.0;
+    if attacker_info.1.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+        damage *= 1.5;
     }
 
     // Apply damage multipliers based on opponent body parts
     if opponent_parts.is_head() {
-        damage *= 2.0;
+        damage *= PARTS_COEFFICIENT[0];
     } else if opponent_parts.is_body() {
-        damage *= 1.5;
-    } else if opponent_parts.is_upper() {
-        damage *= 1.3;
+        damage *= PARTS_COEFFICIENT[1];
     } else if opponent_parts.is_arm() {
-        damage *= 0.8;
+        damage *= PARTS_COEFFICIENT[2];
+    } else {
+        damage *= PARTS_COEFFICIENT[3];
     }
 
     // Apply damage reduction based on opponent defense
-    return (damage / opponent_profile.defense).floor() as u32;
+    return (damage * DEFENCE_COEFICIENCY / (opponent_profile.defense + DEFENCE_OFFSET)).floor() as u32;
 }
 
 /// Updates the health bar of the player character based on their current health.
