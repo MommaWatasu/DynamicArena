@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+pub const ENERGY_MAX: u8 = 100;
+
 pub struct CharacterProfile {
     pub name: &'static str,
     pub description: &'static str,

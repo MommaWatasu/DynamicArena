@@ -3,8 +3,8 @@ use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameMode;
-use crate::{character_def::CHARACTER_PROFILES, ingame::{InGame, GameState}, AppState, GameConfig};
-use super::{pose::*, BackGround, Fighting};
+use crate::{character_def::*, ingame::{InGame, GameState}, AppState, GameConfig};
+use super::{pose::*, BackGround, Fighting, SkillName};
 
 #[cfg(target_arch = "wasm32")]
 use crate::ingame::wasm::DoubleJumpCheck;
@@ -66,6 +66,9 @@ pub struct PlayerID(pub u8);
 
 #[derive(Component)]
 pub struct HealthBar(pub f32, pub f32);
+
+#[derive(Component)]
+pub struct EnergyBar(pub f32, pub f32);
 
 /// Represents the current state of a player using bit flags.
 /// Multiple states can be active simultaneously by combining flags with bitwise OR.
@@ -207,6 +210,7 @@ pub struct Player {
     pub state: PlayerState,
     pub velocity: Vec2,
     pub health: u32,
+    pub energy: u8,
 }
 
 impl Player {
@@ -218,6 +222,7 @@ impl Player {
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
+            energy: 0,
         }
     }
     pub fn new_opposite(character_id: isize) -> Self {
@@ -228,6 +233,7 @@ impl Player {
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
+            energy: 0,
         }
     }
     pub fn reset(&mut self, id: &PlayerID) {
@@ -568,11 +574,13 @@ pub fn spawn_player(
 /// unless in single player mode.
 #[cfg(not(target_arch = "wasm32"))]
 fn keyboard_input(
+    mut fighting: ResMut<Fighting>,
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
-    mut query: Query<(&mut Player, &PlayerID)>
+    mut player_query: Query<(&mut Player, &PlayerID)>,
+    mut skill_name_query: Query<(&SkillName, &mut Visibility)>,
 ) {
-    for (mut player, player_id) in query.iter_mut() {
+    for (mut player, player_id) in player_query.iter_mut() {
         // skip player 1(opponent) in order to control player 0
         // this is for debugging purpose
         #[cfg(debug_assertions)]
@@ -655,6 +663,7 @@ fn keyboard_input(
                 // then player will jump up
                 player.state |= PlayerState::JUMP_UP;
                 player.set_animation(JUMP_UP_POSE1, 0, 10);
+                player.energy += 1;
             } else if !player.state.check(
                 PlayerState::JUMP_UP
                     | PlayerState::JUMP_FORWARD
@@ -667,6 +676,7 @@ fn keyboard_input(
                     player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                     // stop moving for preparing motion
                     player.velocity = Vec2::ZERO;
+                    player.energy += 1;
                 } else {
                     // player is walking left
                     // then player will jump backward
@@ -674,6 +684,7 @@ fn keyboard_input(
                     player.set_animation(JUMP_UP_POSE1, 0, 10);
                     // stop moving for preparing motion
                     player.velocity = Vec2::ZERO;
+                    player.energy += 1;
                 }
             }
         }
@@ -683,10 +694,12 @@ fn keyboard_input(
                 // then player will kick
                 player.state |= PlayerState::KICKING;
                 player.set_animation(KICK_POSE1, 0, 5);
+                player.energy += 2;
             } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
                 // player is jumping
                 // then just adding state
                 player.state |= PlayerState::KICKING;
+                player.energy += 2;
             }
         }
         if keys.just_pressed(KeyCode::KeyL) {
@@ -695,6 +708,7 @@ fn keyboard_input(
                 // then player will punch
                 player.state |= PlayerState::PUNCHING;
                 player.set_animation(PUNCH_POSE, 0, 5);
+                player.energy += 2;
             }
         }
         if keys.just_pressed(KeyCode::KeyJ) {
@@ -703,6 +717,7 @@ fn keyboard_input(
                 // then player will front kick
                 player.state |= PlayerState::FRONT_KICKING;
                 player.set_animation(FRONT_KICK_POSE, 0, 10);
+                player.energy += 2;
             }
         }
         if keys.just_pressed(KeyCode::KeyH) {
@@ -711,6 +726,20 @@ fn keyboard_input(
                 // then player will back kick
                 player.state |= PlayerState::BACK_KICKING;
                 player.set_animation(BACK_KICK_POSE1, 0, 5);
+                player.energy += 2;
+            }
+        }
+        if keys.just_pressed(KeyCode::KeyG) && player.energy == 100 {
+            if player.state.is_idle() {
+                // player is idle
+                // then player will use skill
+                player.state |= PlayerState::SKILL;
+                for (skill_name, mut visibility) in skill_name_query.iter_mut() {
+                    if skill_name.0 == player_id.0 {
+                        *visibility = Visibility::Visible;
+                    }
+                }
+                fighting.0 = true;
             }
         }
     }
@@ -732,6 +761,7 @@ fn keyboard_input(
 /// 4. Ensures the player stays within the game window boundaries.
 fn player_movement(
     mut commands: Commands,
+    fighting: Res<Fighting>,
     time: Res<Time>,
     config: Res<GameConfig>,
     player_collision: Res<PlayerCollision>,
@@ -740,6 +770,9 @@ fn player_movement(
     mut player_query: Query<(&mut Player, &PlayerID, &mut Transform), Without<BackGround>>,
     mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
 ) {
+    if fighting.0 {
+        return;
+    }
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
         for (mut player, _, mut transform) in player_query.iter_mut() {
@@ -1631,6 +1664,44 @@ fn update_health_bar(
     }
 }
 
+/// Updates the health bar of the player character based on their current health.
+fn update_energy_bar(
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut player_query: Query<(&mut Player, &PlayerID)>,
+    mut energy_query: Query<(&mut EnergyBar, &mut Mesh2d, &PlayerID)>,
+) {
+    for (mut player, player_id) in player_query.iter_mut() {
+        for (mut energy_bar, mesh_handler, energy_id) in energy_query.iter_mut() {
+            if player_id == energy_id {
+                let old_energy = energy_bar.0;
+                if player.energy > ENERGY_MAX {
+                    player.energy = ENERGY_MAX;
+                }
+                energy_bar.0 = player.energy as f32 / ENERGY_MAX as f32;
+                if old_energy == energy_bar.0 { continue };
+                if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                        positions[3][0] = energy_bar.1 * energy_bar.0;
+                        if cfg!(target_arch = "wasm32") {
+                            positions[2][0] = energy_bar.1 * energy_bar.0 + if player_id.0 == 0 { 25.0 } else { -25.0 };
+                        } else {
+                            positions[2][0] = energy_bar.1 * energy_bar.0 + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                        }
+                    }
+                    if energy_bar.0 == 1.0 {
+                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                            for i in 2..4 {
+                                colors[i][0] = 1.0;
+                                colors[i][2] = 0.0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn update_facing(
     mut player_query: Query<(&mut Player, &PlayerID, &Transform)>,
 ) {
@@ -1672,6 +1743,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, update_energy_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
 
         #[cfg(not(target_arch = "wasm32"))]
