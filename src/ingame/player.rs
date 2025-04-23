@@ -1646,9 +1646,12 @@ fn update_health_bar(
         let profile = &CHARACTER_PROFILES[player.character_id as usize];
         for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
             if player_id == health_id {
-                let old_health = health_bar.0;
-                health_bar.0 = player.health as f32 / profile.health as f32;
-                if old_health == health_bar.0 { continue };
+                let target_ratio = player.health as f32 / profile.health as f32;
+                if health_bar.0 == target_ratio { continue };
+                health_bar.0 -= 0.005;
+                if health_bar.0 < target_ratio {
+                    health_bar.0 = target_ratio;
+                }
                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
                     if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
                         positions[3][0] = health_bar.1 * health_bar.0;
@@ -1673,12 +1676,15 @@ fn update_energy_bar(
     for (mut player, player_id) in player_query.iter_mut() {
         for (mut energy_bar, mesh_handler, energy_id) in energy_query.iter_mut() {
             if player_id == energy_id {
-                let old_energy = energy_bar.0;
                 if player.energy > ENERGY_MAX {
                     player.energy = ENERGY_MAX;
                 }
-                energy_bar.0 = player.energy as f32 / ENERGY_MAX as f32;
-                if old_energy == energy_bar.0 { continue };
+                let target_ratio = player.energy as f32 / ENERGY_MAX as f32;
+                if energy_bar.0 == target_ratio { continue };
+                energy_bar.0 += 0.002;
+                if energy_bar.0 > target_ratio {
+                    energy_bar.0 = target_ratio;
+                }
                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
                     if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
                         positions[3][0] = energy_bar.1 * energy_bar.0;
