@@ -19,14 +19,14 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         name: "Momma",
         description: "このゲームの開発者で、俊足が自慢のファイター。体力は低いが、強力な攻撃を素早く繰り出すことができる。",
         skill_name: "幻影歩法",
-        skill_description: "一瞬で的に近づき、確定でダメージを与える",
+        skill_description: "一瞬で敵に近づき、確定でダメージを与える",
         color: Color::srgb(0.0, 0.0, 1.0),
         health: 850,
         #[cfg(not(target_arch = "wasm32"))]
         agility: 4.0,
         #[cfg(target_arch = "wasm32")]
         agility: 2.0,
-        dexterity: 1.0,
+        dexterity: 1.2,
         power: 150.0,
         defense: 80.0
     },
@@ -56,7 +56,7 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 2.0,
         #[cfg(target_arch = "wasm32")]
         agility: 1.0,
-        dexterity: 1.0,
+        dexterity: 0.8,
         power: 130.0,
         defense: 150.0
     },

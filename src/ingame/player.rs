@@ -242,7 +242,8 @@ impl Player {
         self.health = CHARACTER_PROFILES[self.character_id as usize].health;
     }
     pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
-        self.animation = PlayerAnimation { diff_pose: (pose - self.pose) / count as f32, diff_y: 0.0, phase, count };
+        let real_count = (count as f32 / CHARACTER_PROFILES[self.character_id as usize].dexterity).round();
+        self.animation = PlayerAnimation { diff_pose: (pose - self.pose) / real_count, diff_y: 0.0, phase, count: real_count as u8 };
     }
     pub fn update_animation(&mut self) {
         if self.animation.count == 0 {
