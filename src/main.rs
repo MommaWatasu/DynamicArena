@@ -36,6 +36,10 @@ const PATH_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-Bold.ttf";
 const PATH_EXTRA_BOLD_JP_FONT: &str = "fonts/M_PLUS_1p/MPLUS1p-ExtraBold.ttf";
 const PATH_BOLD_MONOSPACE_FONT: &str = "fonts/Roboto_Condensed/RobotoCondensed-Bold.ttf";
 const PATH_IMAGE_PREFIX: &str = "images/";
+const PATH_SOUND_PREFIX: &str = "sounds/";
+
+#[derive(Component)]
+pub struct SoundEffect;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum GameMode {

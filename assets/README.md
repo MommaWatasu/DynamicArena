@@ -14,3 +14,14 @@ And the `sky_original.png` is generated via Flux.1 dev fp8 using ComfyUI. And `s
 
 # Sounds
 `bgm.ogg` is generated via Stable Audio Open with ComfyUI.
+The following system sounds are generated via [OpenAI-Edge-TTS](https://github.com/travisvn/openai-edge-tts) and modified using Audacity.
+- `draw.ogg`
+- `fight.ogg`
+- `KO.ogg`
+- `player1_win.ogg`
+- `player2_win.ogg`
+- `ready.ogg`
+- `round1.ogg`
+- `round2.ogg`
+- `round3.ogg`
+- `timeup.ogg`

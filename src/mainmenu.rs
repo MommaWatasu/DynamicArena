@@ -10,9 +10,8 @@ use crate::{
     PATH_BOLD_FONT,
     PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX,
+    PATH_SOUND_PREFIX,
 };
-
-const PATH_SOUND_BGM: &str = "sounds/bgm.ogg";
 
 #[derive(Component)]
 struct Mainmenu;
@@ -31,7 +30,7 @@ fn setup(
     // if audio query is empty, spawn bgm
     if audio.is_empty() {
         commands.spawn((
-            AudioPlayer::new(asset_server.load(PATH_SOUND_BGM)),
+            AudioPlayer::new(asset_server.load(format!("{}/bgm.ogg", PATH_SOUND_PREFIX))),
             PlaybackSettings::LOOP,
             GlobalTransform::default(),
         ));

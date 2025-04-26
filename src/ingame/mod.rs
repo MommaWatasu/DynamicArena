@@ -15,7 +15,15 @@ mod pose;
 #[cfg(debug_assertions)]
 use crate::PATH_BOLD_FONT;
 use crate::{
-    AppState, GameConfig, DEFAULT_FONT_SIZE, PATH_BOLD_MONOSPACE_FONT, PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE
+    AppState,
+    GameConfig,
+    SoundEffect,
+    DEFAULT_FONT_SIZE,
+    PATH_BOLD_MONOSPACE_FONT,
+    PATH_EXTRA_BOLD_FONT,
+    PATH_IMAGE_PREFIX,
+    PATH_SOUND_PREFIX,
+    TITLE_FONT_SIZE
 };
 
 #[cfg(debug_assertions)]
@@ -627,6 +635,7 @@ fn main_game_system(
     mut foot_query: Query<&mut Transform, (With<Foot>, Without<Player>, Without<BackGround>)>,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
+    mut sound_query: Query<Entity, With<SoundEffect>>
 ) {
     gamestate.timer.tick(time.delta());
     if gamestate.timer.just_finished() {
@@ -668,10 +677,20 @@ fn main_game_system(
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::srgba(1.0, 1.0, 1.0, 0.8)),
                 ));
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}/round{}.ogg", PATH_SOUND_PREFIX, gamestate.round))),
+                    SoundEffect,
+                    GlobalTransform::default(),
+                ));
             } else {
                 let (mut bar, mut text, mut text_color) = status_bar_query.single_mut();
                 bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
                 text.0 = format!("ROUND {}", gamestate.round);
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}/round{}.ogg", PATH_SOUND_PREFIX, gamestate.round))),
+                    SoundEffect,
+                    GlobalTransform::default(),
+                ));
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
             }
             gamestate.phase = 1;
@@ -681,6 +700,12 @@ fn main_game_system(
             if gamestate.count == 60 {
                 let (_, mut text, _) = status_bar_query.single_mut();
                 text.0 = "READY?".to_string();
+                // TODO: I have to think about how to handle spawned Audio Player entity
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}/ready.ogg", PATH_SOUND_PREFIX))),
+                    SoundEffect,
+                    GlobalTransform::default(),
+                ));
                 gamestate.phase = 2;
                 gamestate.count = 0;
             }
@@ -689,6 +714,11 @@ fn main_game_system(
             if gamestate.count == 90 {
                 let (_, mut text, _) = status_bar_query.single_mut();
                 text.0 = "FIGHT!".to_string();
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}/fight.ogg", PATH_SOUND_PREFIX))),
+                    SoundEffect,
+                    GlobalTransform::default(),
+                ));
                 gamestate.phase = 3;
                 gamestate.count = 0;
             }
@@ -717,6 +747,19 @@ fn main_game_system(
                 } else {
                     "TIME UP!".to_string()
                 };
+                if gamestate.win_types[gamestate.round as usize - 1] {
+                    commands.spawn((
+                        AudioPlayer::new(asset_server.load(format!("{}/KO.ogg", PATH_SOUND_PREFIX))),
+                        SoundEffect,
+                        GlobalTransform::default(),
+                    ));
+                } else {
+                    commands.spawn((
+                        AudioPlayer::new(asset_server.load(format!("{}/timeup.ogg", PATH_SOUND_PREFIX))),
+                        SoundEffect,
+                        GlobalTransform::default(),
+                    ));
+                }
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
                 // winner and loser animation
                 if !gamestate.win_types[gamestate.round as usize - 1] {
@@ -745,8 +788,18 @@ fn main_game_system(
             let winner_id = gamestate.winners[gamestate.round as usize - 1];
             if winner_id == 0 {
                 text.0 = "DRAW".to_string();
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}/draw.ogg", PATH_SOUND_PREFIX))),
+                    SoundEffect,
+                    GlobalTransform::default(),
+                ));
             } else {
                 text.0 = format!("Player {} WIN", winner_id);
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}/player{}_win.ogg", PATH_SOUND_PREFIX, winner_id))),
+                    SoundEffect,
+                    GlobalTransform::default(),
+                ));
             }
             gamestate.phase = 9;
             gamestate.count = 0;
@@ -814,6 +867,10 @@ fn main_game_system(
                     timer.0 = 60.0;
                     text.0 = "60.00".to_string();
                     color.0 = Color::WHITE;
+                    // reset audio player(unused sound effect entity)
+                    for entity in sound_query.iter() {
+                        commands.entity(entity).despawn();
+                    }
                 }
             }
         } else if gamestate.phase == 11 {
