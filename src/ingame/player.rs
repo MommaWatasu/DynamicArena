@@ -1528,16 +1528,12 @@ fn check_attack(
                     continue;
                 }
 
-                let mut damage: u32 = 0;
-                if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == attacker_id.0) {
-                    damage = calculate_damage(
-                        player_info[attacker_id.0 as usize],
-                        player_info[opponent_id.0 as usize],
-                        opponent_parts,
-                    );
-                    println!("Player {} hit: {} damage", attacker_id.0, damage);
-                    player.state &= !(PlayerState::KICKING | PlayerState::BACK_KICKING | PlayerState::FRONT_KICKING | PlayerState::PUNCHING);
-                }
+                let damage = calculate_damage(
+                    player_info[attacker_id.0 as usize],
+                    player_info[opponent_id.0 as usize],
+                    opponent_parts,
+                );
+                println!("Player {} hit: {} damage", attacker_id.0, damage);
                 if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
                     player.health = player.health.saturating_sub(damage);
                 }
@@ -1632,8 +1628,13 @@ fn calculate_damage(
         damage *= PARTS_COEFFICIENT[3];
     }
 
+    let mut defence_bonus = 0.0;
+    if opponent_info.1.check(PlayerState::BEND_DOWN) {
+        defence_bonus += 50.0;
+    }
+
     // Apply damage reduction based on opponent defense
-    return (damage * DEFENCE_COEFICIENCY / (opponent_profile.defense + DEFENCE_OFFSET)).floor() as u32;
+    return (damage * DEFENCE_COEFICIENCY / (opponent_profile.defense + defence_bonus + DEFENCE_OFFSET)).floor() as u32;
 }
 
 /// Updates the health bar of the player character based on their current health.
