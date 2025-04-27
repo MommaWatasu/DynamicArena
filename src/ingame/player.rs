@@ -3,8 +3,8 @@ use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameMode;
-use crate::{character_def::*, ingame::{InGame, GameState}, AppState, GameConfig};
-use super::{pose::*, BackGround, Fighting, SkillName};
+use crate::{PATH_SOUND_PREFIX, character_def::*, ingame::{InGame, GameState}, AppState, GameConfig, SoundEffect};
+use super::{pose::*, BackGround, Fighting, SkillName, SkillEntity};
 
 #[cfg(target_arch = "wasm32")]
 use crate::ingame::wasm::DoubleJumpCheck;
@@ -578,7 +578,6 @@ fn keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
     mut player_query: Query<(&mut Player, &PlayerID)>,
-    mut skill_name_query: Query<(&SkillName, &mut Visibility)>,
 ) {
     for (mut player, player_id) in player_query.iter_mut() {
         // skip player 1(opponent) in order to control player 0
@@ -726,7 +725,7 @@ fn keyboard_input(
                 // then player will back kick
                 player.state |= PlayerState::BACK_KICKING;
                 player.set_animation(BACK_KICK_POSE1, 0, 5);
-                player.energy += 2;
+                player.energy += 50;
             }
         }
         if keys.just_pressed(KeyCode::KeyG) && player.energy == 100 {
@@ -734,12 +733,9 @@ fn keyboard_input(
                 // player is idle
                 // then player will use skill
                 player.state |= PlayerState::SKILL;
-                for (skill_name, mut visibility) in skill_name_query.iter_mut() {
-                    if skill_name.0 == player_id.0 {
-                        *visibility = Visibility::Visible;
-                    }
-                }
-                fighting.0 = true;
+                fighting.0 = player_id.0 + 1;
+                player.animation.phase = 0;
+                player.animation.count = 0;
             }
         }
     }
@@ -762,20 +758,167 @@ fn keyboard_input(
 fn player_movement(
     mut commands: Commands,
     fighting: Res<Fighting>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
     time: Res<Time>,
     config: Res<GameConfig>,
     player_collision: Res<PlayerCollision>,
     mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Transform), Without<BackGround>>,
-    mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Transform, &mut Visibility), (Without<BackGround>, Without<Camera2d>, Without<SkillEntity>)>,
+    mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>, Without<Camera2d>, Without<SkillEntity>)>,
+    mut skill_name_query: Query<(&SkillName, &mut Visibility), (Without<SkillEntity>, Without<Player>)>,
+    mut thunder_query: Query<(&SkillEntity, &mut Visibility, &mut Transform), (Without<SkillName>, Without<Player>, Without<BackGround>)>,
+    curtain_query: Query<(&SkillEntity, &Mesh2d)>,
 ) {
-    if fighting.0 {
-        return;
-    }
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, _, mut transform) in player_query.iter_mut() {
+        // perform skill animation
+        if fighting.0 != 0 {
+            let mut opponent_position = Vec2::ZERO;
+            if let Some((_, _, transform, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 != fighting.0-1) {  
+                opponent_position = Vec2::new(transform.translation.x, transform.translation.y);   
+            }       
+            if let Some((mut player, _, mut transform, mut player_visibility)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == fighting.0-1) {
+                if player.animation.phase == 0 {
+                    player.animation.count += 1;
+                    // change curtain color to draken the screen
+                    if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                        let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                            for i in 0..4 {
+                                colors[i][3] = player.animation.count as f32 / 60.0;
+                            }
+                        }
+                    }
+                    if player.animation.count == 20 {
+                        // show skill name
+                        for (skill_name, mut skill_name_visibility) in skill_name_query.iter_mut() {
+                            if skill_name.0 == player.character_id as u8 {
+                                *skill_name_visibility = Visibility::Visible;
+                            }
+                        }
+
+                        player.animation.phase = 1;
+                        player.animation.count = 0;
+                    }
+                } else if player.animation.phase == 1 {
+                    player.animation.count += 1 ;
+                    if player.animation.count == 60 {
+                        for (skill_name, mut skill_name_visibility) in skill_name_query.iter_mut() {
+                            if skill_name.0 == player.character_id as u8 {
+                                *skill_name_visibility = Visibility::Hidden;
+                            }
+                        }
+                        player.animation.phase = 2;
+                        player.animation.count = 0;
+                    }
+                } else if player.animation.phase == 2 {
+                    if player.character_id == 0 {
+                        // character 0 skill
+                        player.animation.count += 1;
+                        // change curtain color to draken the screen
+                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                            let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                                for i in 0..4 {
+                                    colors[i][3] = (player.animation.count+20) as f32 / 60.0;
+                                }
+                            }
+                        }
+                        if player.animation.count == 35 {
+                            player.animation.phase = 3;
+                            player.animation.count = 0;
+                        }
+                    } else if player.character_id == 1 {
+                        // character 1 skill
+                    } else if player.character_id == 2 {
+                        // character 2 skill
+                    }
+                } else if player.animation.phase == 3 {
+                    if player.character_id == 0 {
+                        player.animation.count += 1;
+                        if player.animation.count == 30 {
+                            if let Some((_, mut thunder_visibility, mut thunder_transform)) = thunder_query.iter_mut().find(|x| x.0.id == 0) {
+                                *thunder_visibility = Visibility::Visible;
+                                thunder_transform.translation.x = transform.translation.x;
+                            }
+                            *player_visibility = Visibility::Hidden;
+                            player.pose = THUNDER_PUNCH_POSE;
+                            if player.pose.facing {
+                                transform.translation.x = opponent_position.x - 100.0;
+                                transform.translation.y = opponent_position.y + 50.0;                                
+                            } else {
+                                transform.translation.x = opponent_position.x + 100.0;
+                                transform.translation.y = opponent_position.y + 50.0;                                
+                            }
+                            commands.spawn((
+                                AudioPlayer::new(asset_server.load(format!("{}/thunder.ogg", PATH_SOUND_PREFIX))),
+                                SoundEffect,
+                            ));
+                            player.animation.phase = 4;
+                            player.animation.count = 0;
+                        }
+                    }
+                } else if player.animation.phase == 4 {
+                    if player.character_id == 0 {
+                        player.animation.count += 1;
+                        // change curtain color to draken the screen
+                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                            let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                                for i in 0..4 {
+                                    if player.animation.count <= 5 {
+                                        colors[i][0] = player.animation.count as f32 / 5.0;
+                                        colors[i][1] = player.animation.count as f32 / 5.0;
+                                        colors[i][2] = player.animation.count as f32 / 5.0;
+                                    } else {
+                                        colors[i][3] = 2.0 - player.animation.count as f32 / 5.0;
+                                    }
+                                }
+                            }
+                        }
+                        if player.animation.count == 10 {
+                            *player_visibility = Visibility::Visible;
+                            if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                                let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                                if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                                    for i in 0..4 {
+                                        if player.animation.count <= 5 {
+                                            colors[i][0] = 0.0;
+                                            colors[i][1] = 0.0;
+                                            colors[i][2] = 0.0;
+                                        }
+                                    }
+                                }
+                            }
+                            if let Some((_, mut thunder_visibility, _)) = thunder_query.iter_mut().find(|x| x.0.id == 0) {
+                                *thunder_visibility = Visibility::Hidden;
+                            }
+                            player.set_animation(IDLE_POSE1, 5, 30);
+                            player.velocity = Vec2::ZERO;
+                        }
+                    }
+                } else if player.animation.phase == 5 {
+                    if player.character_id == 0 {
+                        player.update_animation();
+                        if transform.translation.y > 270.0-config.window_size.y/2.0 {
+                            player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
+                            transform.translation.y += player.velocity.y;
+                            if transform.translation.y < 270.0-config.window_size.y/2.0 {
+                                transform.translation.y = 270.0-config.window_size.y/2.0
+                            }
+                        }
+                        if player.animation.count == 30 {
+                            player.animation.phase = 6;
+                            player.animation.count = 0;
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        for (mut player, _, mut transform, _) in player_query.iter_mut() {
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
                 player.update_animation();
@@ -1164,7 +1307,7 @@ fn player_movement(
         // Check if players are at opposite ends of the screen
         // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge
         let mut at_edges: [u8;2] = [0;2];
-        for (_, player_id, transform) in player_query.iter() {
+        for (_, player_id, transform, _) in player_query.iter() {
             if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
                 at_edges[player_id.0 as usize] = 1;
             } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
@@ -1178,7 +1321,7 @@ fn player_movement(
 
         if (at_edges[0] == 1 || at_edges[0] == 2) && at_edges[1] == 0 {
             let mut diff = 0.0;
-            if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 0) {
+            if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 0) {
                 if at_edges[0] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
@@ -1197,12 +1340,12 @@ fn player_movement(
                 ground.translation.x = config.window_size.x / 2.0 - 2000.0;
             } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
                 ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-            } else if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 1) {
+            } else if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 1) {
                 transform.translation.x += diff;
             }
         } else if at_edges[0] == 0 && (at_edges[1] == 1 || at_edges[1] == 2) {
             let mut diff = 0.0;
-            if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 1) {
+            if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 1) {
                 if at_edges[1] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
@@ -1221,34 +1364,34 @@ fn player_movement(
                 ground.translation.x = config.window_size.x / 2.0 - 2000.0;
             } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
                 ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-            } else if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == 0) {
+            } else if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 0) {
                 transform.translation.x += diff;
             }
         } else if at_edges[0] != 0 && at_edges[1] != 0 {
             if (at_edges[0] == 1 && at_edges[1] == 3) || (at_edges[0] == 3 && at_edges[1] == 1) {
                 // If both players are at the same edge, move the camera to the edge
                 let mut diff = 0.0;
-                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 1 { 0 } else { 1 }) {
+                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 1 { 0 } else { 1 }) {
                     diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
                     transform.translation.x = -config.window_size.x / 2.0 + 100.0;
                 }
                 ground.translation.x += diff;
-                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 1 { 1 } else { 0 }) {
+                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 1 { 1 } else { 0 }) {
                     transform.translation.x += diff;
                 }
             } else if (at_edges[0] == 2 && at_edges[1] == 4) || (at_edges[0] == 4 && at_edges[1] == 2) {
                 // If both players are at the same edge, move the camera to the edge
                 let mut diff = 0.0;
-                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 2 { 0 } else { 1 }) {
+                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 2 { 0 } else { 1 }) {
                     diff = config.window_size.x / 2.0 - 100.0 - transform.translation.x;
                     transform.translation.x = config.window_size.x / 2.0 - 100.0;
                 }
                 ground.translation.x += diff;
-                if let Some((_, _, mut transform)) = player_query.iter_mut().find(|(_, player_id, _)| player_id.0 == if at_edges[0] == 2 { 1 } else { 0 }) {
+                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 2 { 1 } else { 0 }) {
                     transform.translation.x += diff;
                 }
             } else {
-                for (_, player_id, mut transform) in player_query.iter_mut() {
+                for (_, player_id, mut transform, _) in player_query.iter_mut() {
                     // If players are at opposite edges, don't move
                     if at_edges[player_id.0 as usize] == 1 || at_edges[player_id.0 as usize] == 3 {
                         transform.translation.x = -config.window_size.x / 2.0 + 100.0;
@@ -1473,7 +1616,8 @@ fn check_attack(
                         PlayerState::KICKING
                         | PlayerState::BACK_KICKING
                         | PlayerState::FRONT_KICKING
-                        | PlayerState::PUNCHING)
+                        | PlayerState::PUNCHING
+                        | PlayerState::SKILL)
                     {
                         // Check if the attacker is already set
                         if id1 == player_id {
@@ -1487,7 +1631,7 @@ fn check_attack(
                         // Check if the attacker is in a valid state
                         if player.state.check(PlayerState::KICKING | PlayerState::BACK_KICKING | PlayerState::FRONT_KICKING) && attacker_parts.is_arm(){
                             continue;
-                        } else if player.state.check(PlayerState::PUNCHING) &&  !attacker_parts.is_arm(){
+                        } else if player.state.check(PlayerState::PUNCHING | PlayerState::SKILL) &&  !attacker_parts.is_arm(){
                             continue;
                         }
 
@@ -1698,7 +1842,7 @@ fn update_energy_bar(
                     if energy_bar.0 == 1.0 {
                         if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
                             for i in 2..4 {
-                                colors[i][0] = 1.0;
+                                colors[i][0] = 10.0;
                                 colors[i][2] = 0.0;
                             }
                         }

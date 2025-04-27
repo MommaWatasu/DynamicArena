@@ -8,12 +8,15 @@ All the fonts are taken from Google Fonts and licensed under the Open Font Licen
 - [bush](https://www.cgtrader.com/free-3d-models/plant/bush/cypress-bush-05)
 - [fence](https://www.cgtrader.com/free-3d-models/architectural/architectural-street/wall-with-fence) (I modified this model and create another one which is used in the image)
 
-And textures used in the model are taken from [cgbookcase](https://www.cgbookcase.com/).
+The textures used in the model are taken from [cgbookcase](https://www.cgbookcase.com/).
 
-And the `sky_original.png` is generated via Flux.1 dev fp8 using ComfyUI. And `sky_upscaled.png` is upscaled version of `sky_original.png` via ESRGAN.
+The `sky_original.png` is generated via Flux.1 dev fp8 using ComfyUI. And `sky_upscaled.png` is upscaled version of `sky_original.png` via ESRGAN.
+
+The thunder image(`thunder.png`) is generated via Flux1 schnell and modified.
 
 # Sounds
 `bgm.ogg` is generated via Stable Audio Open with ComfyUI.
+
 The following system sounds are generated via [OpenAI-Edge-TTS](https://github.com/travisvn/openai-edge-tts) and modified using Audacity.
 - `draw.ogg`
 - `fight.ogg`
@@ -25,3 +28,5 @@ The following system sounds are generated via [OpenAI-Edge-TTS](https://github.c
 - `round2.ogg`
 - `round3.ogg`
 - `timeup.ogg`
+
+`thunder.ogg` is created by [On-Jin 〜音人〜](https://on-jin.com).

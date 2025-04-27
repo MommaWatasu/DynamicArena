@@ -15,7 +15,7 @@ pub struct CharacterProfile {
     pub defense: f32,
 }
 
-// TODO: edit dexterity
+// FIXME: jumping motion of Momma is broken bacause of its dexterity
 pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
     CharacterProfile {
         name: "Momma",

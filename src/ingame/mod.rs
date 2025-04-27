@@ -70,13 +70,7 @@ impl GameState {
 }
 
 #[derive(Resource)]
-struct Fighting(bool);
-
-#[derive(Resource, Default)]
-struct SkillAnimation {
-//    pub player_id: u8,
-    pub timer: f32,
-}
+struct Fighting(u8);
 
 #[derive(Component)]
 struct InGame;
@@ -98,6 +92,11 @@ struct GameTimer(f32);
 
 #[derive(Component)]
 pub struct SkillName(u8);
+
+#[derive(Component)]
+pub struct SkillEntity{
+    id: u8
+}
 
 fn setup(
     mut commands: Commands,
@@ -129,7 +128,7 @@ fn setup(
             TextFont {
                 font: asset_server.load(PATH_BOLD_FONT),
                 font_size: DEFAULT_FONT_SIZE,
-                ..Default::default()
+                ..default()
             },
             TextLayout::new_with_justify(JustifyText::Center),
             TextColor(Color::BLACK),
@@ -164,7 +163,7 @@ fn setup(
                     TextFont {
                         font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
                         font_size: DEFAULT_FONT_SIZE,
-                        ..Default::default()
+                        ..default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::WHITE),
@@ -185,11 +184,11 @@ fn setup(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 40.0, 1.0], [config.window_size.x / 2.0 - 300.0, 0.0, 1.0], [config.window_size.x / 2.0 - 250.0, 40.0, 1.0]]
+                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 300.0, 0.0, 1.0], [config.window_size.x / 2.0 - 250.0, 20.0, 1.0]]
                         )
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
+                            vec![[0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 0.5], [0.0, 10.0, 0.0, 0.5]]
                         )
                         .with_inserted_indices(Indices::U32(vec![
                             0, 1, 2,
@@ -212,7 +211,7 @@ fn setup(
             )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 40.0, 1.0)),
             #[cfg(target_arch = "wasm32")]
             Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
         ));
@@ -230,11 +229,11 @@ fn setup(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 40.0, 1.0], [300.0 - config.window_size.x / 2.0, 0.0, 1.0], [250.0 - config.window_size.x / 2.0, 40.0, 1.0]]
+                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [300.0 - config.window_size.x / 2.0, 0.0, 1.0], [250.0 - config.window_size.x / 2.0, 20.0, 1.0]]
                         )
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
+                            vec![[0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 0.5], [0.0, 10.0, 0.0, 0.5]]
                         )
                         .with_inserted_indices(Indices::U32(vec![
                             0, 1, 2,
@@ -257,7 +256,7 @@ fn setup(
             )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 40.0, 1.0)),
             #[cfg(target_arch = "wasm32")]
             Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
         ));
@@ -271,7 +270,7 @@ fn setup(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 40.0, 1.0], [config.window_size.x / 2.0 - 400.0, 0.0, 1.0], [config.window_size.x / 2.0 - 350.0, 40.0, 1.0]]
+                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 400.0, 0.0, 1.0], [config.window_size.x / 2.0 - 350.0, 20.0, 1.0]]
                         )
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_COLOR,
@@ -298,7 +297,7 @@ fn setup(
             )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 100.0, 1.0)),
+            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
             #[cfg(target_arch = "wasm32")]
             Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
         ));
@@ -315,11 +314,11 @@ fn setup(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_POSITION,
-                            vec![[-10.0, 0.0, 1.0], [-10.0, 40.0, 1.0], [-50.0, 0.0, 1.0], [0.0, 40.0, 1.0]]
+                            vec![[-10.0, 0.0, 1.0], [-10.0, 20.0, 1.0], [-50.0, 0.0, 1.0], [0.0, 20.0, 1.0]]
                         )
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]
+                            vec![[0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0]]
                         )
                         .with_inserted_indices(Indices::U32(vec![
                             0, 1, 2,
@@ -342,7 +341,7 @@ fn setup(
             )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 100.0, 2.0)),
+            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
             #[cfg(target_arch = "wasm32")]
             Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
         ));
@@ -355,11 +354,11 @@ fn setup(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 40.0, 1.0], [400.0 - config.window_size.x / 2.0, 0.0, 1.0], [350.0 - config.window_size.x / 2.0, 40.0, 1.0]]
+                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [400.0 - config.window_size.x / 2.0, 0.0, 1.0], [350.0 - config.window_size.x / 2.0, 20.0, 1.0]]
                         )
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5]]
+                            vec![[0.0, 0.0, 10.0, 0.5], [0.0, 0.0, 10.0, 0.5], [0.0, 0.0, 10.0, 0.5], [0.0, 0.0, 10.0, 0.5]]
                         )
                         .with_inserted_indices(Indices::U32(vec![
                             0, 1, 2,
@@ -382,7 +381,7 @@ fn setup(
             )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 100.0, 1.0)),
+            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
             #[cfg(target_arch = "wasm32")]
             Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
         ));
@@ -399,11 +398,11 @@ fn setup(
                 Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_POSITION,
-                            vec![[10.0, 0.0, 1.0], [10.0, 40.0, 1.0], [50.0, 0.0, 1.0], [0.0, 40.0, 1.0]]
+                            vec![[10.0, 0.0, 1.0], [10.0, 20.0, 1.0], [50.0, 0.0, 1.0], [0.0, 20.0, 1.0]]
                         )
                         .with_inserted_attribute(
                             Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]
+                            vec![[0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0]]
                         )
                         .with_inserted_indices(Indices::U32(vec![
                             0, 1, 2,
@@ -426,7 +425,7 @@ fn setup(
             )),
             MeshMaterial2d(materials.add(ColorMaterial::default())),
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 100.0, 2.0)),
+            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
             #[cfg(target_arch = "wasm32")]
             Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
         ));
@@ -438,8 +437,6 @@ fn setup(
         Node {
             justify_self: JustifySelf::Center,
             align_self: AlignSelf::Center,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
             ..default()
         },
         SkillName(0),
@@ -451,8 +448,6 @@ fn setup(
         Node {
             justify_self: JustifySelf::Center,
             align_self: AlignSelf::Center,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
             ..default()
         },
         SkillName(1),
@@ -464,12 +459,49 @@ fn setup(
         Node {
             justify_self: JustifySelf::Center,
             align_self: AlignSelf::Center,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
             ..default()
         },
         SkillName(2),
         ImageNode::new(asset_server.load(format!("{}skill_name3.png", PATH_IMAGE_PREFIX))),
+    ));
+
+    // curtain for skill
+    commands.spawn((
+        Mesh2d(meshes.add(
+            Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
+                    .with_inserted_attribute(
+                        Mesh::ATTRIBUTE_POSITION,
+                        vec![
+                            [-config.window_size.x/2.0, config.window_size.y/2.0, 10.0],
+                            [config.window_size.x/2.0, config.window_size.y/2.0, 10.0],
+                            [-config.window_size.x/2.0, -config.window_size.y/2.0, 10.0],
+                            [config.window_size.x/2.0, -config.window_size.y/2.0, 10.0]
+                            ]
+                    )
+                    .with_inserted_attribute(
+                        Mesh::ATTRIBUTE_COLOR,
+                        vec![[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
+                    )
+                    .with_inserted_indices(Indices::U32(vec![
+                        0, 1, 2,
+                        1, 2, 3]))
+        )),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        SkillEntity { id: 1 },
+        Transform::from_translation(Vec3::new(0.0, 0.0, 19.0)),
+    ));
+
+    // thunder for skill of character 0
+    commands.spawn((
+        InGame,
+        SkillEntity { id: 0 },
+        Visibility::Hidden,
+        Sprite {
+            image: asset_server.load(format!("{}thunder.png", PATH_IMAGE_PREFIX)),
+            custom_size: Some(Vec2::new(250.0, 1000.0)),
+            ..default()
+        },
+        Transform::from_translation(Vec3::new(0.0, 100.0, 20.0)),
     ));
 
     // sky background
@@ -477,12 +509,12 @@ fn setup(
         #[cfg(not(target_arch = "wasm32"))]
         Sprite {
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
-            ..Default::default()
+            ..default()
         },
         #[cfg(target_arch = "wasm32")]
         Sprite {
             image: asset_server.load(format!("{}web/sky_original.png", PATH_IMAGE_PREFIX)),
-            ..Default::default()
+            ..default()
         },
         #[cfg(not(target_arch = "wasm32"))]
         Transform::from_translation(Vec3::new(0.0, 100.0, -2.0)),
@@ -496,13 +528,13 @@ fn setup(
         Sprite {
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
             flip_x: true,
-            ..Default::default()
+            ..default()
         },
         #[cfg(target_arch = "wasm32")]
         Sprite {
             image: asset_server.load(format!("{}web/sky_original.png", PATH_IMAGE_PREFIX)),
             flip_x: true,
-            ..Default::default()
+            ..default()
         },
         #[cfg(not(target_arch = "wasm32"))]
         Transform::from_translation(Vec3::new(4800.0, 100.0, -2.0)),
@@ -520,7 +552,7 @@ fn setup(
                 image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
                 #[cfg(target_arch = "wasm32")]
                 image: asset_server.load(format!("{}web/background.png", PATH_IMAGE_PREFIX)),
-                ..Default::default()
+                ..default()
             },
             BackGround,
             #[cfg(not(target_arch = "wasm32"))]
@@ -562,22 +594,12 @@ fn setup(
 
 fn update_timer(
     time: Res<Time>,
-    mut fighting: ResMut<Fighting>,
-    mut skill_animation: ResMut<SkillAnimation>,
+    fighting: ResMut<Fighting>,
     mut gamestate: ResMut<GameState>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer)>,
-    mut skill_name_query: Query<&mut Visibility, With<SkillName>>,
     health_bar_query: Query<(&HealthBar, &PlayerID)>,
 ) {
-    if fighting.0 {
-        skill_animation.timer += time.delta_secs();
-        if skill_animation.timer > 2.0 {
-            skill_animation.timer = 0.0;
-            for mut visibility in skill_name_query.iter_mut() {
-                *visibility = Visibility::Hidden;
-            }
-            fighting.0 = false;
-        }
+    if fighting.0 != 0 {
         return;
     }
     let (mut text, mut color, mut timer) = timer_query.single_mut();
@@ -674,7 +696,7 @@ fn main_game_system(
                     TextFont {
                         font: asset_server.load(PATH_EXTRA_BOLD_FONT),
                         font_size: TITLE_FONT_SIZE,
-                        ..Default::default()
+                        ..default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::srgba(1.0, 1.0, 1.0, 0.8)),
@@ -682,7 +704,6 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/round{}.ogg", PATH_SOUND_PREFIX, gamestate.round))),
                     SoundEffect,
-                    GlobalTransform::default(),
                 ));
             } else {
                 let (mut bar, mut text, mut text_color) = status_bar_query.single_mut();
@@ -691,7 +712,6 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/round{}.ogg", PATH_SOUND_PREFIX, gamestate.round))),
                     SoundEffect,
-                    GlobalTransform::default(),
                 ));
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
             }
@@ -706,7 +726,6 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/ready.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
-                    GlobalTransform::default(),
                 ));
                 gamestate.phase = 2;
                 gamestate.count = 0;
@@ -719,7 +738,6 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/fight.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
-                    GlobalTransform::default(),
                 ));
                 gamestate.phase = 3;
                 gamestate.count = 0;
@@ -736,7 +754,7 @@ fn main_game_system(
             bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8 - gamestate.count as f32/60.0);
             text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8 - gamestate.count as f32/60.0);
             if gamestate.count == 48 {
-                commands.insert_resource(Fighting(false));
+                commands.insert_resource(Fighting(0));
                 gamestate.phase = 5;
                 gamestate.count = 0;
             }
@@ -753,13 +771,11 @@ fn main_game_system(
                     commands.spawn((
                         AudioPlayer::new(asset_server.load(format!("{}/KO.ogg", PATH_SOUND_PREFIX))),
                         SoundEffect,
-                        GlobalTransform::default(),
                     ));
                 } else {
                     commands.spawn((
                         AudioPlayer::new(asset_server.load(format!("{}/timeup.ogg", PATH_SOUND_PREFIX))),
                         SoundEffect,
-                        GlobalTransform::default(),
                     ));
                 }
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
@@ -793,14 +809,12 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/draw.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
-                    GlobalTransform::default(),
                 ));
             } else {
                 text.0 = format!("Player {} WIN", winner_id);
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/player{}_win.ogg", PATH_SOUND_PREFIX, winner_id))),
                     SoundEffect,
-                    GlobalTransform::default(),
                 ));
             }
             gamestate.phase = 9;
@@ -969,7 +983,6 @@ impl Plugin for GamePlugin {
             .add_plugins(AgentPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
             .insert_resource(GameState::default())
-            .insert_resource(SkillAnimation::default())
             .add_systems(OnEnter(AppState::Ingame), setup)
             .add_systems(OnExit(AppState::Ingame), exit)
             .add_systems(Update, update_timer.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))

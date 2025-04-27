@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
 use bevy::{
     prelude::*,
+    core_pipeline::bloom::Bloom,
     window::{
         Monitor,
         PrimaryWindow,
@@ -157,7 +158,14 @@ fn setup(
         window.resolution = config.window_size.into();
     }
     // camera
-    commands.spawn(Camera2d::default());
+    commands.spawn((
+        Camera2d,
+        Camera {
+            hdr: true, // HDR is required for the bloom effect
+            ..default()
+        },
+        Bloom::NATURAL,
+    ));
     next_state.set(AppState::Mainmenu);
 }
 
