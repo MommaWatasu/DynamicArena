@@ -614,7 +614,9 @@ fn check_gameset(
             let round = gamestate.round as usize - 1;
             gamestate.winners[round] = if player_id.0 == 0 { 2 } else { 1 };
             gamestate.win_types[round] = true;
-            gamestate.phase = 6;
+            if gamestate.phase == 5 {
+                gamestate.phase = 6;
+            }
             break;
         }
     }
@@ -635,7 +637,7 @@ fn main_game_system(
     mut foot_query: Query<&mut Transform, (With<Foot>, Without<Player>, Without<BackGround>)>,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
-    mut sound_query: Query<Entity, With<SoundEffect>>
+    sound_query: Query<Entity, With<SoundEffect>>
 ) {
     gamestate.timer.tick(time.delta());
     if gamestate.timer.just_finished() {
