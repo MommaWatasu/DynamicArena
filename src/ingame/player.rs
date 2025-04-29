@@ -856,7 +856,7 @@ fn player_movement(
                         commands.spawn((
                             Mesh2d(meshes.add(Circle::new(rand() * 10.0))),
                             MeshMaterial2d(materials.add(color)),
-                            Transform::from_translation(Vec3::new(opponent_position.x, opponent_position.y, 20.0)),
+                            Transform::from_translation(Vec3::new(opponent_position.x, opponent_position.y + 50.0, 20.0)),
                             // soul entity's id is 2
                             SkillEntity { id: 2 }
                         ));
@@ -1499,7 +1499,7 @@ fn update_soul_absorb_animation(
                 commands.remove_resource::<SoulAbsorb>();
             }
             destination.x = transform.translation.x;
-            destination.y = transform.translation.y;
+            destination.y = transform.translation.y + 50.0;
             if player.animation.phase == 2 {
                 vibe = true;
             }
