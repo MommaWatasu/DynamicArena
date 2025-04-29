@@ -1,12 +1,8 @@
 #[allow(unused_imports)]
 use bevy::{
-    prelude::*,
     core_pipeline::bloom::Bloom,
-    window::{
-        Monitor,
-        PrimaryWindow,
-        WindowMode,
-    }
+    prelude::*,
+    window::{Monitor, PrimaryWindow, WindowMode},
 };
 
 mod character_def;
@@ -15,8 +11,8 @@ mod choose_character;
 mod connect_controller;
 mod ingame;
 mod mainmenu;
-mod settings;
 mod result;
+mod settings;
 
 use ingame::agent::Level;
 
@@ -53,7 +49,7 @@ impl From<u32> for GameMode {
         match value {
             1 => GameMode::SinglePlayer,
             2 => GameMode::MultiPlayer,
-            _ => panic!("Invalid GameMode: {}", value)
+            _ => panic!("Invalid GameMode: {}", value),
         }
     }
 }
@@ -66,7 +62,7 @@ struct GameConfig {
     characters_id: [isize; 2],
     sound_volume: f32,
     #[cfg(not(target_arch = "wasm32"))]
-    gamepads: [Entity; 2]
+    gamepads: [Entity; 2],
 }
 
 impl Default for GameConfig {
@@ -78,7 +74,7 @@ impl Default for GameConfig {
             characters_id: [-1, -1],
             sound_volume: 1.0,
             #[cfg(not(target_arch = "wasm32"))]
-            gamepads: [Entity::from_raw(0), Entity::from_raw(0)]
+            gamepads: [Entity::from_raw(0), Entity::from_raw(0)],
         }
     }
 }
@@ -95,21 +91,18 @@ enum AppState {
     Ingame,
     Result,
     #[cfg(debug_assertions)]
-    Pause
+    Pause,
 }
 
 fn main() {
     let mut app = App::new();
     #[cfg(not(target_arch = "wasm32"))]
-    app
-        .add_plugins(connect_controller::ConnectControllerPlugin);
-    app
-        .add_plugins(DefaultPlugins)
+    app.add_plugins(connect_controller::ConnectControllerPlugin);
+    app.add_plugins(DefaultPlugins)
         .init_state::<AppState>()
         .insert_resource(GameConfig::default())
         .insert_resource(ClearColor(Color::WHITE))
         .insert_resource(GlobalVolume::new(0.5))
-        
         .add_systems(Startup, setup)
         .add_plugins(mainmenu::MainmenuPlugin)
         .add_plugins(settings::SettingsPlugin)
@@ -136,7 +129,10 @@ fn setup(
         }
         let name = monitor.name.clone().unwrap_or_else(|| "<no name>".into());
         let size = format!("{}x{}px", monitor.physical_height, monitor.physical_width);
-        config.window_size = Vec2::new(monitor.physical_width as f32, monitor.physical_height as f32);
+        config.window_size = Vec2::new(
+            monitor.physical_width as f32,
+            monitor.physical_height as f32,
+        );
         let hz = monitor
             .refresh_rate_millihertz
             .map(|x| format!("{}Hz", x as f32 / 1000.0))

@@ -1,39 +1,36 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues}};
+use bevy::{
+    asset::RenderAssetUsages,
+    prelude::*,
+    render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
+};
 use bevy_rapier2d::prelude::*;
 use pose::{LOSER_POSE, WINNER_POSE};
 
-#[cfg(debug_assertions)]
-mod pause;
+pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
 mod controller;
-#[cfg(target_arch = "wasm32")]
-mod wasm;
-pub mod agent;
+#[cfg(debug_assertions)]
+mod pause;
 mod player;
 mod pose;
+#[cfg(target_arch = "wasm32")]
+mod wasm;
 
 #[cfg(debug_assertions)]
 use crate::PATH_BOLD_FONT;
 use crate::{
-    AppState,
-    GameConfig,
-    SoundEffect,
-    DEFAULT_FONT_SIZE,
-    PATH_BOLD_MONOSPACE_FONT,
-    PATH_EXTRA_BOLD_FONT,
-    PATH_IMAGE_PREFIX,
-    PATH_SOUND_PREFIX,
-    TITLE_FONT_SIZE
+    AppState, GameConfig, SoundEffect, DEFAULT_FONT_SIZE, PATH_BOLD_MONOSPACE_FONT,
+    PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX, TITLE_FONT_SIZE,
 };
 
-#[cfg(debug_assertions)]
-use pause::*;
+use agent::*;
 #[cfg(not(target_arch = "wasm32"))]
 use controller::*;
+#[cfg(debug_assertions)]
+use pause::*;
+use player::*;
 #[cfg(target_arch = "wasm32")]
 use wasm::*;
-use agent::*;
-use player::*;
 
 const FPS: f32 = 60.0;
 
@@ -44,7 +41,7 @@ pub struct GameState {
     pub round: u8,
     pub phase: u8,
     pub count: u8,
-    pub timer: Timer
+    pub timer: Timer,
 }
 
 impl GameState {
@@ -94,15 +91,15 @@ struct GameTimer(f32);
 pub struct SkillName(u8);
 
 #[derive(Component)]
-pub struct SkillEntity{
-    id: u8
+pub struct SkillEntity {
+    id: u8,
 }
 
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn rand() -> f32 {
     rand::random::<f32>()
 }
-#[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
 pub fn rand() -> f32 {
     web_sys::js_sys::Math::random() as f32
 }
@@ -117,21 +114,22 @@ fn setup(
 ) {
     info!("setup");
     #[cfg(debug_assertions)]
-    commands.spawn((
-        Button,
-        Node {
-            justify_self: JustifySelf::Start,
-            align_self: AlignSelf::Start,
-            #[cfg(not(target_arch = "wasm32"))]
-            border: UiRect::all(Val::Px(5.0)),
-            #[cfg(target_arch = "wasm32")]
-            border: UiRect::all(Val::Px(2.0)),
-            ..default()
-        },
-        BorderRadius::MAX,
-        BorderColor(Color::BLACK),
-        InGame
-    ))
+    commands
+        .spawn((
+            Button,
+            Node {
+                justify_self: JustifySelf::Start,
+                align_self: AlignSelf::Start,
+                #[cfg(not(target_arch = "wasm32"))]
+                border: UiRect::all(Val::Px(5.0)),
+                #[cfg(target_arch = "wasm32")]
+                border: UiRect::all(Val::Px(2.0)),
+                ..default()
+            },
+            BorderRadius::MAX,
+            BorderColor(Color::BLACK),
+            InGame,
+        ))
         .with_child((
             Text::new("Pause"),
             TextFont {
@@ -165,280 +163,430 @@ fn setup(
             BackgroundColor(Color::BLACK),
             BorderRadius::all(Val::Px(5.0)),
         ))
-            .with_children(|builder| {
-                builder.spawn((
-                    GameTimer(60.0),
-                    Text::new("60.00"),
-                    TextFont {
-                        font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
-                        font_size: DEFAULT_FONT_SIZE,
-                        ..default()
-                    },
-                    TextLayout::new_with_justify(JustifyText::Center),
-                    TextColor(Color::WHITE),
-                ));
-            });
-    
+        .with_children(|builder| {
+            builder.spawn((
+                GameTimer(60.0),
+                Text::new("60.00"),
+                TextFont {
+                    font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                    font_size: DEFAULT_FONT_SIZE,
+                    ..default()
+                },
+                TextLayout::new_with_justify(JustifyText::Center),
+                TextColor(Color::WHITE),
+            ));
+        });
+
     // health bar for player 2
-    commands
-        .spawn((
-            InGame,
-            PlayerID(1),
-            #[cfg(not(target_arch = "wasm32"))]
-            HealthBar(1.0, config.window_size.x / 2.0 - 250.0),
-            #[cfg(target_arch = "wasm32")]
-            HealthBar(1.0, config.window_size.x / 2.0 - 125.0),
-            #[cfg(not(target_arch = "wasm32"))]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 300.0, 0.0, 1.0], [config.window_size.x / 2.0 - 250.0, 20.0, 1.0]]
-                        )
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 0.5], [0.0, 10.0, 0.0, 0.5]]
-                        )
-                        .with_inserted_indices(Indices::U32(vec![
-                            0, 1, 2,
-                            1, 2, 3]))
-            )),
-            #[cfg(target_arch = "wasm32")]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 150.0, 0.0, 1.0], [config.window_size.x / 2.0 - 125.0, 20.0, 1.0]]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-            )),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-            #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 40.0, 1.0)),
-            #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
-        ));
+    commands.spawn((
+        InGame,
+        PlayerID(1),
+        #[cfg(not(target_arch = "wasm32"))]
+        HealthBar(1.0, config.window_size.x / 2.0 - 250.0),
+        #[cfg(target_arch = "wasm32")]
+        HealthBar(1.0, config.window_size.x / 2.0 - 125.0),
+        #[cfg(not(target_arch = "wasm32"))]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [config.window_size.x / 2.0 - 300.0, 0.0, 1.0],
+                        [config.window_size.x / 2.0 - 250.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 10.0, 0.0, 1.0],
+                        [0.0, 10.0, 0.0, 1.0],
+                        [0.0, 10.0, 0.0, 0.5],
+                        [0.0, 10.0, 0.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        #[cfg(target_arch = "wasm32")]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [config.window_size.x / 2.0 - 150.0, 0.0, 1.0],
+                        [config.window_size.x / 2.0 - 125.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 1.0, 0.0, 1.0],
+                        [0.0, 1.0, 0.0, 1.0],
+                        [0.0, 1.0, 0.0, 0.5],
+                        [0.0, 1.0, 0.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 40.0, 1.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
+    ));
     // health bar for player 1
-    commands
-        .spawn((
-            InGame,
-            PlayerID(0),
-            #[cfg(not(target_arch = "wasm32"))]
-            HealthBar(1.0, 250.0 - config.window_size.x / 2.0),
-            #[cfg(target_arch = "wasm32")]
-            HealthBar(1.0, 125.0 - config.window_size.x / 2.0),
-            #[cfg(not(target_arch = "wasm32"))]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [300.0 - config.window_size.x / 2.0, 0.0, 1.0], [250.0 - config.window_size.x / 2.0, 20.0, 1.0]]
-                        )
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 1.0], [0.0, 10.0, 0.0, 0.5], [0.0, 10.0, 0.0, 0.5]]
-                        )
-                        .with_inserted_indices(Indices::U32(vec![
-                            0, 1, 2,
-                            1, 2, 3]))
-            )),
-            #[cfg(target_arch = "wasm32")]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [150.0 - config.window_size.x / 2.0, 0.0, 1.0], [125.0 - config.window_size.x / 2.0, 20.0, 1.0]]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-            )),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-            #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 40.0, 1.0)),
-            #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
-        ));
-    
+    commands.spawn((
+        InGame,
+        PlayerID(0),
+        #[cfg(not(target_arch = "wasm32"))]
+        HealthBar(1.0, 250.0 - config.window_size.x / 2.0),
+        #[cfg(target_arch = "wasm32")]
+        HealthBar(1.0, 125.0 - config.window_size.x / 2.0),
+        #[cfg(not(target_arch = "wasm32"))]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [300.0 - config.window_size.x / 2.0, 0.0, 1.0],
+                        [250.0 - config.window_size.x / 2.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 10.0, 0.0, 1.0],
+                        [0.0, 10.0, 0.0, 1.0],
+                        [0.0, 10.0, 0.0, 0.5],
+                        [0.0, 10.0, 0.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        #[cfg(target_arch = "wasm32")]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [150.0 - config.window_size.x / 2.0, 0.0, 1.0],
+                        [125.0 - config.window_size.x / 2.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 1.0, 0.0, 1.0],
+                        [0.0, 1.0, 0.0, 1.0],
+                        [0.0, 1.0, 0.0, 0.5],
+                        [0.0, 1.0, 0.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 40.0, 1.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
+    ));
+
     // energy bar for player 2
-    commands
-        .spawn((
-            InGame,
-            #[cfg(not(target_arch = "wasm32"))]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 400.0, 0.0, 1.0], [config.window_size.x / 2.0 - 350.0, 20.0, 1.0]]
-                        )
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5]]
-                        )
-                        .with_inserted_indices(Indices::U32(vec![
-                            0, 1, 2,
-                            1, 2, 3]))
-            )),
-            #[cfg(target_arch = "wasm32")]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [config.window_size.x / 2.0 - 200.0, 0.0, 1.0], [config.window_size.x / 2.0 - 175.0, 20.0, 1.0]]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-            )),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-            #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
-            #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
-        ));
-    commands
-        .spawn((
-            InGame,
-            PlayerID(1),
-            #[cfg(not(target_arch = "wasm32"))]
-            EnergyBar(0.0, config.window_size.x / 2.0 - 350.0),
-            #[cfg(target_arch = "wasm32")]
-            EnergyBar(0.0, config.window_size.x / 2.0 - 175.0),
-            #[cfg(not(target_arch = "wasm32"))]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_POSITION,
-                            vec![[-10.0, 0.0, 1.0], [-10.0, 20.0, 1.0], [-50.0, 0.0, 1.0], [0.0, 20.0, 1.0]]
-                        )
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0]]
-                        )
-                        .with_inserted_indices(Indices::U32(vec![
-                            0, 1, 2,
-                            1, 2, 3]))
-            )),
-            #[cfg(target_arch = "wasm32")]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [-25.0, 0.0, 1.0], [0.0, 20.0, 1.0]]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-            )),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-            #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
-            #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
-        ));
+    commands.spawn((
+        InGame,
+        #[cfg(not(target_arch = "wasm32"))]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [config.window_size.x / 2.0 - 400.0, 0.0, 1.0],
+                        [config.window_size.x / 2.0 - 350.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        #[cfg(target_arch = "wasm32")]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [config.window_size.x / 2.0 - 200.0, 0.0, 1.0],
+                        [config.window_size.x / 2.0 - 175.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+    ));
+    commands.spawn((
+        InGame,
+        PlayerID(1),
+        #[cfg(not(target_arch = "wasm32"))]
+        EnergyBar(0.0, config.window_size.x / 2.0 - 350.0),
+        #[cfg(target_arch = "wasm32")]
+        EnergyBar(0.0, config.window_size.x / 2.0 - 175.0),
+        #[cfg(not(target_arch = "wasm32"))]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [-10.0, 0.0, 1.0],
+                        [-10.0, 20.0, 1.0],
+                        [-50.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 10.0, 1.0],
+                        [0.0, 0.0, 10.0, 1.0],
+                        [0.0, 0.0, 10.0, 1.0],
+                        [0.0, 0.0, 10.0, 1.0],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        #[cfg(target_arch = "wasm32")]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [-25.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 1.0, 1.0],
+                        [0.0, 0.0, 1.0, 1.0],
+                        [0.0, 0.0, 1.0, 1.0],
+                        [0.0, 0.0, 1.0, 1.0],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
+    ));
     // energy bar for player 1
-    commands
-        .spawn((
-            InGame,
-            #[cfg(not(target_arch = "wasm32"))]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_POSITION,
-                            vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [400.0 - config.window_size.x / 2.0, 0.0, 1.0], [350.0 - config.window_size.x / 2.0, 20.0, 1.0]]
-                        )
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 10.0, 0.5], [0.0, 0.0, 10.0, 0.5], [0.0, 0.0, 10.0, 0.5], [0.0, 0.0, 10.0, 0.5]]
-                        )
-                        .with_inserted_indices(Indices::U32(vec![
-                            0, 1, 2,
-                            1, 2, 3]))
-            )),
-            #[cfg(target_arch = "wasm32")]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [200.0 - config.window_size.x / 2.0, 0.0, 1.0], [175.0 - config.window_size.x / 2.0, 20.0, 1.0]]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 1.0, 0.5]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-            )),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-            #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
-            #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
-        ));
-    commands
-        .spawn((
-            InGame,
-            PlayerID(0),
-            #[cfg(not(target_arch = "wasm32"))]
-            EnergyBar(0.0, 350.0 - config.window_size.x / 2.0),
-            #[cfg(target_arch = "wasm32")]
-            EnergyBar(0.0, 175.0 - config.window_size.x / 2.0),
-            #[cfg(not(target_arch = "wasm32"))]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_POSITION,
-                            vec![[10.0, 0.0, 1.0], [10.0, 20.0, 1.0], [50.0, 0.0, 1.0], [0.0, 20.0, 1.0]]
-                        )
-                        .with_inserted_attribute(
-                            Mesh::ATTRIBUTE_COLOR,
-                            vec![[0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0], [0.0, 0.0, 10.0, 1.0]]
-                        )
-                        .with_inserted_indices(Indices::U32(vec![
-                            0, 1, 2,
-                            1, 2, 3]))
-            )),
-            #[cfg(target_arch = "wasm32")]
-            Mesh2d(meshes.add(
-                Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![[0.0, 0.0, 1.0], [0.0, 20.0, 1.0], [-25.0, 0.0, 1.0], [0.0, 20.0, 1.0]]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-            )),
-            MeshMaterial2d(materials.add(ColorMaterial::default())),
-            #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
-            #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
-        ));
-    
+    commands.spawn((
+        InGame,
+        #[cfg(not(target_arch = "wasm32"))]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [400.0 - config.window_size.x / 2.0, 0.0, 1.0],
+                        [350.0 - config.window_size.x / 2.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 10.0, 0.5],
+                        [0.0, 0.0, 10.0, 0.5],
+                        [0.0, 0.0, 10.0, 0.5],
+                        [0.0, 0.0, 10.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        #[cfg(target_arch = "wasm32")]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [200.0 - config.window_size.x / 2.0, 0.0, 1.0],
+                        [175.0 - config.window_size.x / 2.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                        [0.0, 0.0, 1.0, 0.5],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+    ));
+    commands.spawn((
+        InGame,
+        PlayerID(0),
+        #[cfg(not(target_arch = "wasm32"))]
+        EnergyBar(0.0, 350.0 - config.window_size.x / 2.0),
+        #[cfg(target_arch = "wasm32")]
+        EnergyBar(0.0, 175.0 - config.window_size.x / 2.0),
+        #[cfg(not(target_arch = "wasm32"))]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [10.0, 0.0, 1.0],
+                        [10.0, 20.0, 1.0],
+                        [50.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 10.0, 1.0],
+                        [0.0, 0.0, 10.0, 1.0],
+                        [0.0, 0.0, 10.0, 1.0],
+                        [0.0, 0.0, 10.0, 1.0],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        #[cfg(target_arch = "wasm32")]
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                        [-25.0, 0.0, 1.0],
+                        [0.0, 20.0, 1.0],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 1.0, 1.0],
+                        [0.0, 0.0, 1.0, 1.0],
+                        [0.0, 0.0, 1.0, 1.0],
+                        [0.0, 0.0, 1.0, 1.0],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
+        MeshMaterial2d(materials.add(ColorMaterial::default())),
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
+    ));
+
     // skill name display
     commands.spawn((
         InGame,
@@ -476,25 +624,45 @@ fn setup(
 
     // curtain for skill
     commands.spawn((
-        Mesh2d(meshes.add(
-            Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_POSITION,
-                        vec![
-                            [-config.window_size.x/2.0, config.window_size.y/2.0, 10.0],
-                            [config.window_size.x/2.0, config.window_size.y/2.0, 10.0],
-                            [-config.window_size.x/2.0, -config.window_size.y/2.0, 10.0],
-                            [config.window_size.x/2.0, -config.window_size.y/2.0, 10.0]
-                            ]
-                    )
-                    .with_inserted_attribute(
-                        Mesh::ATTRIBUTE_COLOR,
-                        vec![[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
-                    )
-                    .with_inserted_indices(Indices::U32(vec![
-                        0, 1, 2,
-                        1, 2, 3]))
-        )),
+        Mesh2d(
+            meshes.add(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        [
+                            -config.window_size.x / 2.0,
+                            config.window_size.y / 2.0,
+                            10.0,
+                        ],
+                        [config.window_size.x / 2.0, config.window_size.y / 2.0, 10.0],
+                        [
+                            -config.window_size.x / 2.0,
+                            -config.window_size.y / 2.0,
+                            10.0,
+                        ],
+                        [
+                            config.window_size.x / 2.0,
+                            -config.window_size.y / 2.0,
+                            10.0,
+                        ],
+                    ],
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    vec![
+                        [0.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0],
+                    ],
+                )
+                .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
+            ),
+        ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         SkillEntity { id: 1 },
         Transform::from_translation(Vec3::new(0.0, 0.0, 19.0)),
@@ -530,7 +698,7 @@ fn setup(
         #[cfg(target_arch = "wasm32")]
         Transform::from_translation(Vec3::new(0.0, 50.0, -2.0)),
         SkyBackground,
-        InGame
+        InGame,
     ));
     commands.spawn((
         #[cfg(not(target_arch = "wasm32"))]
@@ -550,46 +718,78 @@ fn setup(
         #[cfg(target_arch = "wasm32")]
         Transform::from_translation(Vec3::new(1200.0, 50.0, -2.0)),
         SkyBackground,
-        InGame
+        InGame,
     ));
 
     // background
-    commands
-        .spawn((
-            Sprite{
-                #[cfg(not(target_arch = "wasm32"))]
-                image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
-                #[cfg(target_arch = "wasm32")]
-                image: asset_server.load(format!("{}web/background.png", PATH_IMAGE_PREFIX)),
-                ..default()
-            },
-            BackGround,
+    commands.spawn((
+        Sprite {
             #[cfg(not(target_arch = "wasm32"))]
-            Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
+            image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
             #[cfg(target_arch = "wasm32")]
-            Transform::from_translation(Vec3::new(0.0, 70.0, -1.0)),
-            InGame
-        ));
+            image: asset_server.load(format!("{}web/background.png", PATH_IMAGE_PREFIX)),
+            ..default()
+        },
+        BackGround,
+        #[cfg(not(target_arch = "wasm32"))]
+        Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
+        #[cfg(target_arch = "wasm32")]
+        Transform::from_translation(Vec3::new(0.0, 70.0, -1.0)),
+        InGame,
+    ));
     if cfg!(target_arch = "wasm32") {
-        spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 135.0-config.window_size.y / 2.0);
-        spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 135.0-config.window_size.y / 2.0);
+        spawn_player(
+            0,
+            config.characters_id[0],
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            135.0 - config.window_size.y / 2.0,
+        );
+        spawn_player(
+            1,
+            config.characters_id[1],
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            135.0 - config.window_size.y / 2.0,
+        );
     } else {
-        spawn_player(0, config.characters_id[0], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
-        spawn_player(1, config.characters_id[1], &mut commands, &mut meshes, &mut materials, 270.0-config.window_size.y / 2.0);
+        spawn_player(
+            0,
+            config.characters_id[0],
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            270.0 - config.window_size.y / 2.0,
+        );
+        spawn_player(
+            1,
+            config.characters_id[1],
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            270.0 - config.window_size.y / 2.0,
+        );
     }
 
     // create controller circle
     #[cfg(target_arch = "wasm32")]
-    commands.spawn((
-        InGame,
-        Mesh2d(meshes.add(Circle::new(CONTROLLER_CIRCLE_RADIUS))),
-        MeshMaterial2d(materials.add(Color::srgba(1.0, 1.0, 1.0, 0.4))),
-        Transform::from_translation(Vec3::new(-config.window_size.x/2.0+100.0, -config.window_size.y/4.0, 20.0)),
-    ))
+    commands
+        .spawn((
+            InGame,
+            Mesh2d(meshes.add(Circle::new(CONTROLLER_CIRCLE_RADIUS))),
+            MeshMaterial2d(materials.add(Color::srgba(1.0, 1.0, 1.0, 0.4))),
+            Transform::from_translation(Vec3::new(
+                -config.window_size.x / 2.0 + 100.0,
+                -config.window_size.y / 4.0,
+                20.0,
+            )),
+        ))
         .with_children(|builder| {
             builder.spawn((
                 ControllerCircle,
-                Mesh2d(meshes.add(Circle::new(CONTROLLER_CIRCLE_RADIUS/3.0))),
+                Mesh2d(meshes.add(Circle::new(CONTROLLER_CIRCLE_RADIUS / 3.0))),
                 MeshMaterial2d(materials.add(Color::srgba(1.0, 1.0, 1.0, 1.0))),
                 Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
             ));
@@ -619,12 +819,12 @@ fn update_timer(
     if timer.0 < 0.0 {
         timer.0 = 0.0;
         let bars: Vec<_> = health_bar_query.iter().collect();
-        let winner_id = if bars[0].0.0 < bars[1].0.0 {
-            bars[1].1.0 + 1
-        } else if bars[0].0.0 == bars[1].0.0 {
+        let winner_id = if bars[0].0 .0 < bars[1].0 .0 {
+            bars[1].1 .0 + 1
+        } else if bars[0].0 .0 == bars[1].0 .0 {
             0
         } else {
-            bars[0].1.0 + 1
+            bars[0].1 .0 + 1
         };
         let round = gamestate.round as usize - 1;
         gamestate.winners[round] = winner_id;
@@ -636,10 +836,7 @@ fn update_timer(
     text.0 = format!("{:.2}", timer.0);
 }
 
-fn check_gameset(
-    mut gamestate: ResMut<GameState>,
-    query: Query<(&HealthBar, &PlayerID)>
-) {
+fn check_gameset(mut gamestate: ResMut<GameState>, query: Query<(&HealthBar, &PlayerID)>) {
     for (bar, player_id) in query.iter() {
         if bar.0 <= 0.0 {
             let round = gamestate.round as usize - 1;
@@ -664,11 +861,14 @@ fn main_game_system(
     mut status_bar_query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
     mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
     mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>, Without<Foot>)>,
-    mut player_query: Query<(&PlayerID, &mut Player, &mut Transform), (Without<BackGround>, Without<Foot>)>,
+    mut player_query: Query<
+        (&PlayerID, &mut Player, &mut Transform),
+        (Without<BackGround>, Without<Foot>),
+    >,
     mut foot_query: Query<&mut Transform, (With<Foot>, Without<Player>, Without<BackGround>)>,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
-    sound_query: Query<Entity, With<SoundEffect>>
+    sound_query: Query<Entity, With<SoundEffect>>,
 ) {
     gamestate.timer.tick(time.delta());
     if gamestate.timer.just_finished() {
@@ -700,7 +900,6 @@ fn main_game_system(
                         ..default()
                     },
                     BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-
                     Text::new("ROUND 1"),
                     TextFont {
                         font: asset_server.load(PATH_EXTRA_BOLD_FONT),
@@ -711,7 +910,10 @@ fn main_game_system(
                     TextColor(Color::srgba(1.0, 1.0, 1.0, 0.8)),
                 ));
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/round{}.ogg", PATH_SOUND_PREFIX, gamestate.round))),
+                    AudioPlayer::new(asset_server.load(format!(
+                        "{}/round{}.ogg",
+                        PATH_SOUND_PREFIX, gamestate.round
+                    ))),
                     SoundEffect,
                 ));
             } else {
@@ -719,7 +921,10 @@ fn main_game_system(
                 bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
                 text.0 = format!("ROUND {}", gamestate.round);
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/round{}.ogg", PATH_SOUND_PREFIX, gamestate.round))),
+                    AudioPlayer::new(asset_server.load(format!(
+                        "{}/round{}.ogg",
+                        PATH_SOUND_PREFIX, gamestate.round
+                    ))),
                     SoundEffect,
                 ));
                 text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8);
@@ -760,8 +965,8 @@ fn main_game_system(
         } else if gamestate.phase == 4 {
             gamestate.count += 1;
             let (mut bar, _, mut text_color) = status_bar_query.single_mut();
-            bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8 - gamestate.count as f32/60.0);
-            text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8 - gamestate.count as f32/60.0);
+            bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8 - gamestate.count as f32 / 60.0);
+            text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8 - gamestate.count as f32 / 60.0);
             if gamestate.count == 48 {
                 commands.insert_resource(Fighting(0));
                 gamestate.phase = 5;
@@ -778,12 +983,16 @@ fn main_game_system(
                 };
                 if gamestate.win_types[gamestate.round as usize - 1] {
                     commands.spawn((
-                        AudioPlayer::new(asset_server.load(format!("{}/KO.ogg", PATH_SOUND_PREFIX))),
+                        AudioPlayer::new(
+                            asset_server.load(format!("{}/KO.ogg", PATH_SOUND_PREFIX)),
+                        ),
                         SoundEffect,
                     ));
                 } else {
                     commands.spawn((
-                        AudioPlayer::new(asset_server.load(format!("{}/timeup.ogg", PATH_SOUND_PREFIX))),
+                        AudioPlayer::new(
+                            asset_server.load(format!("{}/timeup.ogg", PATH_SOUND_PREFIX)),
+                        ),
                         SoundEffect,
                     ));
                 }
@@ -822,7 +1031,10 @@ fn main_game_system(
             } else {
                 text.0 = format!("Player {} WIN", winner_id);
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/player{}_win.ogg", PATH_SOUND_PREFIX, winner_id))),
+                    AudioPlayer::new(
+                        asset_server
+                            .load(format!("{}/player{}_win.ogg", PATH_SOUND_PREFIX, winner_id)),
+                    ),
                     SoundEffect,
                 ));
             }
@@ -837,7 +1049,7 @@ fn main_game_system(
         } else if gamestate.phase == 10 {
             gamestate.count += 1;
             let mut curtain = curtain_query.single_mut();
-            curtain.0 = Color::srgba(0.0, 0.0, 0.0, gamestate.count as f32/60.0);
+            curtain.0 = Color::srgba(0.0, 0.0, 0.0, gamestate.count as f32 / 60.0);
             if gamestate.count == 60 {
                 gamestate.round += 1;
                 if gamestate.round == 4 {
@@ -877,12 +1089,16 @@ fn main_game_system(
                     for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
                         health_bar.0 = 1.0;
                         if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
-                            if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                            if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
+                            {
                                 positions[3][0] = health_bar.1 * health_bar.0;
                                 if cfg!(target_arch = "wasm32") {
-                                    positions[2][0] = health_bar.1 * health_bar.0 + if health_id.0 == 0 { 25.0 } else { -25.0 };
+                                    positions[2][0] = health_bar.1 * health_bar.0
+                                        + if health_id.0 == 0 { 25.0 } else { -25.0 };
                                 } else {
-                                    positions[2][0] = health_bar.1 * health_bar.0 + if health_id.0 == 0 { 50.0 } else { -50.0 };
+                                    positions[2][0] = health_bar.1 * health_bar.0
+                                        + if health_id.0 == 0 { 50.0 } else { -50.0 };
                                 }
                             }
                         }
@@ -901,7 +1117,7 @@ fn main_game_system(
         } else if gamestate.phase == 11 {
             gamestate.count += 1;
             let mut curtain = curtain_query.single_mut();
-            curtain.0 = Color::srgba(0.0, 0.0, 0.0, 1.0 - gamestate.count as f32/60.0);
+            curtain.0 = Color::srgba(0.0, 0.0, 0.0, 1.0 - gamestate.count as f32 / 60.0);
             if gamestate.count == 60 {
                 gamestate.phase = 0;
                 gamestate.count = 0;
@@ -910,9 +1126,7 @@ fn main_game_system(
     }
 }
 
-fn move_background(
-    mut query: Query<&mut Transform, With<SkyBackground>>,
-) {
+fn move_background(mut query: Query<&mut Transform, With<SkyBackground>>) {
     // move sky background
     for mut transform in query.iter_mut() {
         transform.translation.x -= 0.25;
@@ -975,27 +1189,33 @@ impl Plugin for GamePlugin {
             .add_systems(Update, check_pause);
 
         #[cfg(not(target_arch = "wasm32"))]
-        app
-            .add_plugins(ControllerPlugin);
+        app.add_plugins(ControllerPlugin);
 
         #[cfg(target_arch = "wasm32")]
-        app
-            .insert_resource(TouchState {
-                start_position: Vec2::ZERO,
-                id: u64::MAX,
-            })
-            .insert_resource(DoubleJumpCheck::new())
-            .add_systems(Update, touch_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+        app.insert_resource(TouchState {
+            start_position: Vec2::ZERO,
+            id: u64::MAX,
+        })
+        .insert_resource(DoubleJumpCheck::new())
+        .add_systems(
+            Update,
+            touch_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        );
 
-        app
-            .add_plugins(PlayerPlugin)
+        app.add_plugins(PlayerPlugin)
             .add_plugins(AgentPlugin)
             .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(300.0))
             .insert_resource(GameState::default())
             .add_systems(OnEnter(AppState::Ingame), setup)
             .add_systems(OnExit(AppState::Ingame), exit)
-            .add_systems(Update, update_timer.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, check_gameset.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(
+                Update,
+                update_timer.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+            )
+            .add_systems(
+                Update,
+                check_gameset.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+            )
             .add_systems(Update, move_background.run_if(in_state(AppState::Ingame)))
             .add_systems(Update, main_game_system.run_if(in_state(AppState::Ingame)));
     }

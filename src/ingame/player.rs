@@ -1,10 +1,17 @@
-use std::{fmt::Debug, ops::{BitAndAssign, BitOr, BitOrAssign, Not}};
-use bevy::{prelude::*, render::mesh::VertexAttributeValues};
-use bevy_rapier2d::prelude::*;
+use super::{pose::*, rand, BackGround, Fighting, SkillEntity, SkillName};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameMode;
-use crate::{PATH_SOUND_PREFIX, character_def::*, ingame::{InGame, GameState}, AppState, GameConfig, SoundEffect};
-use super::{pose::*, BackGround, Fighting, SkillName, SkillEntity, rand};
+use crate::{
+    character_def::*,
+    ingame::{GameState, InGame},
+    AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX,
+};
+use bevy::{prelude::*, render::mesh::VertexAttributeValues};
+use bevy_rapier2d::prelude::*;
+use std::{
+    fmt::Debug,
+    ops::{BitAndAssign, BitOr, BitOrAssign, Not},
+};
 
 #[cfg(target_arch = "wasm32")]
 use crate::ingame::wasm::DoubleJumpCheck;
@@ -55,7 +62,6 @@ const UPPER_LEG_OFFSET: f32 = -50.0;
 #[cfg(target_arch = "wasm32")]
 const LOWER_LEG_OFFSET: f32 = -30.0;
 
-
 const PIXELS_PER_METER: f32 = 100.0;
 const GRAVITY_ACCEL: f32 = 9.80665;
 
@@ -75,7 +81,7 @@ struct SoulAbsorb;
 
 /// Represents the current state of a player using bit flags.
 /// Multiple states can be active simultaneously by combining flags with bitwise OR.
-/// 
+///
 /// | State          | Bit Pattern         | Description                         |
 /// |----------------|---------------------|-------------------------------------|
 /// | IDLE           | 0b0000000000000000  | Default state, no action            |
@@ -141,12 +147,12 @@ impl Debug for PlayerState {
             (PlayerState::BACK_KICKING, "BACK_KICKING"),
             (PlayerState::COOLDOWN, "COOLDOWN"),
         ];
-        
+
         if self.0 == 0 {
             write!(f, "IDLE")?;
             return Ok(());
         }
-        
+
         let mut first = true;
         for (state, name) in states {
             if self.check(state) {
@@ -157,28 +163,28 @@ impl Debug for PlayerState {
                 first = false;
             }
         }
-        
+
         // Also include the raw binary representation
         write!(f, " ({:#010b})", self.0)
     }
 }
 
 impl PlayerState {
-    pub const IDLE: Self           = Self(0b0000000000000000);
-    pub const WALKING: Self        = Self(0b0000000000000001);
-    pub const JUMP_UP: Self        = Self(0b0000000000000010);
-    pub const SKILL: Self    = Self(0b0000000000000100);
-    pub const KICKING: Self        = Self(0b0000000000001000);
-    pub const PUNCHING: Self       = Self(0b0000000000010000);
-    pub const FRONT_KICKING: Self  = Self(0b0000000000100000);
-    pub const BACK_KICKING: Self   = Self(0b0000000001000000);
-    pub const COOLDOWN: Self       = Self(0b0000000010000000);
-    pub const DIRECTION: Self      = Self(0b0000000100000000);
-    pub const JUMP_FORWARD: Self   = Self(0b0000001000000000);
-    pub const JUMP_BACKWARD: Self  = Self(0b0000010000000000);
-    pub const BEND_DOWN: Self      = Self(0b0000100000000000);
-    pub const ROLL_BACK: Self      = Self(0b0001000000000000);
-    pub const ROLL_FORWARD: Self   = Self(0b0010000000000000);
+    pub const IDLE: Self = Self(0b0000000000000000);
+    pub const WALKING: Self = Self(0b0000000000000001);
+    pub const JUMP_UP: Self = Self(0b0000000000000010);
+    pub const SKILL: Self = Self(0b0000000000000100);
+    pub const KICKING: Self = Self(0b0000000000001000);
+    pub const PUNCHING: Self = Self(0b0000000000010000);
+    pub const FRONT_KICKING: Self = Self(0b0000000000100000);
+    pub const BACK_KICKING: Self = Self(0b0000000001000000);
+    pub const COOLDOWN: Self = Self(0b0000000010000000);
+    pub const DIRECTION: Self = Self(0b0000000100000000);
+    pub const JUMP_FORWARD: Self = Self(0b0000001000000000);
+    pub const JUMP_BACKWARD: Self = Self(0b0000010000000000);
+    pub const BEND_DOWN: Self = Self(0b0000100000000000);
+    pub const ROLL_BACK: Self = Self(0b0001000000000000);
+    pub const ROLL_FORWARD: Self = Self(0b0010000000000000);
 
     // ignore cooldown state
     pub fn is_idle(&self) -> bool {
@@ -192,10 +198,9 @@ impl PlayerState {
     }
 }
 
-
 #[derive(Resource)]
 struct AnimationTimer {
-    timer: Timer
+    timer: Timer,
 }
 
 struct PlayerAnimation {
@@ -221,7 +226,12 @@ impl Player {
         Self {
             character_id,
             pose: IDLE_POSE1,
-            animation: PlayerAnimation { diff_pose: default(), diff_y: 0.0, phase: 1, count: 10 },
+            animation: PlayerAnimation {
+                diff_pose: default(),
+                diff_y: 0.0,
+                phase: 1,
+                count: 10,
+            },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
@@ -232,7 +242,12 @@ impl Player {
         Self {
             character_id,
             pose: OPPOSITE_DEFAULT_POSE,
-            animation: PlayerAnimation { diff_pose: default(), diff_y: 0.0, phase: 1, count: 10 },
+            animation: PlayerAnimation {
+                diff_pose: default(),
+                diff_y: 0.0,
+                phase: 1,
+                count: 10,
+            },
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
@@ -245,14 +260,25 @@ impl Player {
         } else {
             self.pose = OPPOSITE_DEFAULT_POSE;
         }
-        self.animation = PlayerAnimation { diff_pose: default(), diff_y: 0.0, phase: 1, count: 10 };
+        self.animation = PlayerAnimation {
+            diff_pose: default(),
+            diff_y: 0.0,
+            phase: 1,
+            count: 10,
+        };
         self.state = PlayerState::default();
         self.velocity = Vec2::ZERO;
         self.health = CHARACTER_PROFILES[self.character_id as usize].health;
     }
     pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
-        let real_count = (count as f32 / CHARACTER_PROFILES[self.character_id as usize].dexterity).round();
-        self.animation = PlayerAnimation { diff_pose: (pose - self.pose) / real_count, diff_y: 0.0, phase, count: real_count as u8 };
+        let real_count =
+            (count as f32 / CHARACTER_PROFILES[self.character_id as usize].dexterity).round();
+        self.animation = PlayerAnimation {
+            diff_pose: (pose - self.pose) / real_count,
+            diff_y: 0.0,
+            phase,
+            count: real_count as u8,
+        };
     }
     pub fn update_animation(&mut self) {
         if self.animation.count == 0 {
@@ -273,7 +299,7 @@ impl Player {
 
 #[derive(Component)]
 struct BodyParts {
-    flags: u8
+    flags: u8,
 }
 
 #[allow(dead_code)]
@@ -283,7 +309,11 @@ impl BodyParts {
     const BODY: Self = Self { flags: 0b01000 };
     pub fn new(head: bool, body: bool, arm: bool, right: bool, upper: bool) -> Self {
         Self {
-            flags: (head as u8) << 4 | (body as u8) << 3 | (arm as u8) << 2 | (right as u8) << 1 | (upper as u8)
+            flags: (head as u8) << 4
+                | (body as u8) << 3
+                | (arm as u8) << 2
+                | (right as u8) << 1
+                | (upper as u8),
         }
     }
     pub fn is_head(&self) -> bool {
@@ -311,15 +341,14 @@ pub struct Foot(bool);
 #[derive(Resource)]
 struct PlayerCollision(u8);
 
-
 /// Spawns a player character with the specified ID and character profile.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `id` - The player ID (0 for player 1, 1 for player 2)
 /// * `character_id` - Index into CHARACTER_PROFILES for the character definition
 /// * `builder` - The entity builder to spawn the player hierarchy
-/// * `meshes` - Asset server for creating mesh components 
+/// * `meshes` - Asset server for creating mesh components
 /// * `materials` - Asset server for creating material components
 /// * `y_pos` - Initial Y position to spawn the player at
 ///
@@ -336,50 +365,65 @@ pub fn spawn_player(
     y_pos: f32,
 ) {
     let profile = &CHARACTER_PROFILES[character_id as usize];
-    builder.spawn((
-        if id == 0 { Player::new(character_id) } else { Player::new_opposite(character_id) },
-        PlayerID(id),
-        InGame,
-        // Player 0 is on top of the screen
-        #[cfg(not(target_arch = "wasm32"))]
-        Transform::from_translation(Vec3::new(if id == 0 {-500.0} else {500.0}, y_pos, if id == 0 { 10.0 } else {1.0})),
-        #[cfg(target_arch = "wasm32")]
-        Transform::from_translation(Vec3::new(if id == 0 {-250.0} else {250.0}, y_pos, if id == 0 { 10.0 } else {1.0})),
-        Visibility::Visible,
-    ))
+    builder
+        .spawn((
+            if id == 0 {
+                Player::new(character_id)
+            } else {
+                Player::new_opposite(character_id)
+            },
+            PlayerID(id),
+            InGame,
+            // Player 0 is on top of the screen
+            #[cfg(not(target_arch = "wasm32"))]
+            Transform::from_translation(Vec3::new(
+                if id == 0 { -500.0 } else { 500.0 },
+                y_pos,
+                if id == 0 { 10.0 } else { 1.0 },
+            )),
+            #[cfg(target_arch = "wasm32")]
+            Transform::from_translation(Vec3::new(
+                if id == 0 { -250.0 } else { 250.0 },
+                y_pos,
+                if id == 0 { 10.0 } else { 1.0 },
+            )),
+            Visibility::Visible,
+        ))
         // Body
         .with_children(|builder| {
-            builder.spawn((
-                #[cfg(not(target_arch = "wasm32"))]
-                Mesh2d(meshes.add( Rectangle::new(BODY_THICKNESS * 4.0, 130.0))),
-                #[cfg(target_arch = "wasm32")]
-                Mesh2d(meshes.add( Rectangle::new(BODY_THICKNESS * 4.0, 65.0))),
-                MeshMaterial2d(materials.add(profile.color)),
-                Transform::default(),
-                BodyParts::BODY,
-                PlayerID(id),
-                #[cfg(not(target_arch = "wasm32"))]
-                Collider::cuboid(BODY_THICKNESS * 2.0, 65.0),
-                #[cfg(target_arch = "wasm32")]
-                Collider::cuboid(BODY_THICKNESS, 32.5),
-                RigidBody::KinematicPositionBased,
-                ActiveEvents::COLLISION_EVENTS,
-                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-            ))
+            builder
+                .spawn((
+                    #[cfg(not(target_arch = "wasm32"))]
+                    Mesh2d(meshes.add(Rectangle::new(BODY_THICKNESS * 4.0, 130.0))),
+                    #[cfg(target_arch = "wasm32")]
+                    Mesh2d(meshes.add(Rectangle::new(BODY_THICKNESS * 4.0, 65.0))),
+                    MeshMaterial2d(materials.add(profile.color)),
+                    Transform::default(),
+                    BodyParts::BODY,
+                    PlayerID(id),
+                    #[cfg(not(target_arch = "wasm32"))]
+                    Collider::cuboid(BODY_THICKNESS * 2.0, 65.0),
+                    #[cfg(target_arch = "wasm32")]
+                    Collider::cuboid(BODY_THICKNESS, 32.5),
+                    RigidBody::KinematicPositionBased,
+                    ActiveEvents::COLLISION_EVENTS,
+                    ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                ))
                 // Head and Neck
                 .with_children(|builder| {
                     // Neck
                     // Neck is invisible(completely transparent)
-                    builder.spawn((
-                        #[cfg(not(target_arch = "wasm32"))]
-                        Mesh2d(meshes.add(Rectangle::new(10.0, 40.0))),
-                        #[cfg(target_arch = "wasm32")]
-                        Mesh2d(meshes.add(Rectangle::new(1.0, 20.0))),
-                        MeshMaterial2d(materials.add(Color::srgba(0.0, 0.0, 0.0, 0.0))),
-                        BodyParts::HEAD,
-                        PlayerID(id),
-                        Transform::from_translation(Vec3::new(0.0, HEAD_OFFSET, 2.0)),                      
-                    ))
+                    builder
+                        .spawn((
+                            #[cfg(not(target_arch = "wasm32"))]
+                            Mesh2d(meshes.add(Rectangle::new(10.0, 40.0))),
+                            #[cfg(target_arch = "wasm32")]
+                            Mesh2d(meshes.add(Rectangle::new(1.0, 20.0))),
+                            MeshMaterial2d(materials.add(Color::srgba(0.0, 0.0, 0.0, 0.0))),
+                            BodyParts::HEAD,
+                            PlayerID(id),
+                            Transform::from_translation(Vec3::new(0.0, HEAD_OFFSET, 2.0)),
+                        ))
                         // Head
                         .with_child((
                             #[cfg(not(target_arch = "wasm32"))]
@@ -398,25 +442,28 @@ pub fn spawn_player(
                             #[cfg(target_arch = "wasm32")]
                             Collider::ball(20.0),
                             ActiveEvents::COLLISION_EVENTS,
-                            ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ));
                     // Right Upper Arm
-                    builder.spawn((
-                        Mesh2d(meshes.add(Capsule2d {
-                            radius: LIMB_RADIUS,
-                            half_length: LIMB_LENGTH,
-                        })),
-                        MeshMaterial2d(materials.add(SKIN_COLOR)),
-                        BodyParts::new(false, false, true, true, true),
-                        PlayerID(id),
-                        // player 0 is right facing, and player 1 is left facing
-                        // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, 2.0)),
-                        RigidBody::KinematicPositionBased,
-                        Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                        ActiveEvents::COLLISION_EVENTS,
-                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                    ))
+                    builder
+                        .spawn((
+                            Mesh2d(meshes.add(Capsule2d {
+                                radius: LIMB_RADIUS,
+                                half_length: LIMB_LENGTH,
+                            })),
+                            MeshMaterial2d(materials.add(SKIN_COLOR)),
+                            BodyParts::new(false, false, true, true, true),
+                            PlayerID(id),
+                            // player 0 is right facing, and player 1 is left facing
+                            // so we need to change which arm is on top
+                            Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, 2.0)),
+                            RigidBody::KinematicPositionBased,
+                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                        ))
                         // Right Lower Arm
                         .with_child((
                             Mesh2d(meshes.add(Capsule2d {
@@ -430,25 +477,28 @@ pub fn spawn_player(
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
-                            ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ));
                     // Left Upper Arm
-                    builder.spawn((
-                        Mesh2d(meshes.add(Capsule2d {
-                            radius: LIMB_RADIUS,
-                            half_length: LIMB_LENGTH,
-                        })),
-                        MeshMaterial2d(materials.add(SKIN_COLOR)),
-                        BodyParts::new(false, false, true, false, true),
-                        PlayerID(id),
-                        // player 0 is right facing, and player 1 is left facing
-                        // so we need to change which arm is on top
-                        Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, -1.0)),
-                        RigidBody::KinematicPositionBased,
-                        Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                        ActiveEvents::COLLISION_EVENTS,
-                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                    ))
+                    builder
+                        .spawn((
+                            Mesh2d(meshes.add(Capsule2d {
+                                radius: LIMB_RADIUS,
+                                half_length: LIMB_LENGTH,
+                            })),
+                            MeshMaterial2d(materials.add(SKIN_COLOR)),
+                            BodyParts::new(false, false, true, false, true),
+                            PlayerID(id),
+                            // player 0 is right facing, and player 1 is left facing
+                            // so we need to change which arm is on top
+                            Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, -1.0)),
+                            RigidBody::KinematicPositionBased,
+                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                        ))
                         // Left Lower Arm
                         .with_child((
                             Mesh2d(meshes.add(Capsule2d {
@@ -462,93 +512,112 @@ pub fn spawn_player(
                             RigidBody::KinematicPositionBased,
                             Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
-                            ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ));
                     // Right Upper Leg
-                    builder.spawn((
-                        Mesh2d(meshes.add(Capsule2d {
-                            radius: LIMB_RADIUS,
-                            half_length: LIMB_LENGTH,
-                        })),
-                        MeshMaterial2d(materials.add(profile.color)),
-                        // right upper leg
-                        BodyParts::new(false, false, false, true, true),
-                        PlayerID(id),
-                        // player 0 is right facing, and player 1 is left facing
-                        // so we need to change which leg is on top
-                        Transform::from_translation(Vec3::new(20.0, UPPER_LEG_OFFSET, 3.0)),
-                        RigidBody::KinematicPositionBased,
-                        Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                        ActiveEvents::COLLISION_EVENTS,
-                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                    ))
+                    builder
+                        .spawn((
+                            Mesh2d(meshes.add(Capsule2d {
+                                radius: LIMB_RADIUS,
+                                half_length: LIMB_LENGTH,
+                            })),
+                            MeshMaterial2d(materials.add(profile.color)),
+                            // right upper leg
+                            BodyParts::new(false, false, false, true, true),
+                            PlayerID(id),
+                            // player 0 is right facing, and player 1 is left facing
+                            // so we need to change which leg is on top
+                            Transform::from_translation(Vec3::new(20.0, UPPER_LEG_OFFSET, 3.0)),
+                            RigidBody::KinematicPositionBased,
+                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                        ))
                         // Right Lower Leg
                         .with_children(|builder| {
-                            builder.spawn((
-                                Mesh2d(meshes.add(Capsule2d {
-                                    radius: LIMB_RADIUS,
-                                    half_length: LIMB_LENGTH,
-                                })),
-                                MeshMaterial2d(materials.add(profile.color)),
-                                // right lower leg
-                                BodyParts::new(false, false, false, true, false),
-                                PlayerID(id),
-                                Transform::from_translation(Vec3::new(0.0, LOWER_LEG_OFFSET, 1.0)),
-                                RigidBody::KinematicPositionBased,
-                                Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                                ActiveEvents::COLLISION_EVENTS,
-                                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                            )).with_child((
-                                Foot(true),
-                                PlayerID(id),
-                                Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
-                                MeshMaterial2d(materials.add(SKIN_COLOR)),
-                                #[cfg(not(target_arch = "wasm32"))]
-                                Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
-                                #[cfg(target_arch = "wasm32")]
-                                Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
-                            ));
+                            builder
+                                .spawn((
+                                    Mesh2d(meshes.add(Capsule2d {
+                                        radius: LIMB_RADIUS,
+                                        half_length: LIMB_LENGTH,
+                                    })),
+                                    MeshMaterial2d(materials.add(profile.color)),
+                                    // right lower leg
+                                    BodyParts::new(false, false, false, true, false),
+                                    PlayerID(id),
+                                    Transform::from_translation(Vec3::new(
+                                        0.0,
+                                        LOWER_LEG_OFFSET,
+                                        1.0,
+                                    )),
+                                    RigidBody::KinematicPositionBased,
+                                    Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                                    ActiveEvents::COLLISION_EVENTS,
+                                    ActiveCollisionTypes::default()
+                                        | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                                ))
+                                .with_child((
+                                    Foot(true),
+                                    PlayerID(id),
+                                    Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
+                                    MeshMaterial2d(materials.add(SKIN_COLOR)),
+                                    #[cfg(not(target_arch = "wasm32"))]
+                                    Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
+                                    #[cfg(target_arch = "wasm32")]
+                                    Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
+                                ));
                         });
                     // Left Upper Leg
-                    builder.spawn((
-                        Mesh2d(meshes.add(Capsule2d {
-                            radius: LIMB_RADIUS,
-                            half_length: LIMB_LENGTH,
-                        })),
-                        MeshMaterial2d(materials.add(profile.color)),
-                        BodyParts::new(false, false, false, false, true),
-                        PlayerID(id),
-                        Transform::from_translation(Vec3::new(-20.0, UPPER_LEG_OFFSET, 1.0)),
-                        RigidBody::KinematicPositionBased,
-                        Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                        ActiveEvents::COLLISION_EVENTS,
-                        ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                    ))
+                    builder
+                        .spawn((
+                            Mesh2d(meshes.add(Capsule2d {
+                                radius: LIMB_RADIUS,
+                                half_length: LIMB_LENGTH,
+                            })),
+                            MeshMaterial2d(materials.add(profile.color)),
+                            BodyParts::new(false, false, false, false, true),
+                            PlayerID(id),
+                            Transform::from_translation(Vec3::new(-20.0, UPPER_LEG_OFFSET, 1.0)),
+                            RigidBody::KinematicPositionBased,
+                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            ActiveEvents::COLLISION_EVENTS,
+                            ActiveCollisionTypes::default()
+                                | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                        ))
                         // Left Lower Leg
                         .with_children(|builder| {
-                            builder.spawn((
-                                Mesh2d(meshes.add(Capsule2d {
-                                    radius: LIMB_RADIUS,
-                                    half_length: LIMB_LENGTH,
-                                })),
-                                MeshMaterial2d(materials.add(profile.color)),
-                                BodyParts::new(false, false, false, false, false),
-                                PlayerID(id),
-                                Transform::from_translation(Vec3::new(0.0, LOWER_LEG_OFFSET, 1.0)),
-                                RigidBody::KinematicPositionBased,
-                                Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
-                                ActiveEvents::COLLISION_EVENTS,
-                                ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC
-                            )).with_child((
-                                Foot(false),
-                                PlayerID(id),
-                                Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
-                                MeshMaterial2d(materials.add(SKIN_COLOR)),
-                                #[cfg(not(target_arch = "wasm32"))]
-                                Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
-                                #[cfg(target_arch = "wasm32")]
-                                Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
-                            ));
+                            builder
+                                .spawn((
+                                    Mesh2d(meshes.add(Capsule2d {
+                                        radius: LIMB_RADIUS,
+                                        half_length: LIMB_LENGTH,
+                                    })),
+                                    MeshMaterial2d(materials.add(profile.color)),
+                                    BodyParts::new(false, false, false, false, false),
+                                    PlayerID(id),
+                                    Transform::from_translation(Vec3::new(
+                                        0.0,
+                                        LOWER_LEG_OFFSET,
+                                        1.0,
+                                    )),
+                                    RigidBody::KinematicPositionBased,
+                                    Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                                    ActiveEvents::COLLISION_EVENTS,
+                                    ActiveCollisionTypes::default()
+                                        | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+                                ))
+                                .with_child((
+                                    Foot(false),
+                                    PlayerID(id),
+                                    Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
+                                    MeshMaterial2d(materials.add(SKIN_COLOR)),
+                                    #[cfg(not(target_arch = "wasm32"))]
+                                    Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
+                                    #[cfg(target_arch = "wasm32")]
+                                    Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
+                                ));
                         });
                 });
         });
@@ -600,12 +669,12 @@ fn keyboard_input(
         if keys.pressed(KeyCode::KeyD) && !player.state.check(PlayerState::COOLDOWN) {
             if !player.state.check(
                 PlayerState::JUMP_UP
-                | PlayerState::JUMP_BACKWARD
-                | PlayerState::JUMP_FORWARD
-                | PlayerState::BEND_DOWN
-                | PlayerState::ROLL_BACK
-                | PlayerState::ROLL_FORWARD
-                | PlayerState::WALKING
+                    | PlayerState::JUMP_BACKWARD
+                    | PlayerState::JUMP_FORWARD
+                    | PlayerState::BEND_DOWN
+                    | PlayerState::ROLL_BACK
+                    | PlayerState::ROLL_FORWARD
+                    | PlayerState::WALKING,
             ) {
                 // player is just walking
                 player.state |= PlayerState::WALKING;
@@ -616,12 +685,12 @@ fn keyboard_input(
         } else if keys.pressed(KeyCode::KeyA) && !player.state.check(PlayerState::COOLDOWN) {
             if !player.state.check(
                 PlayerState::JUMP_UP
-                | PlayerState::JUMP_BACKWARD
-                | PlayerState::JUMP_FORWARD
-                | PlayerState::BEND_DOWN
-                | PlayerState::ROLL_BACK
-                | PlayerState::ROLL_FORWARD
-                | PlayerState::WALKING
+                    | PlayerState::JUMP_BACKWARD
+                    | PlayerState::JUMP_FORWARD
+                    | PlayerState::BEND_DOWN
+                    | PlayerState::ROLL_BACK
+                    | PlayerState::ROLL_FORWARD
+                    | PlayerState::WALKING,
             ) {
                 // player is just walking
                 player.state |= PlayerState::WALKING;
@@ -656,7 +725,8 @@ fn keyboard_input(
                     player.state |= PlayerState::ROLL_BACK;
                     player.set_animation(ROLL_BACK_POSE1, 0, 10);
                 }
-                let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 } * CHARACTER_PROFILES[player.character_id as usize].agility;
+                let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
+                    * CHARACTER_PROFILES[player.character_id as usize].agility;
                 player.velocity = Vec2::new(x_vel, 0.0);
             }
         }
@@ -668,10 +738,9 @@ fn keyboard_input(
                 player.set_animation(JUMP_UP_POSE1, 0, 10);
                 player.energy += 1;
             } else if !player.state.check(
-                PlayerState::JUMP_UP
-                    | PlayerState::JUMP_FORWARD
-                    | PlayerState::JUMP_BACKWARD
-            ) && player.state.check(PlayerState::WALKING) {
+                PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD,
+            ) && player.state.check(PlayerState::WALKING)
+            {
                 if player.state.check(PlayerState::DIRECTION) {
                     // player is walking right
                     // then player will jump forward
@@ -698,7 +767,10 @@ fn keyboard_input(
                 player.state |= PlayerState::KICKING;
                 player.set_animation(KICK_POSE1, 0, 5);
                 player.energy += 2;
-            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+            } else if player
+                .state
+                .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD)
+            {
                 // player is jumping
                 // then just adding state
                 player.state |= PlayerState::KICKING;
@@ -774,10 +846,27 @@ fn player_movement(
     mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
     energy_query: Query<(&mut EnergyBar, &mut Mesh2d, &PlayerID), Without<SkillEntity>>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Transform, &mut Visibility), (Without<BackGround>, Without<Camera2d>, Without<SkillEntity>)>,
-    mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>, Without<Camera2d>, Without<SkillEntity>)>,
-    mut skill_name_query: Query<(&SkillName, &mut Visibility), (Without<SkillEntity>, Without<Player>)>,
-    mut thunder_query: Query<(&SkillEntity, &mut Visibility, &mut Transform), (Without<SkillName>, Without<Player>, Without<BackGround>)>,
+    mut player_query: Query<
+        (&mut Player, &PlayerID, &mut Transform, &mut Visibility),
+        (Without<BackGround>, Without<Camera2d>, Without<SkillEntity>),
+    >,
+    mut ground_query: Query<
+        &mut Transform,
+        (
+            With<BackGround>,
+            Without<Player>,
+            Without<Camera2d>,
+            Without<SkillEntity>,
+        ),
+    >,
+    mut skill_name_query: Query<
+        (&SkillName, &mut Visibility),
+        (Without<SkillEntity>, Without<Player>),
+    >,
+    mut thunder_query: Query<
+        (&SkillEntity, &mut Visibility, &mut Transform),
+        (Without<SkillName>, Without<Player>, Without<BackGround>),
+    >,
     curtain_query: Query<(&SkillEntity, &Mesh2d), Without<EnergyBar>>,
 ) {
     timer.timer.tick(time.delta());
@@ -785,17 +874,26 @@ fn player_movement(
         // perform skill animation
         if fighting.0 != 0 {
             let mut opponent_position = Vec2::ZERO;
-            if let Some((_, _, transform, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 != fighting.0-1) {  
-                opponent_position = Vec2::new(transform.translation.x, transform.translation.y);   
+            if let Some((_, _, transform, _)) = player_query
+                .iter_mut()
+                .find(|(_, id, _, _)| id.0 != fighting.0 - 1)
+            {
+                opponent_position = Vec2::new(transform.translation.x, transform.translation.y);
             }
             let mut damage: u32 = 0;
-            if let Some((mut player, player_id, mut transform, mut player_visibility)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == fighting.0-1) {
+            if let Some((mut player, player_id, mut transform, mut player_visibility)) =
+                player_query
+                    .iter_mut()
+                    .find(|(_, id, _, _)| id.0 == fighting.0 - 1)
+            {
                 if player.animation.phase == 0 {
                     player.animation.count += 1;
                     // change curtain color to draken the screen
                     if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
                         let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
-                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                            mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                        {
                             for i in 0..4 {
                                 colors[i][3] = player.animation.count as f32 / 60.0;
                             }
@@ -813,7 +911,7 @@ fn player_movement(
                         player.animation.count = 0;
                     }
                 } else if player.animation.phase == 1 {
-                    player.animation.count += 1 ;
+                    player.animation.count += 1;
                     if player.animation.count == 60 {
                         for (skill_name, mut skill_name_visibility) in skill_name_query.iter_mut() {
                             if skill_name.0 == player.character_id as u8 {
@@ -828,11 +926,14 @@ fn player_movement(
                         // character 0 skill
                         player.animation.count += 1;
                         // change curtain color to draken the screen
-                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1)
+                        {
                             let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
-                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
                                 for i in 0..4 {
-                                    colors[i][3] = (player.animation.count+20) as f32 / 60.0;
+                                    colors[i][3] = (player.animation.count + 20) as f32 / 60.0;
                                 }
                             }
                         }
@@ -845,9 +946,9 @@ fn player_movement(
                         // decide soul color using random number
                         player.animation.count += 1;
                         let color_rand = rand();
-                        let color = if color_rand >= 2.0/3.0 {
+                        let color = if color_rand >= 2.0 / 3.0 {
                             SOUL_COLOR[0]
-                        } else if color_rand >= 1.0/3.0 {
+                        } else if color_rand >= 1.0 / 3.0 {
                             SOUL_COLOR[1]
                         } else {
                             SOUL_COLOR[2]
@@ -856,9 +957,13 @@ fn player_movement(
                         commands.spawn((
                             Mesh2d(meshes.add(Circle::new(rand() * 10.0))),
                             MeshMaterial2d(materials.add(color)),
-                            Transform::from_translation(Vec3::new(opponent_position.x, opponent_position.y + 50.0, 20.0)),
+                            Transform::from_translation(Vec3::new(
+                                opponent_position.x,
+                                opponent_position.y + 50.0,
+                                20.0,
+                            )),
                             // soul entity's id is 2
-                            SkillEntity { id: 2 }
+                            SkillEntity { id: 2 },
                         ));
                         if player.animation.count == 100 {
                             player.animation.phase = 3;
@@ -866,12 +971,15 @@ fn player_movement(
                         }
                     } else if player.character_id == 2 {
                         // character 2 skill
+                        player.set_animation(FIRE_SKILL_POSE, 0, 10);
                     }
                 } else if player.animation.phase == 3 {
                     if player.character_id == 0 {
                         player.animation.count += 1;
                         if player.animation.count == 30 {
-                            if let Some((_, mut thunder_visibility, mut thunder_transform)) = thunder_query.iter_mut().find(|x| x.0.id == 0) {
+                            if let Some((_, mut thunder_visibility, mut thunder_transform)) =
+                                thunder_query.iter_mut().find(|x| x.0.id == 0)
+                            {
                                 *thunder_visibility = Visibility::Visible;
                                 thunder_transform.translation.x = transform.translation.x;
                             }
@@ -879,13 +987,15 @@ fn player_movement(
                             player.pose = THUNDER_PUNCH_POSE;
                             if player.pose.facing {
                                 transform.translation.x = opponent_position.x - 100.0;
-                                transform.translation.y = opponent_position.y + 50.0;                                
+                                transform.translation.y = opponent_position.y + 50.0;
                             } else {
                                 transform.translation.x = opponent_position.x + 100.0;
-                                transform.translation.y = opponent_position.y + 50.0;                                
+                                transform.translation.y = opponent_position.y + 50.0;
                             }
                             commands.spawn((
-                                AudioPlayer::new(asset_server.load(format!("{}/thunder.ogg", PATH_SOUND_PREFIX))),
+                                AudioPlayer::new(
+                                    asset_server.load(format!("{}/thunder.ogg", PATH_SOUND_PREFIX)),
+                                ),
                                 SoundEffect,
                             ));
                             player.animation.phase = 4;
@@ -896,9 +1006,12 @@ fn player_movement(
                     if player.character_id == 0 {
                         player.animation.count += 1;
                         // change curtain color to draken the screen
-                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1)
+                        {
                             let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
-                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
                                 for i in 0..4 {
                                     if player.animation.count <= 5 {
                                         colors[i][0] = player.animation.count as f32 / 5.0;
@@ -913,9 +1026,13 @@ fn player_movement(
                         if player.animation.count == 10 {
                             damage = 150;
                             *player_visibility = Visibility::Visible;
-                            if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                            if let Some((_, mesh_handler)) =
+                                curtain_query.iter().find(|x| x.0.id == 1)
+                            {
                                 let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
-                                if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                                if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                    mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                                {
                                     for i in 0..4 {
                                         colors[i][0] = 0.0;
                                         colors[i][1] = 0.0;
@@ -923,7 +1040,9 @@ fn player_movement(
                                     }
                                 }
                             }
-                            if let Some((_, mut thunder_visibility, _)) = thunder_query.iter_mut().find(|x| x.0.id == 0) {
+                            if let Some((_, mut thunder_visibility, _)) =
+                                thunder_query.iter_mut().find(|x| x.0.id == 0)
+                            {
                                 *thunder_visibility = Visibility::Hidden;
                             }
                             player.set_animation(IDLE_POSE1, 5, 30);
@@ -931,9 +1050,12 @@ fn player_movement(
                         }
                     } else if player.character_id == 1 {
                         player.animation.count += 1;
-                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1)
+                        {
                             let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
-                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
                                 for i in 0..4 {
                                     colors[i][3] = (20 - player.animation.count) as f32 / 60.0;
                                 }
@@ -946,15 +1068,15 @@ fn player_movement(
                 } else if player.animation.phase == 5 {
                     if player.character_id == 0 {
                         player.update_animation();
-                        if transform.translation.y > 270.0-config.window_size.y/2.0 {
+                        if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
                             player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
                             transform.translation.y += player.velocity.y;
-                            if transform.translation.y < 270.0-config.window_size.y/2.0 {
-                                transform.translation.y = 270.0-config.window_size.y/2.0;
+                            if transform.translation.y < 270.0 - config.window_size.y / 2.0 {
+                                transform.translation.y = 270.0 - config.window_size.y / 2.0;
                             }
                         }
                         if player.animation.count == 0 {
-                            if transform.translation.y == 270.0-config.window_size.y/2.0 {
+                            if transform.translation.y == 270.0 - config.window_size.y / 2.0 {
                                 player.animation.phase = 7;
                             } else {
                                 // player position have to be reset
@@ -964,11 +1086,11 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 6 {
                     if player.character_id == 0 {
-                        if transform.translation.y > 270.0-config.window_size.y/2.0 {
+                        if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
                             player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
                             transform.translation.y += player.velocity.y;
-                            if transform.translation.y < 270.0-config.window_size.y/2.0 {
-                                transform.translation.y = 270.0-config.window_size.y/2.0;
+                            if transform.translation.y < 270.0 - config.window_size.y / 2.0 {
+                                transform.translation.y = 270.0 - config.window_size.y / 2.0;
                                 player.animation.phase = 7;
                             }
                         }
@@ -980,9 +1102,13 @@ fn player_movement(
                     player.animation.count = 0;
                     player.state &= !PlayerState::SKILL;
                     fighting.0 = 0;
-                    if let Some((_, mesh_handler, _)) = energy_query.iter().find(|x| x.2 == player_id) {
+                    if let Some((_, mesh_handler, _)) =
+                        energy_query.iter().find(|x| x.2 == player_id)
+                    {
                         if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
-                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
                                 for i in 2..4 {
                                     colors[i][0] = 0.0;
                                     colors[i][2] = 10.0;
@@ -992,7 +1118,10 @@ fn player_movement(
                     }
                 }
                 if damage != 0 {
-                    if let Some((mut player, _, _, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 != fighting.0-1) {
+                    if let Some((mut player, _, _, _)) = player_query
+                        .iter_mut()
+                        .find(|(_, id, _, _)| id.0 != fighting.0 - 1)
+                    {
                         player.health -= damage;
                     }
                 }
@@ -1009,7 +1138,7 @@ fn player_movement(
                     gamestate.phase = 7;
                     gamestate.count = 0;
                 }
-                continue
+                continue;
             }
             // player is idle
             if player.state.is_idle() | player.state.check(PlayerState::COOLDOWN) {
@@ -1343,15 +1472,26 @@ fn player_movement(
                     }
                 }
                 if player.state.check(PlayerState::WALKING) {
-                    if player.state.is_forward() && player.velocity.x < CHARACTER_PROFILES[player.character_id as usize].agility {
+                    if player.state.is_forward()
+                        && player.velocity.x
+                            < CHARACTER_PROFILES[player.character_id as usize].agility
+                    {
                         player.velocity += Vec2::new(1.0, 0.0) * PIXELS_PER_METER / FPS;
-                    } else if !player.state.is_forward() && player.velocity.x > -CHARACTER_PROFILES[player.character_id as usize].agility {
+                    } else if !player.state.is_forward()
+                        && player.velocity.x
+                            > -CHARACTER_PROFILES[player.character_id as usize].agility
+                    {
                         player.velocity += Vec2::new(-1.0, 0.0) * PIXELS_PER_METER / FPS;
                     }
-                    if player.velocity.x > CHARACTER_PROFILES[player.character_id as usize].agility {
-                        player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].agility;
-                    } else if player.velocity.x < -CHARACTER_PROFILES[player.character_id as usize].agility {
-                        player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].agility;
+                    if player.velocity.x > CHARACTER_PROFILES[player.character_id as usize].agility
+                    {
+                        player.velocity.x =
+                            CHARACTER_PROFILES[player.character_id as usize].agility;
+                    } else if player.velocity.x
+                        < -CHARACTER_PROFILES[player.character_id as usize].agility
+                    {
+                        player.velocity.x =
+                            -CHARACTER_PROFILES[player.character_id as usize].agility;
                     }
                     if player.animation.phase == 0 {
                         player.update_animation();
@@ -1373,26 +1513,28 @@ fn player_movement(
             }
             if player_collision.0 == 2 {
                 // no collision, player moves freely
-                transform.translation += Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+                transform.translation +=
+                    Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
             } else {
                 // collision, player cannot move along x-axis
-                transform.translation += Vec3::new(0.0, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+                transform.translation +=
+                    Vec3::new(0.0, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
             }
         }
 
         /*
         // move player and ground
-        */
+         */
         let mut ground = ground_query.get_single_mut().unwrap();
-        
+
         // Check if players are at opposite ends of the screen
         // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge
-        let mut at_edges: [u8;2] = [0;2];
+        let mut at_edges: [u8; 2] = [0; 2];
         for (_, player_id, transform, _) in player_query.iter() {
             if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
                 at_edges[player_id.0 as usize] = 1;
             } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
-                at_edges[player_id.0 as usize] = 2; 
+                at_edges[player_id.0 as usize] = 2;
             } else if transform.translation.x == -config.window_size.x / 2.0 + 100.0 {
                 at_edges[player_id.0 as usize] = 3;
             } else if transform.translation.x == config.window_size.x / 2.0 - 100.0 {
@@ -1402,7 +1544,10 @@ fn player_movement(
 
         if (at_edges[0] == 1 || at_edges[0] == 2) && at_edges[1] == 0 {
             let mut diff = 0.0;
-            if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 0) {
+            if let Some((_, _, mut transform, _)) = player_query
+                .iter_mut()
+                .find(|(_, player_id, _, _)| player_id.0 == 0)
+            {
                 if at_edges[0] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
@@ -1421,12 +1566,18 @@ fn player_movement(
                 ground.translation.x = config.window_size.x / 2.0 - 2000.0;
             } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
                 ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-            } else if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 1) {
+            } else if let Some((_, _, mut transform, _)) = player_query
+                .iter_mut()
+                .find(|(_, player_id, _, _)| player_id.0 == 1)
+            {
                 transform.translation.x += diff;
             }
         } else if at_edges[0] == 0 && (at_edges[1] == 1 || at_edges[1] == 2) {
             let mut diff = 0.0;
-            if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 1) {
+            if let Some((_, _, mut transform, _)) = player_query
+                .iter_mut()
+                .find(|(_, player_id, _, _)| player_id.0 == 1)
+            {
                 if at_edges[1] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
                     // transform.translation.x - (-config.window_size.x / 2.0 + 100.0): difference between player 0 and left edge
@@ -1445,30 +1596,51 @@ fn player_movement(
                 ground.translation.x = config.window_size.x / 2.0 - 2000.0;
             } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
                 ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-            } else if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == 0) {
+            } else if let Some((_, _, mut transform, _)) = player_query
+                .iter_mut()
+                .find(|(_, player_id, _, _)| player_id.0 == 0)
+            {
                 transform.translation.x += diff;
             }
         } else if at_edges[0] != 0 && at_edges[1] != 0 {
             if (at_edges[0] == 1 && at_edges[1] == 3) || (at_edges[0] == 3 && at_edges[1] == 1) {
                 // If both players are at the same edge, move the camera to the edge
                 let mut diff = 0.0;
-                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 1 { 0 } else { 1 }) {
+                if let Some((_, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                        player_id.0 == if at_edges[0] == 1 { 0 } else { 1 }
+                    })
+                {
                     diff = -config.window_size.x / 2.0 + 100.0 - transform.translation.x;
                     transform.translation.x = -config.window_size.x / 2.0 + 100.0;
                 }
                 ground.translation.x += diff;
-                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 1 { 1 } else { 0 }) {
+                if let Some((_, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                        player_id.0 == if at_edges[0] == 1 { 1 } else { 0 }
+                    })
+                {
                     transform.translation.x += diff;
                 }
-            } else if (at_edges[0] == 2 && at_edges[1] == 4) || (at_edges[0] == 4 && at_edges[1] == 2) {
+            } else if (at_edges[0] == 2 && at_edges[1] == 4)
+                || (at_edges[0] == 4 && at_edges[1] == 2)
+            {
                 // If both players are at the same edge, move the camera to the edge
                 let mut diff = 0.0;
-                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 2 { 0 } else { 1 }) {
+                if let Some((_, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                        player_id.0 == if at_edges[0] == 2 { 0 } else { 1 }
+                    })
+                {
                     diff = config.window_size.x / 2.0 - 100.0 - transform.translation.x;
                     transform.translation.x = config.window_size.x / 2.0 - 100.0;
                 }
                 ground.translation.x += diff;
-                if let Some((_, _, mut transform, _)) = player_query.iter_mut().find(|(_, player_id, _, _)| player_id.0 == if at_edges[0] == 2 { 1 } else { 0 }) {
+                if let Some((_, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                        player_id.0 == if at_edges[0] == 2 { 1 } else { 0 }
+                    })
+                {
                     transform.translation.x += diff;
                 }
             } else {
@@ -1488,7 +1660,7 @@ fn player_movement(
 fn update_soul_absorb_animation(
     mut commands: Commands,
     mut soul_query: Query<(Entity, &SkillEntity, &mut Transform), Without<Player>>,
-    mut player_query: Query<(&mut Player, &Transform), Without<SkillEntity>>
+    mut player_query: Query<(&mut Player, &Transform), Without<SkillEntity>>,
 ) {
     let mut destination = Vec2::ZERO;
     let mut vibe = false;
@@ -1531,8 +1703,8 @@ fn update_soul_absorb_animation(
         let diff = {
             let x = destination.x - transform.translation.x;
             let y = destination.y - transform.translation.y;
-            let norm = (x*x+y*y).sqrt();
-            Vec2::new(x/norm, y/norm)
+            let norm = (x * x + y * y).sqrt();
+            Vec2::new(x / norm, y / norm)
         };
         transform.translation.x += diff.x * 10.0 + rand() * 4.0 - 2.0;
         transform.translation.y += diff.y * 10.0 + rand() * 4.0 - 2.0;
@@ -1541,33 +1713,42 @@ fn update_soul_absorb_animation(
 
 // check if the player is grounding
 #[cfg(not(target_arch = "wasm32"))]
-fn check_ground(
-    config: Res<GameConfig>,
-    mut player_query: Query<(&mut Player, &mut Transform)>,
-) {
+fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &mut Transform)>) {
     for (mut player, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
-        if player.animation.phase == 0 { continue }
+        if player.animation.phase == 0 {
+            continue;
+        }
         // change offset based on the type of jump
-        if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
-        && transform.translation.y + 50.0 < 270.0-config.window_size.y/2.0
-        && player.animation.phase == 4 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
+        if player
+            .state
+            .check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
+            && transform.translation.y + 50.0 < 270.0 - config.window_size.y / 2.0
+            && player.animation.phase == 4
+        {
+            player.state &= !(PlayerState::JUMP_UP
+                | PlayerState::JUMP_BACKWARD
+                | PlayerState::JUMP_FORWARD
+                | PlayerState::KICKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 5.0;
             //transform.translation.y = 270.0 - config.window_size.y/2.0 - 50.0;
-            transform.translation.y = 220.0 - config.window_size.y/2.0;
+            transform.translation.y = 220.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
-        && transform.translation.y + 70.0 < 270.0-config.window_size.y/2.0
-        && player.animation.phase == 2 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD | PlayerState::KICKING);
+            && transform.translation.y + 70.0 < 270.0 - config.window_size.y / 2.0
+            && player.animation.phase == 2
+        {
+            player.state &= !(PlayerState::JUMP_UP
+                | PlayerState::JUMP_BACKWARD
+                | PlayerState::JUMP_FORWARD
+                | PlayerState::KICKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 7.0;
             //transform.translation.y = 270.0 - config.window_size.y/2.0 - 70.0;
-            transform.translation.y = 200.0 - config.window_size.y/2.0;
+            transform.translation.y = 200.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
     }
@@ -1582,38 +1763,46 @@ fn check_ground(
 ) {
     for (mut player, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
-        if player.animation.phase == 0 { continue }
+        if player.animation.phase == 0 {
+            continue;
+        }
         // change offset based on the type of jump
-        if player.state.check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
-        && transform.translation.y + 25.0 < 135.0-config.window_size.y/2.0
-        && player.animation.phase == 4 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+        if player
+            .state
+            .check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
+            && transform.translation.y + 25.0 < 135.0 - config.window_size.y / 2.0
+            && player.animation.phase == 4
+        {
+            player.state &=
+                !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 2.5;
             //transform.translation.y = 135.0 - config.window_size.y/2.0 - 25.0;
-            transform.translation.y = 110.0 - config.window_size.y/2.0;
+            transform.translation.y = 110.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
-        && transform.translation.y + 35.0 < 135.0-config.window_size.y/2.0
-        && player.animation.phase == 2 {
-            player.state &= !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
+            && transform.translation.y + 35.0 < 135.0 - config.window_size.y / 2.0
+            && player.animation.phase == 2
+        {
+            player.state &=
+                !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 3.5;
             //transform.translation.y = 135.0 - config.window_size.y/2.0 - 35.0;
-            transform.translation.y = 100.0 - config.window_size.y/2.0;
+            transform.translation.y = 100.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
     }
 }
 
 /// Rotates and positions a body part based on given parameters.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `transform` - The Transform component to modify
 /// * `offset` - Vertical offset from the parent joint
 /// * `degree` - Rotation angle in degrees (positive is counterclockwise)
-/// 
+///
 /// This function:
 /// 1. Converts degree to radians and sets rotation
 /// 2. Calculates X offset using sin of angle * limb length  
@@ -1622,7 +1811,7 @@ fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree:
     let rad = degree.to_radians();
     transform.rotation = Quat::from_rotation_z(rad);
     transform.translation.x = x_offset + LIMB_LENGTH * rad.sin();
-    transform.translation.y = y_offset + LIMB_LENGTH * (1.0-rad.cos());
+    transform.translation.y = y_offset + LIMB_LENGTH * (1.0 - rad.cos());
 }
 
 /// Rotates and positions the neck based on given parameters.
@@ -1642,15 +1831,24 @@ fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree:
 fn rotate_neck(transform: &mut Transform, degree: f32) {
     let rad = degree.to_radians();
     transform.rotation = Quat::from_rotation_z(-rad);
-    transform.translation.x = NECK_LENGTH/2.0 * rad.sin();
-    transform.translation.y = HEAD_OFFSET - NECK_LENGTH/2.0 * (1.0-rad.cos());
+    transform.translation.x = NECK_LENGTH / 2.0 * rad.sin();
+    transform.translation.y = HEAD_OFFSET - NECK_LENGTH / 2.0 * (1.0 - rad.cos());
 }
 
 /// Updates the pose of the player character based on their current state.
 fn update_pose(
-    mut player_query: Query<(&mut Player, &mut Transform, &PlayerID), (Without<BodyParts>, Without<Foot>)>,
-    mut parts_query: Query<(&BodyParts, &PlayerID, &mut Transform), (Without<Player>, Without<Foot>)>,
-    mut foot_query: Query<(&Foot, &PlayerID, &mut Transform), (Without<Player>, Without<BodyParts>)>,
+    mut player_query: Query<
+        (&mut Player, &mut Transform, &PlayerID),
+        (Without<BodyParts>, Without<Foot>),
+    >,
+    mut parts_query: Query<
+        (&BodyParts, &PlayerID, &mut Transform),
+        (Without<Player>, Without<Foot>),
+    >,
+    mut foot_query: Query<
+        (&Foot, &PlayerID, &mut Transform),
+        (Without<Player>, Without<BodyParts>),
+    >,
 ) {
     for (mut player, mut player_transform, player_id) in player_query.iter_mut() {
         let flip = if player.pose.facing { 1.0 } else { -1.0 };
@@ -1660,23 +1858,65 @@ fn update_pose(
                     // Head(Neck)
                     0b10000 => rotate_neck(&mut transform, flip * player.pose.head),
                     // Body
-                    0b01000 => rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body),
+                    0b01000 => {
+                        rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body)
+                    }
                     // Right Upper Arm
-                    0b00111 => rotate_parts(&mut transform, -2.0 * flip * BODY_THICKNESS, UPPER_ARM_OFFSET, flip * player.pose.right_upper_arm),
+                    0b00111 => rotate_parts(
+                        &mut transform,
+                        -2.0 * flip * BODY_THICKNESS,
+                        UPPER_ARM_OFFSET,
+                        flip * player.pose.right_upper_arm,
+                    ),
                     // Right Lower Arm
-                    0b00110 => rotate_parts(&mut transform, 0.0, LOWER_ARM_OFFSET, flip * player.pose.right_lower_arm),
+                    0b00110 => rotate_parts(
+                        &mut transform,
+                        0.0,
+                        LOWER_ARM_OFFSET,
+                        flip * player.pose.right_lower_arm,
+                    ),
                     // Right Upper Leg
-                    0b00011 => rotate_parts(&mut transform, -flip * BODY_THICKNESS, UPPER_LEG_OFFSET, flip * player.pose.right_upper_leg),
+                    0b00011 => rotate_parts(
+                        &mut transform,
+                        -flip * BODY_THICKNESS,
+                        UPPER_LEG_OFFSET,
+                        flip * player.pose.right_upper_leg,
+                    ),
                     // Right Lower Leg
-                    0b00010 => rotate_parts(&mut transform, 0.0, LOWER_LEG_OFFSET, flip * player.pose.right_lower_leg),
+                    0b00010 => rotate_parts(
+                        &mut transform,
+                        0.0,
+                        LOWER_LEG_OFFSET,
+                        flip * player.pose.right_lower_leg,
+                    ),
                     // Left Upper Arm
-                    0b00101 => rotate_parts(&mut transform, 2.0 * flip * BODY_THICKNESS, UPPER_ARM_OFFSET, flip * player.pose.left_upper_arm),
+                    0b00101 => rotate_parts(
+                        &mut transform,
+                        2.0 * flip * BODY_THICKNESS,
+                        UPPER_ARM_OFFSET,
+                        flip * player.pose.left_upper_arm,
+                    ),
                     // Left Lower Arm
-                    0b00100 => rotate_parts(&mut transform, 0.0, LOWER_ARM_OFFSET, flip * player.pose.left_lower_arm),
+                    0b00100 => rotate_parts(
+                        &mut transform,
+                        0.0,
+                        LOWER_ARM_OFFSET,
+                        flip * player.pose.left_lower_arm,
+                    ),
                     // Left Upper Leg
-                    0b00001 => rotate_parts(&mut transform, flip * BODY_THICKNESS, UPPER_LEG_OFFSET, flip * player.pose.left_upper_leg),
+                    0b00001 => rotate_parts(
+                        &mut transform,
+                        flip * BODY_THICKNESS,
+                        UPPER_LEG_OFFSET,
+                        flip * player.pose.left_upper_leg,
+                    ),
                     // Left Lower Leg
-                    0b00000 => rotate_parts(&mut transform, 0.0, LOWER_LEG_OFFSET, flip * player.pose.left_lower_leg),
+                    0b00000 => rotate_parts(
+                        &mut transform,
+                        0.0,
+                        LOWER_LEG_OFFSET,
+                        flip * player.pose.left_lower_leg,
+                    ),
                     _ => {}
                 }
             }
@@ -1686,8 +1926,10 @@ fn update_pose(
             player_transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
             player_transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
         } else {
-            player_transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0;
-            player_transform.translation.y += (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
+            player_transform.translation.x +=
+                (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0;
+            player_transform.translation.y +=
+                (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
         }
         player.pose.old_offset = player.pose.offset;
 
@@ -1696,19 +1938,27 @@ fn update_pose(
             if player_id.0 == foot_id.0 {
                 if cfg!(not(target_arch = "wasm32")) {
                     if foot.0 {
-                        transform.translation.x += player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
-                        transform.translation.y += player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
+                        transform.translation.x +=
+                            player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
+                        transform.translation.y +=
+                            player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
                     } else {
-                        transform.translation.x += player.pose.foot_offset[2] - player.pose.old_foot_offset[2];
-                        transform.translation.y += player.pose.foot_offset[3] - player.pose.old_foot_offset[3];
+                        transform.translation.x +=
+                            player.pose.foot_offset[2] - player.pose.old_foot_offset[2];
+                        transform.translation.y +=
+                            player.pose.foot_offset[3] - player.pose.old_foot_offset[3];
                     }
                 } else {
                     if foot.0 {
-                        transform.translation.x += (player.pose.foot_offset[0] - player.pose.old_foot_offset[0])/2.0;
-                        transform.translation.y += (player.pose.foot_offset[1] - player.pose.old_foot_offset[1])/2.0;
+                        transform.translation.x +=
+                            (player.pose.foot_offset[0] - player.pose.old_foot_offset[0]) / 2.0;
+                        transform.translation.y +=
+                            (player.pose.foot_offset[1] - player.pose.old_foot_offset[1]) / 2.0;
                     } else {
-                        transform.translation.x += (player.pose.foot_offset[2] - player.pose.old_foot_offset[2])/2.0;
-                        transform.translation.y += (player.pose.foot_offset[3] - player.pose.old_foot_offset[3])/2.0;
+                        transform.translation.x +=
+                            (player.pose.foot_offset[2] - player.pose.old_foot_offset[2]) / 2.0;
+                        transform.translation.y +=
+                            (player.pose.foot_offset[3] - player.pose.old_foot_offset[3]) / 2.0;
                     }
                 }
             }
@@ -1739,7 +1989,9 @@ fn check_attack(
                 };
 
                 // Check if the collision is between two player characters
-                if id1 == id2 { continue }
+                if id1 == id2 {
+                    continue;
+                }
 
                 let mut attacker_id: PlayerID = PlayerID(2);
                 let mut opponent_id: PlayerID = PlayerID(2);
@@ -1749,10 +2001,10 @@ fn check_attack(
                 for (player, player_id) in player_query.iter() {
                     if player.state.check(
                         PlayerState::KICKING
-                        | PlayerState::BACK_KICKING
-                        | PlayerState::FRONT_KICKING
-                        | PlayerState::PUNCHING)
-                    {
+                            | PlayerState::BACK_KICKING
+                            | PlayerState::FRONT_KICKING
+                            | PlayerState::PUNCHING,
+                    ) {
                         // Check if the attacker is already set
                         if id1 == player_id {
                             attacker_parts = parts1;
@@ -1763,23 +2015,39 @@ fn check_attack(
                         }
 
                         // Check if the attacker is in a valid state
-                        if player.state.check(PlayerState::KICKING | PlayerState::BACK_KICKING | PlayerState::FRONT_KICKING) && attacker_parts.is_arm(){
+                        if player.state.check(
+                            PlayerState::KICKING
+                                | PlayerState::BACK_KICKING
+                                | PlayerState::FRONT_KICKING,
+                        ) && attacker_parts.is_arm()
+                        {
                             continue;
-                        } else if player.state.check(PlayerState::PUNCHING) &&  !attacker_parts.is_arm(){
+                        } else if player.state.check(PlayerState::PUNCHING)
+                            && !attacker_parts.is_arm()
+                        {
                             continue;
                         }
 
                         // Check if the attacker is already set
-                        if attacker_id != PlayerID(2) && attacker_power > CHARACTER_PROFILES[player.character_id as usize].power {
+                        if attacker_id != PlayerID(2)
+                            && attacker_power
+                                > CHARACTER_PROFILES[player.character_id as usize].power
+                        {
                             continue;
                         }
                         attacker_id = *player_id;
-                        opponent_id = if PlayerID(0) == attacker_id { PlayerID(1) } else { PlayerID(0) };
+                        opponent_id = if PlayerID(0) == attacker_id {
+                            PlayerID(1)
+                        } else {
+                            PlayerID(0)
+                        };
                         attacker_power = CHARACTER_PROFILES[player.character_id as usize].power;
                     }
                 }
                 if attacker_id == PlayerID(2) {
-                    if player_collision.0 != 2 { continue; }
+                    if player_collision.0 != 2 {
+                        continue;
+                    }
                     // No attacker found
                     // If the collision is between one body and another body part, move player to avoid collision
                     if parts1.is_body() && !parts2.is_body() {
@@ -1792,7 +2060,7 @@ fn check_attack(
                                 }
                             }
                         }
-                    } else if parts2.is_body() &&  !parts1.is_body() {
+                    } else if parts2.is_body() && !parts1.is_body() {
                         for (player, player_id) in player_query.iter() {
                             if player_id == id1 {
                                 if player.state.is_idle() {
@@ -1801,7 +2069,7 @@ fn check_attack(
                                     player_collision.0 = id1.0;
                                 }
                             }
-                        }                   
+                        }
                     }
                     continue;
                 }
@@ -1812,7 +2080,10 @@ fn check_attack(
                     opponent_parts,
                 );
                 println!("Player {} hit: {} damage", attacker_id.0, damage);
-                if let Some((mut player, _)) = player_query.iter_mut().find(|(_, id)| id.0 == opponent_id.0) {
+                if let Some((mut player, _)) = player_query
+                    .iter_mut()
+                    .find(|(_, id)| id.0 == opponent_id.0)
+                {
                     player.health = player.health.saturating_sub(damage);
                 }
             }
@@ -1825,7 +2096,9 @@ fn check_attack(
                 };
 
                 // Check if the collision is between two player characters
-                if id1 == id2 { continue }
+                if id1 == id2 {
+                    continue;
+                }
 
                 // Check if the collision is between one body and another body part
                 if parts1.is_body() != parts2.is_body() {
@@ -1845,7 +2118,10 @@ fn avoid_collision(
         return;
     }
     // move player to avoid collision
-    if let Some((player, _, mut transform)) = player_query.iter_mut().find(|(_, id, _)| id.0 == player_collision.0) {
+    if let Some((player, _, mut transform)) = player_query
+        .iter_mut()
+        .find(|(_, id, _)| id.0 == player_collision.0)
+    {
         transform.translation.x += if player.pose.facing { -1.0 } else { 1.0 };
     }
 }
@@ -1876,7 +2152,7 @@ fn calculate_damage(
     let attacker_profile = &CHARACTER_PROFILES[attacker_info.0 as usize];
     let opponent_profile = &CHARACTER_PROFILES[opponent_info.0 as usize];
     let mut damage = attacker_profile.power;
-    
+
     // Apply damage multipliers based on player states
     if attacker_info.1.check(PlayerState::PUNCHING) {
         damage *= SKILL_COEFFICIENT[0];
@@ -1891,7 +2167,10 @@ fn calculate_damage(
     }
 
     // If attacker is performes a jumping kick or double jump kick, double the damage
-    if attacker_info.1.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+    if attacker_info
+        .1
+        .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD)
+    {
         damage *= 1.5;
     }
 
@@ -1912,7 +2191,9 @@ fn calculate_damage(
     }
 
     // Apply damage reduction based on opponent defense
-    return (damage * DEFENCE_COEFICIENCY / (opponent_profile.defense + defence_bonus + DEFENCE_OFFSET)).floor() as u32;
+    return (damage * DEFENCE_COEFICIENCY
+        / (opponent_profile.defense + defence_bonus + DEFENCE_OFFSET))
+        .floor() as u32;
 }
 
 /// Updates the health bar of the player character based on their current health.
@@ -1926,18 +2207,24 @@ fn update_health_bar(
         for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
             if player_id == health_id {
                 let target_ratio = player.health as f32 / profile.health as f32;
-                if health_bar.0 == target_ratio { continue };
+                if health_bar.0 == target_ratio {
+                    continue;
+                };
                 health_bar.0 -= 0.005;
                 if health_bar.0 < target_ratio {
                     health_bar.0 = target_ratio;
                 }
                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
-                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
+                        mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
+                    {
                         positions[3][0] = health_bar.1 * health_bar.0;
                         if cfg!(target_arch = "wasm32") {
-                            positions[2][0] = health_bar.1 * health_bar.0 + if player_id.0 == 0 { 25.0 } else { -25.0 };
+                            positions[2][0] = health_bar.1 * health_bar.0
+                                + if player_id.0 == 0 { 25.0 } else { -25.0 };
                         } else {
-                            positions[2][0] = health_bar.1 * health_bar.0 + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                            positions[2][0] = health_bar.1 * health_bar.0
+                                + if player_id.0 == 0 { 50.0 } else { -50.0 };
                         }
                     }
                 }
@@ -1959,22 +2246,30 @@ fn update_energy_bar(
                     player.energy = ENERGY_MAX;
                 }
                 let target_ratio = player.energy as f32 / ENERGY_MAX as f32;
-                if energy_bar.0 == target_ratio { continue };
+                if energy_bar.0 == target_ratio {
+                    continue;
+                };
                 energy_bar.0 += 0.002;
                 if energy_bar.0 > target_ratio {
                     energy_bar.0 = target_ratio;
                 }
                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
-                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
+                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
+                        mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
+                    {
                         positions[3][0] = energy_bar.1 * energy_bar.0;
                         if cfg!(target_arch = "wasm32") {
-                            positions[2][0] = energy_bar.1 * energy_bar.0 + if player_id.0 == 0 { 25.0 } else { -25.0 };
+                            positions[2][0] = energy_bar.1 * energy_bar.0
+                                + if player_id.0 == 0 { 25.0 } else { -25.0 };
                         } else {
-                            positions[2][0] = energy_bar.1 * energy_bar.0 + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                            positions[2][0] = energy_bar.1 * energy_bar.0
+                                + if player_id.0 == 0 { 50.0 } else { -50.0 };
                         }
                     }
                     if energy_bar.0 == 1.0 {
-                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                            mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                        {
                             for i in 2..4 {
                                 colors[i][0] = 10.0;
                                 colors[i][2] = 0.0;
@@ -1987,15 +2282,16 @@ fn update_energy_bar(
     }
 }
 
-fn update_facing(
-    mut player_query: Query<(&mut Player, &PlayerID, &Transform)>,
-) {
-    let mut positions = [0.0;2];
+fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &Transform)>) {
+    let mut positions = [0.0; 2];
     for (_, player_id, transform) in player_query.iter_mut() {
         positions[player_id.0 as usize] = transform.translation.x;
     }
     for (mut player, player_id, _) in player_query.iter_mut() {
-        if !player.state.check(!(PlayerState::COOLDOWN | PlayerState::DIRECTION | PlayerState::WALKING)) {
+        if !player
+            .state
+            .check(!(PlayerState::COOLDOWN | PlayerState::DIRECTION | PlayerState::WALKING))
+        {
             if player_id.0 == 0 {
                 if positions[0] < positions[1] {
                     player.pose.facing = true;
@@ -2017,23 +2313,49 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(AnimationTimer {
-                timer: Timer::from_seconds(1.0 / FPS, TimerMode::Repeating),
-            })
-            .insert_resource(PlayerCollision(2))
-            .add_systems(Update, player_movement.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
-            .add_systems(Update, check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_energy_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_soul_absorb_animation.run_if(in_state(AppState::Ingame).and(resource_exists::<SoulAbsorb>)));
+        app.insert_resource(AnimationTimer {
+            timer: Timer::from_seconds(1.0 / FPS, TimerMode::Repeating),
+        })
+        .insert_resource(PlayerCollision(2))
+        .add_systems(
+            Update,
+            player_movement.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            check_ground.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(Update, update_pose.run_if(in_state(AppState::Ingame)))
+        .add_systems(
+            Update,
+            check_attack.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            update_energy_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            update_soul_absorb_animation
+                .run_if(in_state(AppState::Ingame).and(resource_exists::<SoulAbsorb>)),
+        );
 
         #[cfg(not(target_arch = "wasm32"))]
-        app
-            .add_systems(Update, keyboard_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+        app.add_systems(
+            Update,
+            keyboard_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        );
     }
 }

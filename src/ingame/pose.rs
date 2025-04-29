@@ -10,10 +10,10 @@ use std::ops::{Add, AddAssign, Div, Sub};
 pub struct Pose {
     // true means right facing, false means left facing
     pub facing: bool,
-    pub offset: [f32;2],
-    pub old_offset: [f32;2],
-    pub foot_offset: [f32;4],
-    pub old_foot_offset: [f32;4],
+    pub offset: [f32; 2],
+    pub old_offset: [f32; 2],
+    pub foot_offset: [f32; 4],
+    pub old_foot_offset: [f32; 4],
     pub head: f32,
     pub body: f32,
     pub right_upper_arm: f32,
@@ -34,14 +34,14 @@ impl Add for Pose {
             facing: self.facing,
             offset: [
                 self.offset[0] + rhs.offset[0],
-                self.offset[1] + rhs.offset[1]
+                self.offset[1] + rhs.offset[1],
             ],
             old_offset: self.old_offset,
             foot_offset: [
                 self.foot_offset[0] + rhs.foot_offset[0],
                 self.foot_offset[1] + rhs.foot_offset[1],
                 self.foot_offset[2] + rhs.foot_offset[2],
-                self.foot_offset[3] + rhs.foot_offset[3]
+                self.foot_offset[3] + rhs.foot_offset[3],
             ],
             old_foot_offset: self.old_foot_offset,
             head: self.head + rhs.head,
@@ -72,14 +72,14 @@ impl Sub for Pose {
             facing: self.facing,
             offset: [
                 self.offset[0] - rhs.offset[0],
-                self.offset[1] - rhs.offset[1]
+                self.offset[1] - rhs.offset[1],
             ],
             old_offset: self.old_offset,
             foot_offset: [
                 self.foot_offset[0] - rhs.foot_offset[0],
                 self.foot_offset[1] - rhs.foot_offset[1],
                 self.foot_offset[2] - rhs.foot_offset[2],
-                self.foot_offset[3] - rhs.foot_offset[3]
+                self.foot_offset[3] - rhs.foot_offset[3],
             ],
             old_foot_offset: self.old_foot_offset,
             head: self.head - rhs.head,
@@ -102,16 +102,13 @@ impl Div<f32> for Pose {
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             facing: self.facing,
-            offset: [
-                self.offset[0] / rhs,
-                self.offset[1] / rhs
-            ],
+            offset: [self.offset[0] / rhs, self.offset[1] / rhs],
             old_offset: self.old_offset,
             foot_offset: [
                 self.foot_offset[0] / rhs,
                 self.foot_offset[1] / rhs,
                 self.foot_offset[2] / rhs,
-                self.foot_offset[3] / rhs
+                self.foot_offset[3] / rhs,
             ],
             old_foot_offset: self.old_foot_offset,
             head: self.head / rhs,
@@ -627,7 +624,6 @@ pub const JUMPING_KICK_POSE: Pose = Pose {
     left_lower_leg: -130.0,
 };
 
-
 pub const KICK_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
@@ -743,6 +739,24 @@ pub const THUNDER_PUNCH_POSE: Pose = Pose {
     foot_offset: [0.0, 5.0, 0.0, -10.0],
     old_foot_offset: [0.0, 5.0, 0.0, -10.0],
     head: 0.0,
+    body: -40.0,
+    right_upper_arm: -80.0,
+    right_lower_arm: 160.0,
+    right_upper_leg: -50.0,
+    right_lower_leg: -20.0,
+    left_upper_arm: 100.0,
+    left_lower_arm: -30.0,
+    left_upper_leg: 10.0,
+    left_lower_leg: -60.0,
+};
+
+pub const FIRE_SKILL_POSE: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    old_foot_offset: [0.0, 5.0, 0.0, -10.0],
+    head: 20.0,
     body: -40.0,
     right_upper_arm: -80.0,
     right_lower_arm: 160.0,

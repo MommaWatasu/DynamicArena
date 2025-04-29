@@ -1,20 +1,11 @@
 use bevy::{
+    input::gamepad::{Gamepad, GamepadConnectionEvent},
     prelude::*,
-    input::gamepad::{
-        Gamepad,
-        GamepadConnectionEvent,
-    }
 };
 
 use crate::{
-    AppState,
-    GameConfig,
-    GameMode,
-    PATH_BOLD_FONT,
-    PATH_BOLD_JP_FONT,
-    PATH_EXTRA_BOLD_JP_FONT,
-    PATH_IMAGE_PREFIX,
-    TITLE_FONT_SIZE
+    AppState, GameConfig, GameMode, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT,
+    PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 
 #[derive(Component)]
@@ -23,81 +14,83 @@ struct ConnectController;
 #[derive(Component)]
 pub struct GamepadID(u8);
 
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    game_config: Res<GameConfig>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Res<GameConfig>) {
     info!("setup");
-    commands.spawn((
-        #[cfg(not(target_arch = "wasm32"))]
-        ImageNode::new(asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX))),
-        #[cfg(target_arch = "wasm32")]
-        ImageNode::new(asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX))),
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            flex_direction: FlexDirection::Column,
-            ..default()
-        },
-        ConnectController,
-    ))
+    commands
+        .spawn((
+            #[cfg(not(target_arch = "wasm32"))]
+            ImageNode::new(
+                asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
+            ),
+            #[cfg(target_arch = "wasm32")]
+            ImageNode::new(
+                asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX)),
+            ),
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            ConnectController,
+        ))
         .with_children(|builder| {
-            builder.spawn(
-                Node {
+            builder
+                .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(10.0),
                     justify_content: JustifyContent::SpaceBetween,
                     align_items: AlignItems::Center,
                     ..default()
-                }
-            )
+                })
                 .with_children(|builder| {
-                    builder.spawn((
-                        Button,
-                        Node {
-                            justify_self: JustifySelf::Start,
-                            align_self: AlignSelf::Start,
-                            border: UiRect::all(Val::Px(5.0)),
-                            ..default()
-                        },
-                        BorderRadius::MAX,
-                        BorderColor(Color::BLACK),
-                    ))
-                    .with_child((
-                        Text::new("<Back"),
-                        TextFont {
-                            font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: 50.0,
-                            ..Default::default()
-                        },
-                        TextLayout::new_with_justify(JustifyText::Center),
-                        TextColor(Color::BLACK),
-                    ));
-                    builder.spawn((
-                        Button,
-                        Node {
-                            justify_self: JustifySelf::End,
-                            align_self: AlignSelf::Start,
-                            border: UiRect::all(Val::Px(5.0)),
-                            ..default()
-                        },
-                        BorderRadius::MAX,
-                        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-                    ))
-                    .with_child((
-                        Text::new("Next>"),
-                        TextFont {
-                            font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: 50.0,
-                            ..Default::default()
-                        },
-                        TextLayout::new_with_justify(JustifyText::Center),
-                        TextColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-                    ));
+                    builder
+                        .spawn((
+                            Button,
+                            Node {
+                                justify_self: JustifySelf::Start,
+                                align_self: AlignSelf::Start,
+                                border: UiRect::all(Val::Px(5.0)),
+                                ..default()
+                            },
+                            BorderRadius::MAX,
+                            BorderColor(Color::BLACK),
+                        ))
+                        .with_child((
+                            Text::new("<Back"),
+                            TextFont {
+                                font: asset_server.load(PATH_BOLD_FONT),
+                                font_size: 50.0,
+                                ..Default::default()
+                            },
+                            TextLayout::new_with_justify(JustifyText::Center),
+                            TextColor(Color::BLACK),
+                        ));
+                    builder
+                        .spawn((
+                            Button,
+                            Node {
+                                justify_self: JustifySelf::End,
+                                align_self: AlignSelf::Start,
+                                border: UiRect::all(Val::Px(5.0)),
+                                ..default()
+                            },
+                            BorderRadius::MAX,
+                            BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+                        ))
+                        .with_child((
+                            Text::new("Next>"),
+                            TextFont {
+                                font: asset_server.load(PATH_BOLD_FONT),
+                                font_size: 50.0,
+                                ..Default::default()
+                            },
+                            TextLayout::new_with_justify(JustifyText::Center),
+                            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+                        ));
                 });
-            builder.spawn(
-                Node {
+            builder
+                .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(90.0),
                     flex_direction: FlexDirection::Column,
@@ -106,8 +99,7 @@ fn setup(
                     align_items: AlignItems::Center,
                     justify_items: JustifyItems::Center,
                     ..default()
-                },
-            )
+                })
                 .with_children(|builder| {
                     builder.spawn((
                         Text::new("コントローラーを接続してください"),
@@ -123,27 +115,43 @@ fn setup(
                             ..default()
                         },
                     ));
-                    builder.spawn((
-                        Node{
-                            width: Val::Percent(90.0),
-                            height: Val::Percent(90.0),
-                            flex_direction: FlexDirection::Row,
-                            align_self: AlignSelf::Center,
-                            justify_self: JustifySelf::Center,
-                            align_items: AlignItems::Center,
-                            justify_items: JustifyItems::Center,
-                            justify_content: JustifyContent::SpaceEvenly,
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
-                        BorderRadius::all(Val::Px(20.0)),
-                    ))
+                    builder
+                        .spawn((
+                            Node {
+                                width: Val::Percent(90.0),
+                                height: Val::Percent(90.0),
+                                flex_direction: FlexDirection::Row,
+                                align_self: AlignSelf::Center,
+                                justify_self: JustifySelf::Center,
+                                align_items: AlignItems::Center,
+                                justify_items: JustifyItems::Center,
+                                justify_content: JustifyContent::SpaceEvenly,
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
+                            BorderRadius::all(Val::Px(20.0)),
+                        ))
                         .with_children(|builder| {
                             if game_config.mode == GameMode::SinglePlayer {
-                                create_controller_box(builder, &asset_server, &game_config.gamepads, 0);
+                                create_controller_box(
+                                    builder,
+                                    &asset_server,
+                                    &game_config.gamepads,
+                                    0,
+                                );
                             } else {
-                                create_controller_box(builder, &asset_server, &game_config.gamepads, 0);
-                                create_controller_box(builder, &asset_server, &game_config.gamepads, 1);
+                                create_controller_box(
+                                    builder,
+                                    &asset_server,
+                                    &game_config.gamepads,
+                                    0,
+                                );
+                                create_controller_box(
+                                    builder,
+                                    &asset_server,
+                                    &game_config.gamepads,
+                                    1,
+                                );
                             }
                         });
                 });
@@ -154,50 +162,52 @@ fn create_controller_box(
     builder: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
     gamepads: &[Entity; 2],
-    id: u8
+    id: u8,
 ) {
-    builder.spawn((
-        Node {
-            width: Val::Percent(40.0),
-            height: Val::Percent(90.0),
-            justify_self: JustifySelf::Center,
-            flex_direction: FlexDirection::Column,
-            ..default()
-        },
-        GamepadID(id),
-        BorderRadius::all(Val::Px(20.0)),
-        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
-        BackgroundColor(Color::srgb(1.0, 1.0, 1.0)),
-    )).with_children(|builder| {
-        builder.spawn((
-            Text::new(format!("コントローラー {}", id + 1)),
-            TextFont {
-                font: asset_server.load(PATH_BOLD_JP_FONT),
-                font_size: 40.0,
-                ..Default::default()
+    builder
+        .spawn((
+            Node {
+                width: Val::Percent(40.0),
+                height: Val::Percent(90.0),
+                justify_self: JustifySelf::Center,
+                flex_direction: FlexDirection::Column,
+                ..default()
             },
-            TextLayout::new_with_justify(JustifyText::Center),
-            TextColor(Color::BLACK),
-        ));
-        builder.spawn((
-            if gamepads[id as usize] == Entity::from_raw(0) {
-                Text::new("未接続")
-            } else {
-                Text::new("接続済み")
-            },
-            TextFont {
-                font: asset_server.load(PATH_BOLD_JP_FONT),
-                font_size: 40.0,
-                ..Default::default()
-            },
-            TextLayout::new_with_justify(JustifyText::Center),
-            if gamepads[id as usize] == Entity::from_raw(0) {
-                TextColor(Color::srgb(1.0, 0.0, 0.0))
-            } else {
-                TextColor(Color::srgb(0.0, 1.0, 0.0))
-            },
-        ));
-    });
+            GamepadID(id),
+            BorderRadius::all(Val::Px(20.0)),
+            BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
+            BackgroundColor(Color::srgb(1.0, 1.0, 1.0)),
+        ))
+        .with_children(|builder| {
+            builder.spawn((
+                Text::new(format!("コントローラー {}", id + 1)),
+                TextFont {
+                    font: asset_server.load(PATH_BOLD_JP_FONT),
+                    font_size: 40.0,
+                    ..Default::default()
+                },
+                TextLayout::new_with_justify(JustifyText::Center),
+                TextColor(Color::BLACK),
+            ));
+            builder.spawn((
+                if gamepads[id as usize] == Entity::from_raw(0) {
+                    Text::new("未接続")
+                } else {
+                    Text::new("接続済み")
+                },
+                TextFont {
+                    font: asset_server.load(PATH_BOLD_JP_FONT),
+                    font_size: 40.0,
+                    ..Default::default()
+                },
+                TextLayout::new_with_justify(JustifyText::Center),
+                if gamepads[id as usize] == Entity::from_raw(0) {
+                    TextColor(Color::srgb(1.0, 0.0, 0.0))
+                } else {
+                    TextColor(Color::srgb(0.0, 1.0, 0.0))
+                },
+            ));
+        });
 }
 
 fn update_controller(
@@ -255,17 +265,21 @@ fn update_controller(
     connection_event.clear();
 
     // Count required controllers based on game mode
-    let required_controllers = if game_config.mode == GameMode::SinglePlayer { 1 } else { 2 };
-    
+    let required_controllers = if game_config.mode == GameMode::SinglePlayer {
+        1
+    } else {
+        2
+    };
+
     // Track connected gamepads
     let connected_count = gamepads.iter().count();
-    
+
     // Update buttons based on controller status
     for (children, mut border_color) in button_query.iter_mut() {
         if children.is_empty() {
             continue;
         }
-        
+
         if let Ok((text, mut text_color)) = text_query.get_mut(children[0]) {
             match text.as_str() {
                 "Next>" => {
@@ -277,7 +291,7 @@ fn update_controller(
                         *border_color = BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8));
                         *text_color = TextColor(Color::srgba(0.0, 0.0, 0.0, 0.8));
                     }
-                },
+                }
                 _ => {}
             }
         }
@@ -302,7 +316,7 @@ fn check_buttons(
                         "Next>" => {
                             // NOTE: For now, we will skip the controller check
                             //if text.1.0 == Color::BLACK {
-                                state.set(AppState::ChooseCharacter);
+                            state.set(AppState::ChooseCharacter);
                             //}
                             break;
                         }
@@ -315,10 +329,7 @@ fn check_buttons(
     }
 }
 
-fn exit(
-    mut commands: Commands,
-    query: Query<Entity, With<ConnectController>>,
-) {
+fn exit(mut commands: Commands, query: Query<Entity, With<ConnectController>>) {
     info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
@@ -329,10 +340,15 @@ pub struct ConnectControllerPlugin;
 
 impl Plugin for ConnectControllerPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(OnEnter(AppState::ConnectController), setup)
+        app.add_systems(OnEnter(AppState::ConnectController), setup)
             .add_systems(OnExit(AppState::ConnectController), exit)
-            .add_systems(Update, check_buttons.run_if(in_state(AppState::ConnectController)))
-            .add_systems(Update, update_controller.run_if(in_state(AppState::ConnectController)));
+            .add_systems(
+                Update,
+                check_buttons.run_if(in_state(AppState::ConnectController)),
+            )
+            .add_systems(
+                Update,
+                update_controller.run_if(in_state(AppState::ConnectController)),
+            );
     }
 }

@@ -3,14 +3,8 @@ use bevy::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameConfig;
 use crate::{
-    AppState,
-    GAMETITLE,
-    TITLE_FONT_SIZE,
-    DEFAULT_FONT_SIZE,
-    PATH_BOLD_FONT,
-    PATH_EXTRA_BOLD_FONT,
-    PATH_IMAGE_PREFIX,
-    PATH_SOUND_PREFIX,
+    AppState, DEFAULT_FONT_SIZE, GAMETITLE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
+    PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX, TITLE_FONT_SIZE,
 };
 
 #[derive(Component)]
@@ -19,10 +13,8 @@ struct Mainmenu;
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    #[cfg(not(target_arch = "wasm32"))]
-    mut config: ResMut<GameConfig>,
-    #[cfg(not(target_arch = "wasm32"))]
-    gamepads: Query<(&Name, Entity), With<Gamepad>>,
+    #[cfg(not(target_arch = "wasm32"))] mut config: ResMut<GameConfig>,
+    #[cfg(not(target_arch = "wasm32"))] gamepads: Query<(&Name, Entity), With<Gamepad>>,
     audio: Query<&AudioPlayer>,
 ) {
     info!("setup");
@@ -52,9 +44,13 @@ fn setup(
     commands
         .spawn((
             #[cfg(not(target_arch = "wasm32"))]
-            ImageNode::new(asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX))),
+            ImageNode::new(
+                asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
+            ),
             #[cfg(target_arch = "wasm32")]
-            ImageNode::new(asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX))),
+            ImageNode::new(
+                asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX)),
+            ),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -62,7 +58,7 @@ fn setup(
                 align_items: AlignItems::Center,
                 ..default()
             },
-            Mainmenu
+            Mainmenu,
         ))
         .with_children(|builder| {
             builder
@@ -100,84 +96,87 @@ fn setup(
                             ..default()
                         },
                     ));
-                    builder.spawn((
-                        Button,
-                        Node {
-                            width: Val::Percent(50.0),
-                            height: Val::Percent(10.0),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            border: UiRect::all(Val::Px(5.0)),
-                            #[cfg(target_arch = "wasm32")]
-                            border: UiRect::all(Val::Px(2.0)),
-                            margin: UiRect::all(Val::Percent(1.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        BorderColor(Color::BLACK),
-                        BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
-                    ))
-                    .with_child((
-                        Text::new("Start"),
-                        TextFont {
-                            font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: DEFAULT_FONT_SIZE,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                    builder.spawn((
-                        Button,
-                        Node {
-                            width: Val::Percent(50.0),
-                            height: Val::Percent(10.0),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            border: UiRect::all(Val::Px(5.0)),
-                            #[cfg(target_arch = "wasm32")]
-                            border: UiRect::all(Val::Px(2.0)),
-                            margin: UiRect::all(Val::Percent(1.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        BorderColor(Color::BLACK),
-                        BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
-                    ))
-                    .with_child((
-                        Text::new("Settings"),
-                        TextFont {
-                            font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: DEFAULT_FONT_SIZE,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                    builder.spawn((
-                        Button,
-                        Node {
-                            width: Val::Percent(50.0),
-                            height: Val::Percent(10.0),
-                            #[cfg(not(target_arch = "wasm32"))]
-                            border: UiRect::all(Val::Px(5.0)),
-                            #[cfg(target_arch = "wasm32")]
-                            border: UiRect::all(Val::Px(2.0)),
-                            margin: UiRect::all(Val::Percent(1.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        BorderColor(Color::BLACK),
-                        BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
-                    ))
-                    .with_child((
-                        Text::new("Exit"),
-                        TextFont {
-                            font: asset_server.load(PATH_BOLD_FONT),
-                            font_size: DEFAULT_FONT_SIZE,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
+                    builder
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Percent(50.0),
+                                height: Val::Percent(10.0),
+                                #[cfg(not(target_arch = "wasm32"))]
+                                border: UiRect::all(Val::Px(5.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                border: UiRect::all(Val::Px(2.0)),
+                                margin: UiRect::all(Val::Percent(1.0)),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BorderColor(Color::BLACK),
+                            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                        ))
+                        .with_child((
+                            Text::new("Start"),
+                            TextFont {
+                                font: asset_server.load(PATH_BOLD_FONT),
+                                font_size: DEFAULT_FONT_SIZE,
+                                ..default()
+                            },
+                            TextColor(Color::WHITE),
+                        ));
+                    builder
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Percent(50.0),
+                                height: Val::Percent(10.0),
+                                #[cfg(not(target_arch = "wasm32"))]
+                                border: UiRect::all(Val::Px(5.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                border: UiRect::all(Val::Px(2.0)),
+                                margin: UiRect::all(Val::Percent(1.0)),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BorderColor(Color::BLACK),
+                            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                        ))
+                        .with_child((
+                            Text::new("Settings"),
+                            TextFont {
+                                font: asset_server.load(PATH_BOLD_FONT),
+                                font_size: DEFAULT_FONT_SIZE,
+                                ..default()
+                            },
+                            TextColor(Color::WHITE),
+                        ));
+                    builder
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Percent(50.0),
+                                height: Val::Percent(10.0),
+                                #[cfg(not(target_arch = "wasm32"))]
+                                border: UiRect::all(Val::Px(5.0)),
+                                #[cfg(target_arch = "wasm32")]
+                                border: UiRect::all(Val::Px(2.0)),
+                                margin: UiRect::all(Val::Percent(1.0)),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BorderColor(Color::BLACK),
+                            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                        ))
+                        .with_child((
+                            Text::new("Exit"),
+                            TextFont {
+                                font: asset_server.load(PATH_BOLD_FONT),
+                                font_size: DEFAULT_FONT_SIZE,
+                                ..default()
+                            },
+                            TextColor(Color::WHITE),
+                        ));
                 });
         });
 }
@@ -215,10 +214,7 @@ fn update(
     }
 }
 
-fn exit(
-    mut commands: Commands,
-    query: Query<Entity, With<Mainmenu>>,
-) {
+fn exit(mut commands: Commands, query: Query<Entity, With<Mainmenu>>) {
     info!("exit");
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
@@ -229,8 +225,7 @@ pub struct MainmenuPlugin;
 
 impl Plugin for MainmenuPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(OnEnter(AppState::Mainmenu), setup)
+        app.add_systems(OnEnter(AppState::Mainmenu), setup)
             .add_systems(OnExit(AppState::Mainmenu), exit)
             .add_systems(Update, update.run_if(in_state(AppState::Mainmenu)));
     }

@@ -1,16 +1,9 @@
-use bevy::prelude::*;
 use crate::{
-    AppState,
-    GameMode,
-    GameConfig,
     character_def::*,
-    ingame::{
-        player::*,
-        pose::*,
-        Fighting,
-        rand,
-    }
+    ingame::{player::*, pose::*, rand, Fighting},
+    AppState, GameConfig, GameMode,
 };
+use bevy::prelude::*;
 
 // Agent select action every 1/AGENT_FREQUENCY seconds
 const AGENT_FREQUENCY: f32 = 30.0;
@@ -19,7 +12,7 @@ const AGENT_FREQUENCY: f32 = 30.0;
 pub enum Level {
     Easy = 1,
     Normal = 2,
-    Hard = 3
+    Hard = 3,
 }
 
 impl From<u32> for Level {
@@ -28,7 +21,7 @@ impl From<u32> for Level {
             1 => Level::Easy,
             2 => Level::Normal,
             3 => Level::Hard,
-            _ => panic!("Invalid Level: {}", value)
+            _ => panic!("Invalid Level: {}", value),
         }
     }
 }
@@ -36,7 +29,7 @@ impl From<u32> for Level {
 enum Policy {
     Offensive,
     Defensive,
-    Neutral
+    Neutral,
 }
 
 enum Action {
@@ -51,7 +44,7 @@ enum Action {
     FrontKick,
     Punch,
     Ignore,
-    None
+    None,
 }
 
 #[derive(Default)]
@@ -60,7 +53,7 @@ struct Environment {
     player_health: f32,
     distance: f32,
     player_state: PlayerState,
-    agent_facing: bool
+    agent_facing: bool,
 }
 
 #[derive(Resource)]
@@ -68,7 +61,7 @@ pub struct Agent {
     timer: Timer,
     count: u8,
     level: Level,
-    policy: Policy
+    policy: Policy,
 }
 
 impl Agent {
@@ -77,7 +70,7 @@ impl Agent {
             timer: Timer::from_seconds(1.0 / AGENT_FREQUENCY, TimerMode::Repeating),
             count: 0,
             level,
-            policy: Policy::Neutral
+            policy: Policy::Neutral,
         }
     }
     fn select_policy(&mut self, environment: &Environment) {
@@ -111,7 +104,10 @@ impl Agent {
             Policy::Offensive => {
                 if environment.distance < 150.0 {
                     return Action::Kick;
-                } else if environment.distance > 500.0 && (environment.player_state.check(PlayerState::BEND_DOWN) || environment.player_state.is_idle()) {
+                } else if environment.distance > 500.0
+                    && (environment.player_state.check(PlayerState::BEND_DOWN)
+                        || environment.player_state.is_idle())
+                {
                     if environment.agent_facing {
                         return Action::JumpRight;
                     } else {
@@ -156,7 +152,7 @@ pub fn agent_system(
     time: Res<Time>,
     game_config: Res<GameConfig>,
     mut agent: ResMut<Agent>,
-    mut player_query: Query<(&mut Player, &PlayerID, &Transform)>
+    mut player_query: Query<(&mut Player, &PlayerID, &Transform)>,
 ) {
     // Skip if multiplayer
     if game_config.mode == GameMode::MultiPlayer {
@@ -167,12 +163,14 @@ pub fn agent_system(
         agent.count += 1;
         let mut environment = Environment::default();
         if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 0) {
-            environment.player_health = player.health as f32 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
+            environment.player_health = player.health as f32
+                / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.player_state = player.state;
             environment.distance = transform.translation.x;
         }
         if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 1) {
-            environment.agent_health = player.health as f32 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
+            environment.agent_health = player.health as f32
+                / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.agent_facing = player.pose.facing;
             environment.distance = (transform.translation.x - environment.distance).abs();
         }
@@ -186,12 +184,11 @@ pub fn agent_system(
                 Action::MoveRight => {
                     if player.state.check(
                         PlayerState::JUMP_UP
-                       
-                        | PlayerState::JUMP_BACKWARD
-                        | PlayerState::JUMP_FORWARD
-                        | PlayerState::BEND_DOWN
-                        | PlayerState::ROLL_BACK
-                        | PlayerState::ROLL_FORWARD
+                            | PlayerState::JUMP_BACKWARD
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::BEND_DOWN
+                            | PlayerState::ROLL_BACK
+                            | PlayerState::ROLL_FORWARD,
                     ) {
                         // player is jumping or bending or rolling
                         // then just adding state
@@ -207,12 +204,11 @@ pub fn agent_system(
                 Action::MoveLeft => {
                     if player.state.check(
                         PlayerState::JUMP_UP
-                       
-                        | PlayerState::JUMP_BACKWARD
-                        | PlayerState::JUMP_FORWARD
-                        | PlayerState::BEND_DOWN
-                        | PlayerState::ROLL_BACK
-                        | PlayerState::ROLL_FORWARD
+                            | PlayerState::JUMP_BACKWARD
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::BEND_DOWN
+                            | PlayerState::ROLL_BACK
+                            | PlayerState::ROLL_FORWARD,
                     ) {
                         // player is jumping or bending or rolling
                         // then just adding state
@@ -233,7 +229,7 @@ pub fn agent_system(
                             // then player will jump up
                             player.state |= PlayerState::JUMP_UP;
                             player.set_animation(JUMP_UP_POSE1, 0, 10);
-                            player.velocity = Vec2::new(0.0, 12.0);                    
+                            player.velocity = Vec2::new(0.0, 12.0);
                         }
                     } else {
                         // character 0 and 2 can only single jump
@@ -242,26 +238,28 @@ pub fn agent_system(
                             // then player will jump up
                             player.state |= PlayerState::JUMP_UP;
                             player.set_animation(JUMP_UP_POSE1, 0, 10);
-                            player.velocity = Vec2::new(0.0, 12.0);                    
+                            player.velocity = Vec2::new(0.0, 12.0);
                         } else if !player.state.check(
                             PlayerState::JUMP_UP
-                               
                                 | PlayerState::JUMP_FORWARD
-                                | PlayerState::JUMP_BACKWARD
-                        ) && player.state.check(PlayerState::WALKING) {
+                                | PlayerState::JUMP_BACKWARD,
+                        ) && player.state.check(PlayerState::WALKING)
+                        {
                             if player.state.check(PlayerState::DIRECTION) {
                                 // player is walking right
                                 // then player will jump forward
                                 player.state |= PlayerState::JUMP_FORWARD;
                                 player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
-                                let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                                let x_vel =
+                                    CHARACTER_PROFILES[player.character_id as usize].agility;
                                 player.velocity = Vec2::new(x_vel, 12.0);
                             } else {
                                 // player is walking left
                                 // then player will jump backward
                                 player.state |= PlayerState::JUMP_BACKWARD;
                                 player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
-                                let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                                let x_vel =
+                                    CHARACTER_PROFILES[player.character_id as usize].agility;
                                 player.velocity = Vec2::new(-x_vel, 12.0);
                             }
                         }
@@ -301,7 +299,11 @@ pub fn agent_system(
                         // then player will kick
                         player.state |= PlayerState::KICKING;
                         player.set_animation(KICK_POSE1, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(
+                        PlayerState::JUMP_UP
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::JUMP_BACKWARD,
+                    ) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::KICKING;
@@ -313,7 +315,11 @@ pub fn agent_system(
                         // then player will back kick
                         player.state |= PlayerState::BACK_KICKING;
                         player.set_animation(BACK_KICK_POSE1, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(
+                        PlayerState::JUMP_UP
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::JUMP_BACKWARD,
+                    ) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::BACK_KICKING;
@@ -325,7 +331,11 @@ pub fn agent_system(
                         // then player will knee kick
                         player.state |= PlayerState::FRONT_KICKING;
                         player.set_animation(FRONT_KICK_POSE, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(
+                        PlayerState::JUMP_UP
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::JUMP_BACKWARD,
+                    ) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::FRONT_KICKING;
@@ -337,7 +347,11 @@ pub fn agent_system(
                         // then player will punch
                         player.state |= PlayerState::PUNCHING;
                         player.set_animation(PUNCH_POSE, 0, 10);
-                    } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) {
+                    } else if player.state.check(
+                        PlayerState::JUMP_UP
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::JUMP_BACKWARD,
+                    ) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::PUNCHING;
@@ -361,8 +375,9 @@ pub struct AgentPlugin;
 
 impl Plugin for AgentPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(Agent::new(Level::Normal))
-            .add_systems(Update, agent_system.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+        app.insert_resource(Agent::new(Level::Normal)).add_systems(
+            Update,
+            agent_system.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        );
     }
 }
