@@ -4,7 +4,7 @@ use bevy_rapier2d::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameMode;
 use crate::{PATH_SOUND_PREFIX, character_def::*, ingame::{InGame, GameState}, AppState, GameConfig, SoundEffect};
-use super::{pose::*, BackGround, Fighting, SkillName, SkillEntity};
+use super::{pose::*, BackGround, Fighting, SkillName, SkillEntity, rand};
 
 #[cfg(target_arch = "wasm32")]
 use crate::ingame::wasm::DoubleJumpCheck;
@@ -69,6 +69,9 @@ pub struct HealthBar(pub f32, pub f32);
 
 #[derive(Component)]
 pub struct EnergyBar(pub f32, pub f32);
+
+#[derive(Resource)]
+struct SoulAbsorb;
 
 /// Represents the current state of a player using bit flags.
 /// Multiple states can be active simultaneously by combining flags with bitwise OR.
@@ -574,6 +577,7 @@ pub fn spawn_player(
 /// unless in single player mode.
 #[cfg(not(target_arch = "wasm32"))]
 fn keyboard_input(
+    mut commands: Commands,
     mut fighting: ResMut<Fighting>,
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
@@ -736,6 +740,9 @@ fn keyboard_input(
                 fighting.0 = player_id.0 + 1;
                 player.animation.phase = 0;
                 player.animation.count = 0;
+                if player.character_id == 1 {
+                    commands.insert_resource(SoulAbsorb);
+                }
             }
         }
     }
@@ -757,19 +764,21 @@ fn keyboard_input(
 /// 4. Ensures the player stays within the game window boundaries.
 fn player_movement(
     mut commands: Commands,
-    fighting: Res<Fighting>,
+    mut fighting: ResMut<Fighting>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
     time: Res<Time>,
     config: Res<GameConfig>,
     player_collision: Res<PlayerCollision>,
     mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
+    energy_query: Query<(&mut EnergyBar, &mut Mesh2d, &PlayerID), Without<SkillEntity>>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Transform, &mut Visibility), (Without<BackGround>, Without<Camera2d>, Without<SkillEntity>)>,
     mut ground_query: Query<&mut Transform, (With<BackGround>, Without<Player>, Without<Camera2d>, Without<SkillEntity>)>,
     mut skill_name_query: Query<(&SkillName, &mut Visibility), (Without<SkillEntity>, Without<Player>)>,
     mut thunder_query: Query<(&SkillEntity, &mut Visibility, &mut Transform), (Without<SkillName>, Without<Player>, Without<BackGround>)>,
-    curtain_query: Query<(&SkillEntity, &Mesh2d)>,
+    curtain_query: Query<(&SkillEntity, &Mesh2d), Without<EnergyBar>>,
 ) {
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
@@ -778,8 +787,9 @@ fn player_movement(
             let mut opponent_position = Vec2::ZERO;
             if let Some((_, _, transform, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 != fighting.0-1) {  
                 opponent_position = Vec2::new(transform.translation.x, transform.translation.y);   
-            }       
-            if let Some((mut player, _, mut transform, mut player_visibility)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == fighting.0-1) {
+            }
+            let mut damage: u32 = 0;
+            if let Some((mut player, player_id, mut transform, mut player_visibility)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == fighting.0-1) {
                 if player.animation.phase == 0 {
                     player.animation.count += 1;
                     // change curtain color to draken the screen
@@ -832,6 +842,28 @@ fn player_movement(
                         }
                     } else if player.character_id == 1 {
                         // character 1 skill
+                        // decide soul color using random number
+                        player.animation.count += 1;
+                        let color_rand = rand();
+                        let color = if color_rand >= 2.0/3.0 {
+                            SOUL_COLOR[0]
+                        } else if color_rand >= 1.0/3.0 {
+                            SOUL_COLOR[1]
+                        } else {
+                            SOUL_COLOR[2]
+                        };
+                        // create a soul entity
+                        commands.spawn((
+                            Mesh2d(meshes.add(Circle::new(rand() * 10.0))),
+                            MeshMaterial2d(materials.add(color)),
+                            Transform::from_translation(Vec3::new(opponent_position.x, opponent_position.y, 20.0)),
+                            // soul entity's id is 2
+                            SkillEntity { id: 2 }
+                        ));
+                        if player.animation.count == 100 {
+                            player.animation.phase = 3;
+                            player.animation.count = 0;
+                        }
                     } else if player.character_id == 2 {
                         // character 2 skill
                     }
@@ -879,16 +911,15 @@ fn player_movement(
                             }
                         }
                         if player.animation.count == 10 {
+                            damage = 150;
                             *player_visibility = Visibility::Visible;
                             if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
                                 let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
                                 if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
                                     for i in 0..4 {
-                                        if player.animation.count <= 5 {
-                                            colors[i][0] = 0.0;
-                                            colors[i][1] = 0.0;
-                                            colors[i][2] = 0.0;
-                                        }
+                                        colors[i][0] = 0.0;
+                                        colors[i][1] = 0.0;
+                                        colors[i][2] = 0.0;
                                     }
                                 }
                             }
@@ -898,6 +929,19 @@ fn player_movement(
                             player.set_animation(IDLE_POSE1, 5, 30);
                             player.velocity = Vec2::ZERO;
                         }
+                    } else if player.character_id == 1 {
+                        player.animation.count += 1;
+                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                            let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                                for i in 0..4 {
+                                    colors[i][3] = (20 - player.animation.count) as f32 / 60.0;
+                                }
+                            }
+                        }
+                        if player.animation.count == 20 {
+                            player.animation.phase = 7;
+                        }
                     }
                 } else if player.animation.phase == 5 {
                     if player.character_id == 0 {
@@ -906,13 +950,50 @@ fn player_movement(
                             player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
                             transform.translation.y += player.velocity.y;
                             if transform.translation.y < 270.0-config.window_size.y/2.0 {
-                                transform.translation.y = 270.0-config.window_size.y/2.0
+                                transform.translation.y = 270.0-config.window_size.y/2.0;
                             }
                         }
-                        if player.animation.count == 30 {
-                            player.animation.phase = 6;
-                            player.animation.count = 0;
+                        if player.animation.count == 0 {
+                            if transform.translation.y == 270.0-config.window_size.y/2.0 {
+                                player.animation.phase = 7;
+                            } else {
+                                // player position have to be reset
+                                player.animation.phase = 6;
+                            }
                         }
+                    }
+                } else if player.animation.phase == 6 {
+                    if player.character_id == 0 {
+                        if transform.translation.y > 270.0-config.window_size.y/2.0 {
+                            player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
+                            transform.translation.y += player.velocity.y;
+                            if transform.translation.y < 270.0-config.window_size.y/2.0 {
+                                transform.translation.y = 270.0-config.window_size.y/2.0;
+                                player.animation.phase = 7;
+                            }
+                        }
+                    }
+                } else {
+                    // finish skill
+                    player.energy = 0;
+                    player.animation.phase = 0;
+                    player.animation.count = 0;
+                    player.state &= !PlayerState::SKILL;
+                    fighting.0 = 0;
+                    if let Some((_, mesh_handler, _)) = energy_query.iter().find(|x| x.2 == player_id) {
+                        if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) = mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR) {
+                                for i in 2..4 {
+                                    colors[i][0] = 0.0;
+                                    colors[i][2] = 10.0;
+                                }
+                            }
+                        }
+                    }
+                }
+                if damage != 0 {
+                    if let Some((mut player, _, _, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 != fighting.0-1) {
+                        player.health -= damage;
                     }
                 }
             }
@@ -1404,6 +1485,60 @@ fn player_movement(
     }
 }
 
+fn update_soul_absorb_animation(
+    mut commands: Commands,
+    mut soul_query: Query<(Entity, &SkillEntity, &mut Transform), Without<Player>>,
+    mut player_query: Query<(&mut Player, &Transform), Without<SkillEntity>>
+) {
+    let mut destination = Vec2::ZERO;
+    let mut vibe = false;
+    for (mut player, transform) in player_query.iter_mut() {
+        if player.character_id == 1 {
+            if player.animation.phase == 3 && soul_query.iter().count() == 2 {
+                player.animation.phase = 4;
+                commands.remove_resource::<SoulAbsorb>();
+            }
+            destination.x = transform.translation.x;
+            destination.y = transform.translation.y;
+            if player.animation.phase == 2 {
+                vibe = true;
+            }
+        }
+    }
+    if vibe {
+        if let Some((mut player, _)) = player_query.iter_mut().find(|x| x.0.character_id != 1) {
+            // opponent shakes
+            player.pose.offset[0] = rand() * 10.0;
+            player.pose.offset[1] = rand() * 10.0;
+        }
+    }
+    for (entity, skill_entity, mut transform) in soul_query.iter_mut() {
+        if skill_entity.id != 2 {
+            continue;
+        }
+        let pos = Vec2::new(transform.translation.x, transform.translation.y);
+        // if distance between soul and character is lower than threshold, despawn soul and player gains HP
+        if destination.distance(pos) < 10.0 {
+            commands.entity(entity).despawn();
+            for (mut player, _) in player_query.iter_mut() {
+                if player.character_id == 1 {
+                    player.health += 1;
+                } else {
+                    player.health -= 1;
+                }
+            }
+        }
+        let diff = {
+            let x = destination.x - transform.translation.x;
+            let y = destination.y - transform.translation.y;
+            let norm = (x*x+y*y).sqrt();
+            Vec2::new(x/norm, y/norm)
+        };
+        transform.translation.x += diff.x * 10.0 + rand() * 4.0 - 2.0;
+        transform.translation.y += diff.y * 10.0 + rand() * 4.0 - 2.0;
+    }
+}
+
 // check if the player is grounding
 #[cfg(not(target_arch = "wasm32"))]
 fn check_ground(
@@ -1616,8 +1751,7 @@ fn check_attack(
                         PlayerState::KICKING
                         | PlayerState::BACK_KICKING
                         | PlayerState::FRONT_KICKING
-                        | PlayerState::PUNCHING
-                        | PlayerState::SKILL)
+                        | PlayerState::PUNCHING)
                     {
                         // Check if the attacker is already set
                         if id1 == player_id {
@@ -1631,7 +1765,7 @@ fn check_attack(
                         // Check if the attacker is in a valid state
                         if player.state.check(PlayerState::KICKING | PlayerState::BACK_KICKING | PlayerState::FRONT_KICKING) && attacker_parts.is_arm(){
                             continue;
-                        } else if player.state.check(PlayerState::PUNCHING | PlayerState::SKILL) &&  !attacker_parts.is_arm(){
+                        } else if player.state.check(PlayerState::PUNCHING) &&  !attacker_parts.is_arm(){
                             continue;
                         }
 
@@ -1895,7 +2029,8 @@ impl Plugin for PlayerPlugin {
             .add_systems(Update, avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
             .add_systems(Update, update_energy_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
-            .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)));
+            .add_systems(Update, update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)))
+            .add_systems(Update, update_soul_absorb_animation.run_if(in_state(AppState::Ingame).and(resource_exists::<SoulAbsorb>)));
 
         #[cfg(not(target_arch = "wasm32"))]
         app

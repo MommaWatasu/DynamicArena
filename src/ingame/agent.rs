@@ -7,7 +7,8 @@ use crate::{
     ingame::{
         player::*,
         pose::*,
-        Fighting
+        Fighting,
+        rand,
     }
 };
 
@@ -68,15 +69,6 @@ pub struct Agent {
     count: u8,
     level: Level,
     policy: Policy
-}
-
-#[cfg(not(target_arch="wasm32"))]
-fn rand() -> f32 {
-    rand::random::<f32>()
-}
-#[cfg(target_arch="wasm32")]
-fn rand() -> f32 {
-    web_sys::js_sys::Math::random() as f32
 }
 
 impl Agent {

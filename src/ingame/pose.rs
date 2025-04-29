@@ -741,7 +741,7 @@ pub const THUNDER_PUNCH_POSE: Pose = Pose {
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
     foot_offset: [0.0, 5.0, 0.0, -10.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    old_foot_offset: [0.0, 5.0, 0.0, -10.0],
     head: 0.0,
     body: -40.0,
     right_upper_arm: -80.0,
