@@ -2,9 +2,7 @@ use super::{pose::*, rand, BackGround, Fighting, SkillEntity, SkillName};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameMode;
 use crate::{
-    character_def::*,
-    ingame::{GameState, InGame},
-    AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX,
+    character_def::*, ingame::{GameState, InGame}, AppState, GameConfig, SoundEffect, PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX
 };
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
@@ -867,7 +865,7 @@ fn player_movement(
         (&SkillEntity, &mut Visibility, &mut Transform),
         (Without<SkillName>, Without<Player>, Without<BackGround>),
     >,
-    curtain_query: Query<(&SkillEntity, &Mesh2d), Without<EnergyBar>>,
+    curtain_query: Query<(Entity, &SkillEntity, &Mesh2d), Without<EnergyBar>>,
 ) {
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
@@ -889,7 +887,7 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.animation.count += 1;
                     // change curtain color to draken the screen
-                    if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1) {
+                    if let Some((_, _, mesh_handler)) = curtain_query.iter().find(|x| x.1.id == 1) {
                         let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
                         if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
                             mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
@@ -920,13 +918,16 @@ fn player_movement(
                         }
                         player.animation.phase = 2;
                         player.animation.count = 0;
+                        if player.character_id == 2 {
+                            player.set_animation(FIRE_GROUND_POSE, 2, 5);
+                        }
                     }
                 } else if player.animation.phase == 2 {
                     if player.character_id == 0 {
                         // character 0 skill
                         player.animation.count += 1;
                         // change curtain color to draken the screen
-                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1)
+                        if let Some((_, _, mesh_handler)) = curtain_query.iter().find(|x| x.1.id == 1)
                         {
                             let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
                             if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
@@ -971,7 +972,10 @@ fn player_movement(
                         }
                     } else if player.character_id == 2 {
                         // character 2 skill
-                        player.set_animation(FIRE_SKILL_POSE, 0, 10);
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            player.animation.phase = 3;
+                        }
                     }
                 } else if player.animation.phase == 3 {
                     if player.character_id == 0 {
@@ -1001,12 +1005,32 @@ fn player_movement(
                             player.animation.phase = 4;
                             player.animation.count = 0;
                         }
+                    } else if player.character_id == 2 {
+                        player.animation.count += 1;
+                        for (entity, skill_entity, _) in curtain_query.iter() {
+                            if skill_entity.id == 3 {
+                                commands.entity(entity).despawn();
+                            }
+                        }
+                        commands.spawn((
+                            Mesh2d(meshes.add(Circle::new(player.animation.count as f32 / 1.5))),
+                            MeshMaterial2d(materials.add(FIRE_COLOR)),
+                            Transform::from_translation(Vec3::new(
+                                transform.translation.x+70.0,
+                                transform.translation.y-150.0,
+                                20.0,
+                            )),
+                            SkillEntity { id: 3 },
+                        ));
+                        if player.animation.count == 60 {
+                            player.set_animation(IDLE_POSE1, 4, 3);
+                        }
                     }
                 } else if player.animation.phase == 4 {
                     if player.character_id == 0 {
                         player.animation.count += 1;
                         // change curtain color to draken the screen
-                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1)
+                        if let Some((_, _, mesh_handler)) = curtain_query.iter().find(|x| x.1.id == 1)
                         {
                             let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
                             if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
@@ -1026,8 +1050,8 @@ fn player_movement(
                         if player.animation.count == 10 {
                             damage = 150;
                             *player_visibility = Visibility::Visible;
-                            if let Some((_, mesh_handler)) =
-                                curtain_query.iter().find(|x| x.0.id == 1)
+                            if let Some((_, _, mesh_handler)) =
+                                curtain_query.iter().find(|x| x.1.id == 1)
                             {
                                 let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
                                 if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
@@ -1050,7 +1074,7 @@ fn player_movement(
                         }
                     } else if player.character_id == 1 {
                         player.animation.count += 1;
-                        if let Some((_, mesh_handler)) = curtain_query.iter().find(|x| x.0.id == 1)
+                        if let Some((_, _, mesh_handler)) = curtain_query.iter().find(|x| x.1.id == 1)
                         {
                             let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
                             if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
@@ -1063,6 +1087,39 @@ fn player_movement(
                         }
                         if player.animation.count == 20 {
                             player.animation.phase = 7;
+                        }
+                    } else if player.character_id == 2 {
+                        player.update_animation();
+                        if player.animation.count == 0 {
+                            // remove energy ball
+                            for (entity, skill_entity, _) in curtain_query.iter() {
+                                if skill_entity.id == 3 {
+                                    commands.entity(entity).despawn();
+                                }
+                            }
+                            commands.spawn((
+                                Mesh2d(meshes.add(Circle::new(0.0))),
+                                Sprite{
+                                        image: asset_server.load(format!(
+                                        "{}/fire.png",
+                                        PATH_IMAGE_PREFIX
+                                    )),
+                                    ..default()
+                                },
+                                SkillEntity { id: 4 },
+                                Transform::from_translation(Vec3::new(
+                                    transform.translation.x+326.0,
+                                    transform.translation.y+106.0,
+                                    20.0,
+                                )),
+                            ));
+                            if player.pose.facing && opponent_position.x - transform.translation.x > 0.0 && opponent_position.x - transform.translation.x < 600.0 {
+                                damage = 250;
+                            } else if !player.pose.facing && transform.translation.x - opponent_position.x > 0.0 && transform.translation.x - opponent_position.x < 600.0 {
+                                damage = 250;
+                            }
+                            player.animation.phase = 5;
+                            player.animation.count = 0;
                         }
                     }
                 } else if player.animation.phase == 5 {
@@ -1083,6 +1140,17 @@ fn player_movement(
                                 player.animation.phase = 6;
                             }
                         }
+                    } else if player.character_id == 2 {
+                        player.animation.count += 1;
+                        if player.animation.count == 30 {
+                            for (entity, skill_entity, _) in curtain_query.iter() {
+                                if skill_entity.id == 4 {
+                                    commands.entity(entity).despawn();
+                                }
+                            }
+                            player.animation.phase = 6;
+                            player.animation.count = 0;
+                        }
                     }
                 } else if player.animation.phase == 6 {
                     if player.character_id == 0 {
@@ -1093,6 +1161,22 @@ fn player_movement(
                                 transform.translation.y = 270.0 - config.window_size.y / 2.0;
                                 player.animation.phase = 7;
                             }
+                        }
+                    } else if player.character_id == 2 {
+                        player.animation.count += 1;
+                        if let Some((_, _, mesh_handler)) = curtain_query.iter().find(|x| x.1.id == 1)
+                        {
+                            let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
+                                for i in 0..4 {
+                                    colors[i][3] = (20 - player.animation.count) as f32 / 60.0;
+                                }
+                            }
+                        }
+                        if player.animation.count == 20 {
+                            player.animation.phase = 7;
                         }
                     }
                 } else {

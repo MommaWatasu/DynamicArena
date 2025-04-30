@@ -15,6 +15,7 @@ pub struct CharacterProfile {
     pub defense: f32,
 }
 
+pub const FIRE_COLOR: Color = Color::srgba(3.0, 0.0, 0.0, 0.8);
 pub const SOUL_COLOR: [Color; 3] = [
     Color::srgb(0.0, 20.0, 18.0),
     Color::srgb(0.0, 20.0, 15.0),
