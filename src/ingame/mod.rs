@@ -811,7 +811,7 @@ fn update_timer(
     if fighting.0 != 0 {
         return;
     }
-    let (mut text, mut color, mut timer) = timer_query.single_mut();
+    let (mut text, mut color, mut timer) = timer_query.single_mut().expect("failed to get timer");
     if timer.0 == 0.0 {
         return;
     }
@@ -917,7 +917,7 @@ fn main_game_system(
                     SoundEffect,
                 ));
             } else {
-                let (mut bar, mut text, mut text_color) = status_bar_query.single_mut();
+                let (mut bar, mut text, mut text_color) = status_bar_query.single_mut().expect("failed to get status bar");
                 bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
                 text.0 = format!("ROUND {}", gamestate.round);
                 commands.spawn((
@@ -934,7 +934,7 @@ fn main_game_system(
         } else if gamestate.phase == 1 {
             gamestate.count += 1;
             if gamestate.count == 60 {
-                let (_, mut text, _) = status_bar_query.single_mut();
+                let (_, mut text, _) = status_bar_query.single_mut().expect("failed to get status bar");
                 text.0 = "READY?".to_string();
                 // TODO: I have to think about how to handle spawned Audio Player entity
                 commands.spawn((
@@ -947,7 +947,7 @@ fn main_game_system(
         } else if gamestate.phase == 2 {
             gamestate.count += 1;
             if gamestate.count == 90 {
-                let (_, mut text, _) = status_bar_query.single_mut();
+                let (_, mut text, _) = status_bar_query.single_mut().expect("failed to get status bar");
                 text.0 = "FIGHT!".to_string();
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!("{}/fight.ogg", PATH_SOUND_PREFIX))),
@@ -964,7 +964,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 4 {
             gamestate.count += 1;
-            let (mut bar, _, mut text_color) = status_bar_query.single_mut();
+            let (mut bar, _, mut text_color) = status_bar_query.single_mut().expect("failed to get status bar");
             bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8 - gamestate.count as f32 / 60.0);
             text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.8 - gamestate.count as f32 / 60.0);
             if gamestate.count == 48 {
@@ -974,7 +974,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 6 {
             if gamestate.count == 0 {
-                let (mut bar, mut text, mut text_color) = status_bar_query.single_mut();
+                let (mut bar, mut text, mut text_color) = status_bar_query.single_mut().expect("failed to get status bar");
                 bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.8);
                 text.0 = if gamestate.win_types[gamestate.round as usize - 1] {
                     "KO!".to_string()
@@ -1020,7 +1020,7 @@ fn main_game_system(
                 gamestate.count = 0;
             }
         } else if gamestate.phase == 8 {
-            let (_, mut text, _) = status_bar_query.single_mut();
+            let (_, mut text, _) = status_bar_query.single_mut().expect("failed to get status bar");
             let winner_id = gamestate.winners[gamestate.round as usize - 1];
             if winner_id == 0 {
                 text.0 = "DRAW".to_string();
@@ -1048,7 +1048,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 10 {
             gamestate.count += 1;
-            let mut curtain = curtain_query.single_mut();
+            let mut curtain = curtain_query.single_mut().expect("failed to get curtain");
             curtain.0 = Color::srgba(0.0, 0.0, 0.0, gamestate.count as f32 / 60.0);
             if gamestate.count == 60 {
                 gamestate.round += 1;
@@ -1060,11 +1060,11 @@ fn main_game_system(
                     gamestate.count = 0;
 
                     // remove status bar
-                    let (mut bar, _, mut text_color) = status_bar_query.single_mut();
+                    let (mut bar, _, mut text_color) = status_bar_query.single_mut().expect("failed to get status bar");
                     bar.0 = Color::srgba(0.0, 0.0, 0.0, 0.0);
                     text_color.0 = Color::srgba(1.0, 1.0, 1.0, 0.0);
                     // reset background
-                    background_query.single_mut().translation.x = 0.0;
+                    background_query.single_mut().expect("failed to get background").translation.x = 0.0;
                     // reset player
                     for (id, mut player, mut transform) in player_query.iter_mut() {
                         player.reset(id);
@@ -1104,7 +1104,7 @@ fn main_game_system(
                         }
                     }
                     // reset timer
-                    let (mut text, mut color, mut timer) = timer_query.single_mut();
+                    let (mut text, mut color, mut timer) = timer_query.single_mut().expect("failed to get timer");
                     timer.0 = 60.0;
                     text.0 = "60.00".to_string();
                     color.0 = Color::WHITE;
@@ -1116,7 +1116,7 @@ fn main_game_system(
             }
         } else if gamestate.phase == 11 {
             gamestate.count += 1;
-            let mut curtain = curtain_query.single_mut();
+            let mut curtain = curtain_query.single_mut().expect("failed to get curtain");
             curtain.0 = Color::srgba(0.0, 0.0, 0.0, 1.0 - gamestate.count as f32 / 60.0);
             if gamestate.count == 60 {
                 gamestate.phase = 0;
@@ -1172,7 +1172,7 @@ fn check_pause(
 fn exit(mut commands: Commands, query: Query<Entity, With<InGame>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
     commands.remove_resource::<Fighting>();
 }

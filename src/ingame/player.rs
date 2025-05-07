@@ -1619,7 +1619,7 @@ fn player_movement(
         /*
         // move player and ground
          */
-        let mut ground = ground_query.get_single_mut().unwrap();
+        let mut ground = ground_query.single_mut().unwrap();
 
         // Check if players are at opposite ends of the screen
         // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge

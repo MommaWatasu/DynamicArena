@@ -146,7 +146,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn create_character_box(
-    builder: &mut ChildBuilder,
+    builder: &mut ChildSpawnerCommands,
     asset_server: &Res<AssetServer>,
     character_id: isize,
 ) {
@@ -313,7 +313,7 @@ fn check_buttons(
 fn exit(mut commands: Commands, query: Query<Entity, With<ChooseCharacter>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 
