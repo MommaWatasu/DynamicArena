@@ -13,9 +13,6 @@ use std::{
     ops::{BitAndAssign, BitOr, BitOrAssign, Not},
 };
 
-#[cfg(target_arch = "wasm32")]
-use crate::ingame::wasm::DoubleJumpCheck;
-
 const SKIN_COLOR: Color = Color::srgb(0.9, 0.8, 0.7);
 
 // definition for normal display
