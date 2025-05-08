@@ -330,6 +330,24 @@ impl BodyParts {
     }
 }
 
+impl Debug for BodyParts {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.flags {
+            0b10000 => write!(f, "BodyParts: Head"),
+            0b01000 => write!(f, "BodyParts: Body"),
+            0b00111 => write!(f, "BodyParts: Right Upper Arm"),
+            0b00110 => write!(f, "BodyParts: Right Lower Arm"),
+            0b00011 => write!(f, "BodyParts: Right Upper Leg"),
+            0b00010 => write!(f, "BodyParts: Right Lower Leg"),
+            0b00101 => write!(f, "BodyParts: Left Upper Arm"),
+            0b00100 => write!(f, "BodyParts: Left Lower Arm"),
+            0b00001 => write!(f, "BodyParts: Left Upper Leg"),
+            0b00000 => write!(f, "BodyParts: Left Lower Leg"),
+            _ => write!(f, "BodyParts: Unkown"),
+        }
+    }
+}
+
 // Represents a foot Entity
 // true for right foot, false for left foot
 #[derive(Component)]
