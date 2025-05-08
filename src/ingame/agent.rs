@@ -32,6 +32,7 @@ enum Policy {
     Neutral,
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum Action {
     MoveRight,
     MoveLeft,
@@ -43,12 +44,12 @@ enum Action {
     BackKick,
     FrontKick,
     Punch,
-    Ignore,
     None,
 }
 
 #[derive(Default)]
 struct Environment {
+    agent_state: PlayerState,
     agent_health: f32,
     player_health: f32,
     distance: f32,
@@ -74,36 +75,178 @@ impl Agent {
         }
     }
     fn select_policy(&mut self, environment: &Environment) {
-        if environment.agent_health < 0.3 {
-            self.policy = Policy::Defensive;
-        } else if environment.agent_health > 0.6 {
-            self.policy = Policy::Offensive;
-        } else {
-            self.policy = Policy::Neutral;
-        }
-    }
-    fn select_action(&self, environment: &Environment) -> Action {
         match self.level {
+            // Easy: weak strategy
+            // in this mode, agent performs few patterns
             Level::Easy => {
-                if rand() > 0.7 {
-                    return Action::Ignore;
+                if environment.agent_health < 0.5 {
+                    if environment.distance < 150.0 {
+                        self.policy = Policy::Defensive;
+                    } else if environment.distance > 500.0 {
+                        self.policy = Policy::Neutral;
+                    } else {
+                        self.policy = Policy::Offensive;
+                    }
+                } else {
+                    if environment.distance < 150.0 {
+                        self.policy = Policy::Offensive;
+                    } else if environment.distance > 500.0 {
+                        self.policy = Policy::Neutral;
+                    } else {
+                        self.policy = Policy::Defensive;
+                    }
                 }
             }
+            // Normal: normal strategy
+            // in this mode, agent performs adequate patterns
+            // and more aggressive than easy mode
             Level::Normal => {
-                if rand() > 0.3 {
-                    return Action::Ignore;
+                if environment.agent_health < 0.3 {
+                    if environment.distance < 150.0 {
+                        self.policy = Policy::Defensive;
+                    } else if environment.distance < 500.0 {
+                        let rand = rand();
+                        if rand < 0.4 {
+                            self.policy = Policy::Defensive;
+                        } else if rand < 0.7 {
+                            self.policy = Policy::Neutral;
+                        } else {
+                            self.policy = Policy::Offensive;
+                        }
+                    } else {
+                        let rand = rand();
+                        if rand < 0.2 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    }
+                } else if environment.agent_health < 0.6 {
+                    if environment.distance < 300.0 {
+                        let rand = rand();
+                        if rand < 0.6 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Defensive;
+                        }
+                    } else if environment.distance < 600.0 {
+                        let rand = rand();
+                        if rand < 0.4 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    } else {
+                        let rand = rand();
+                        if rand < 0.4 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    }
+                } else {
+                    if environment.distance < 400.0 {
+                        let rand = rand();
+                        if rand < 0.8 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Defensive;
+                        }
+                    } else if environment.distance < 600.0 {
+                        let rand = rand();
+                        if rand < 0.5 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    } else {
+                        self.policy = Policy::Offensive;
+                    }
                 }
             }
             Level::Hard => {
-                if rand() > 0.1 {
-                    return Action::Ignore;
+                if environment.agent_health < 0.3 {
+                    if environment.distance < 150.0 {
+                        self.policy = Policy::Defensive;
+                    } else if environment.distance < 500.0 {
+                        let rand = rand();
+                        if rand < 0.4 {
+                            self.policy = Policy::Defensive;
+                        } else if rand < 0.7 {
+                            self.policy = Policy::Neutral;
+                        } else {
+                            self.policy = Policy::Offensive;
+                        }
+                    } else {
+                        let rand = rand();
+                        if rand < 0.2 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    }
+                } else if environment.agent_health < 0.6 {
+                    if environment.distance < 300.0 {
+                        let rand = rand();
+                        if rand < 0.7 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Defensive;
+                        }
+                    } else if environment.distance < 600.0 {
+                        let rand = rand();
+                        if rand < 0.5 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    } else {
+                        let rand = rand();
+                        if rand < 0.5 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    }
+                } else {
+                    if environment.distance < 400.0 {
+                        let rand = rand();
+                        if rand < 0.9 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Defensive;
+                        }
+                    } else if environment.distance < 600.0 {
+                        let rand = rand();
+                        if rand < 0.6 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Neutral;
+                        }
+                    } else {
+                        self.policy = Policy::Offensive;
+                    }
                 }
             }
+        }
+    }
+    fn select_action(&self, environment: &Environment) -> Action {
+        if environment.agent_state.check(PlayerState::COOLDOWN) {
+            return Action::None;
         }
         match self.policy {
             Policy::Offensive => {
                 if environment.distance < 150.0 {
-                    return Action::Kick;
+                    let rand = rand();
+                    if rand < 0.5 {
+                        return Action::Punch;
+                    } else if rand < 0.8 {
+                        return Action::FrontKick;
+                    } else {
+                        return Action::Kick;
+                    }
+                } else if environment.distance < 250.0 {
+                    return Action::BackKick;
                 } else if environment.distance > 500.0
                     && (environment.player_state.check(PlayerState::BEND_DOWN)
                         || environment.player_state.is_idle())
@@ -173,6 +316,7 @@ pub fn agent_system(
                 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.agent_facing = player.pose.facing;
             environment.distance = (transform.translation.x - environment.distance).abs();
+            environment.agent_state = player.state;
         }
         if agent.count == AGENT_FREQUENCY as u8 {
             agent.count = 0;
@@ -180,6 +324,10 @@ pub fn agent_system(
         }
         let action = agent.select_action(&environment);
         if let Some((mut player, _, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
+            if action != Action::MoveLeft || action != Action::MoveRight {
+                // agent is idle
+                player.state &= !PlayerState::WALKING;
+            }
             match action {
                 Action::MoveRight => {
                     if player.state.check(
@@ -222,46 +370,35 @@ pub fn agent_system(
                     player.state &= !PlayerState::DIRECTION;
                 }
                 Action::JumpUP => {
-                    if player.character_id == 1 {
-                        // character 1 can double jump
-                        if player.state.is_idle() {
-                            // player is idle
-                            // then player will jump up
-                            player.state |= PlayerState::JUMP_UP;
-                            player.set_animation(JUMP_UP_POSE1, 0, 10);
-                            player.velocity = Vec2::new(0.0, 12.0);
-                        }
-                    } else {
-                        // character 0 and 2 can only single jump
-                        if player.state.is_idle() {
-                            // player is idle
-                            // then player will jump up
-                            player.state |= PlayerState::JUMP_UP;
-                            player.set_animation(JUMP_UP_POSE1, 0, 10);
-                            player.velocity = Vec2::new(0.0, 12.0);
-                        } else if !player.state.check(
-                            PlayerState::JUMP_UP
-                                | PlayerState::JUMP_FORWARD
-                                | PlayerState::JUMP_BACKWARD,
-                        ) && player.state.check(PlayerState::WALKING)
-                        {
-                            if player.state.check(PlayerState::DIRECTION) {
-                                // player is walking right
-                                // then player will jump forward
-                                player.state |= PlayerState::JUMP_FORWARD;
-                                player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
-                                let x_vel =
-                                    CHARACTER_PROFILES[player.character_id as usize].agility;
-                                player.velocity = Vec2::new(x_vel, 12.0);
-                            } else {
-                                // player is walking left
-                                // then player will jump backward
-                                player.state |= PlayerState::JUMP_BACKWARD;
-                                player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
-                                let x_vel =
-                                    CHARACTER_PROFILES[player.character_id as usize].agility;
-                                player.velocity = Vec2::new(-x_vel, 12.0);
-                            }
+                    // character 0 and 2 can only single jump
+                    if player.state.is_idle() {
+                        // player is idle
+                        // then player will jump up
+                        player.state |= PlayerState::JUMP_UP;
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.velocity = Vec2::new(0.0, 12.0);
+                    } else if !player.state.check(
+                        PlayerState::JUMP_UP
+                            | PlayerState::JUMP_FORWARD
+                            | PlayerState::JUMP_BACKWARD,
+                    ) && player.state.check(PlayerState::WALKING)
+                    {
+                        if player.state.check(PlayerState::DIRECTION) {
+                            // player is walking right
+                            // then player will jump forward
+                            player.state |= PlayerState::JUMP_FORWARD;
+                            player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                            let x_vel =
+                                CHARACTER_PROFILES[player.character_id as usize].agility;
+                            player.velocity = Vec2::new(x_vel, 12.0);
+                        } else {
+                            // player is walking left
+                            // then player will jump backward
+                            player.state |= PlayerState::JUMP_BACKWARD;
+                            player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
+                            let x_vel =
+                                CHARACTER_PROFILES[player.character_id as usize].agility;
+                            player.velocity = Vec2::new(-x_vel, 12.0);
                         }
                     }
                 }
@@ -357,7 +494,6 @@ pub fn agent_system(
                         player.state |= PlayerState::PUNCHING;
                     }
                 }
-                Action::Ignore => {}
                 Action::None => {
                     if player.state.check(PlayerState::WALKING) {
                         // player is walking
