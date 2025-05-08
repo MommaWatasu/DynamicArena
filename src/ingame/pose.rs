@@ -750,7 +750,7 @@ pub const THUNDER_PUNCH_POSE: Pose = Pose {
     left_lower_leg: -60.0,
 };
 
-pub const FIRE_GROUND_POSE: Pose = Pose {
+pub const HAMMER_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
@@ -759,13 +759,31 @@ pub const FIRE_GROUND_POSE: Pose = Pose {
     head: 0.0,
     body: 0.0,
     right_upper_arm: -10.0,
-    right_lower_arm: 160.0,
+    right_lower_arm: 140.0,
     right_upper_leg: -40.0,
     right_lower_leg: 40.0,
-    left_upper_arm: 70.0,
-    left_lower_arm: 110.0,
-    left_upper_leg: 110.0,
-    left_lower_leg: -110.0,
+    left_upper_arm: 120.0,
+    left_lower_arm: 60.0,
+    left_upper_leg: 60.0,
+    left_lower_leg: -60.0,
+};
+
+pub const HAMMER_POSE2: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: 0.0,
+    right_upper_arm: -10.0,
+    right_lower_arm: 140.0,
+    right_upper_leg: -40.0,
+    right_lower_leg: 40.0,
+    left_upper_arm: 50.0,
+    left_lower_arm: 0.0,
+    left_upper_leg: 60.0,
+    left_lower_leg: -60.0,
 };
 
 pub const WINNER_POSE: Pose = Pose {
