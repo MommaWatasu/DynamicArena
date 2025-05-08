@@ -50,7 +50,7 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 3.0,
         #[cfg(target_arch = "wasm32")]
         agility: 1.5,
-        dexterity: 1.0,
+        dexterity: 1.1,
         power: 100.0,
         defense: 100.0
     },
@@ -65,7 +65,7 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 2.0,
         #[cfg(target_arch = "wasm32")]
         agility: 1.0,
-        dexterity: 0.8,
+        dexterity: 1.0,
         power: 130.0,
         defense: 150.0
     },
