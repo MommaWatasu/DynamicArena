@@ -3,7 +3,7 @@ use super::{pose::*, rand, BackGround, Fighting, SkillEntity, SkillName};
 use crate::GameMode;
 use crate::{
     character_def::*,
-    ingame::{GameState, InGame},
+    ingame::{GameState, InGame, DamageDisplay},
     AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX,
 };
 use bevy::{prelude::*, asset::RenderAssetUsages, render::mesh::{VertexAttributeValues, PrimitiveTopology, Indices}};
@@ -801,7 +801,7 @@ fn keyboard_input(
                 // then player will back kick
                 player.state |= PlayerState::BACK_KICKING;
                 player.set_animation(BACK_KICK_POSE1, 0, 5);
-                player.energy += 2;
+                player.energy += 50;
             }
         }
         if keys.just_pressed(KeyCode::KeyG) && player.energy == 100 {
@@ -1423,6 +1423,7 @@ fn skill_animation(
         (Entity, &SkillEntity, &Mesh2d, &mut Transform),
         (Without<SkillName>, Without<Player>, Without<BackGround>),
     >,
+    mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
 ) {
     // normal animation
     if fighting.0 == 0 {
@@ -1846,10 +1847,25 @@ fn skill_animation(
                     }
                 }
                 if damage != 0 {
-                    if let Some((mut player, _, _, _)) = player_query
+                    if let Some((mut player, player_id, _, _)) = player_query
                         .iter_mut()
                         .find(|(_, id, _, _)| id.0 != fighting.0 - 1)
                     {
+                        for (player_id_text, mut text, mut color, mut damage_display) in
+                            damage_display_query.iter_mut()
+                        {
+                            if player_id.0 == player_id_text.0 {
+                                text.0 = format!("{}", damage);
+                                if damage > 100 {
+                                    color.0 = Color::srgba(5.0, 0.0, 0.0, 1.0);   
+                                    damage_display.is_red = true;              
+                                } else {
+                                    color.0 = Color::srgba(0.0, 0.0, 5.0, 1.0);
+                                    damage_display.is_red = false;
+                                }
+                                damage_display.alpha = 1.0;
+                            }
+                        }
                         player.health = player.health.saturating_sub(damage);
                     }
                 }
@@ -2174,6 +2190,7 @@ fn check_attack(
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
     mut player_query: Query<(&mut Player, &PlayerID)>,
+    mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
 ) {
     let mut player_info: [(isize, PlayerState); 2] = [(0, PlayerState::IDLE); 2];
     for (player, player_id) in player_query.iter() {
@@ -2280,11 +2297,25 @@ fn check_attack(
                     player_info[opponent_id.0 as usize],
                     opponent_parts,
                 );
-                println!("Player {} hit: {} damage", attacker_id.0, damage);
                 if let Some((mut player, _)) = player_query
                     .iter_mut()
                     .find(|(_, id)| id.0 == opponent_id.0)
                 {
+                    for (player_id, mut text, mut color, mut damage_display) in
+                        damage_display_query.iter_mut()
+                    {
+                        if player_id.0 == opponent_id.0 {
+                            text.0 = format!("{}", damage);
+                            if damage > 100 {
+                                color.0 = Color::srgba(5.0, 0.0, 0.0, 1.0);   
+                                damage_display.is_red = true;              
+                            } else {
+                                color.0 = Color::srgba(0.0, 0.0, 5.0, 1.0);
+                                damage_display.is_red = false;
+                            }
+                            damage_display.alpha = 1.0;
+                        }
+                    }
                     player.health = player.health.saturating_sub(damage);
                 }
             }
@@ -2395,6 +2426,24 @@ fn calculate_damage(
     return (damage * DEFENCE_COEFICIENCY
         / (opponent_profile.defense + defence_bonus + DEFENCE_OFFSET))
         .floor() as u32;
+}
+
+fn update_damage_display(
+    mut damage_display_query: Query<(&mut TextColor, &mut DamageDisplay)>,
+) {
+    for (mut color, mut damage_display) in damage_display_query.iter_mut() {
+        if damage_display.alpha != 0.0 {
+            damage_display.alpha -= 0.05;
+            if damage_display.alpha < 0.0 {
+                damage_display.alpha = 0.0;
+            }
+            if damage_display.is_red {
+                color.0 = Color::srgba(5.0, 0.0, 0.0, damage_display.alpha);
+            } else {
+                color.0 = Color::srgba(0.0, 0.0, 5.0, damage_display.alpha);
+            }
+        }
+    }
 }
 
 /// Updates the health bar of the player character based on their current health.
@@ -2538,6 +2587,10 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             avoid_collision.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            update_damage_display.run_if(in_state(AppState::Ingame)),
         )
         .add_systems(
             Update,
