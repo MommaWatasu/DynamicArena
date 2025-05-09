@@ -313,6 +313,7 @@ pub fn agent_system(
         }
         let action = agent.select_action(&environment);
         if let Some((mut player, _, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
+            println!("agent state: {:?}", player.state);
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
@@ -474,14 +475,6 @@ pub fn agent_system(
                         // then player will back kick
                         player.state |= PlayerState::BACK_KICKING;
                         player.set_animation(BACK_KICK_POSE1, 0, 10);
-                    } else if player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::JUMP_BACKWARD,
-                    ) {
-                        // player is jumping
-                        // then just adding state
-                        player.state |= PlayerState::BACK_KICKING;
                     }
                 }
                 Action::FrontKick => {
@@ -490,14 +483,6 @@ pub fn agent_system(
                         // then player will knee kick
                         player.state |= PlayerState::FRONT_KICKING;
                         player.set_animation(FRONT_KICK_POSE, 0, 10);
-                    } else if player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::JUMP_BACKWARD,
-                    ) {
-                        // player is jumping
-                        // then just adding state
-                        player.state |= PlayerState::FRONT_KICKING;
                     }
                 }
                 Action::Punch => {
@@ -506,14 +491,6 @@ pub fn agent_system(
                         // then player will punch
                         player.state |= PlayerState::PUNCHING;
                         player.set_animation(PUNCH_POSE, 0, 10);
-                    } else if player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::JUMP_BACKWARD,
-                    ) {
-                        // player is jumping
-                        // then just adding state
-                        player.state |= PlayerState::PUNCHING;
                     }
                 }
                 Action::None => {
