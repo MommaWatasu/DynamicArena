@@ -313,7 +313,7 @@ pub fn agent_system(
         }
         let action = agent.select_action(&environment);
         if let Some((mut player, _, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
-            println!("agent state: {:?}", player.state);
+            //println!("agent state: {:?}", player.state);
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
