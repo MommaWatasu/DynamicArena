@@ -110,7 +110,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
 }
 
 fn create_round_result(
-    builder: &mut ChildBuilder,
+    builder: &mut ChildSpawnerCommands,
     asset_server: &Res<AssetServer>,
     round: u8,
     winner_id: u8,
@@ -182,7 +182,7 @@ fn create_round_result(
         });
 }
 
-fn create_total_result(builder: &mut ChildBuilder, asset_server: &Res<AssetServer>, winner_id: u8) {
+fn create_total_result(builder: &mut ChildSpawnerCommands, asset_server: &Res<AssetServer>, winner_id: u8) {
     builder
         .spawn((
             Node {
@@ -263,7 +263,7 @@ fn check_exit_button(
 fn exit(mut commands: Commands, query: Query<Entity, With<ShowResult>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

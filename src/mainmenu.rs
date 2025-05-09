@@ -217,7 +217,7 @@ fn update(
 fn exit(mut commands: Commands, query: Query<Entity, With<Mainmenu>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

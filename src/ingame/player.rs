@@ -1283,7 +1283,7 @@ fn player_movement(
         /*
         // move player and ground
          */
-        let mut ground = ground_query.single_mut();
+        let mut ground = ground_query.single_mut().expect("faild to get ground");
 
         // Check if players are at opposite ends of the screen
         // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge
@@ -1840,7 +1840,7 @@ fn skill_animation(
                         }
                         if player.animation.count == 20 {
                             if let Some((entity, _, _)) = curtain_query.iter().find(|x| x.1.id == 3) {
-                                commands.entity(entity).despawn_recursive();
+                                commands.entity(entity).despawn();
                             }
                             player.animation.phase = 7;
                             player.animation.count = 0;
