@@ -801,7 +801,7 @@ fn keyboard_input(
                 // then player will back kick
                 player.state |= PlayerState::BACK_KICKING;
                 player.set_animation(BACK_KICK_POSE1, 0, 5);
-                player.energy += 50;
+                player.energy += 2;
             }
         }
         if keys.just_pressed(KeyCode::KeyG) && player.energy == 100 {
@@ -948,7 +948,7 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
                         if cfg!(not(target_arch = "wasm32")) {
                             player.velocity = Vec2::new(x_vel, 12.0);
                             if player.state.check(PlayerState::KICKING) {
@@ -1030,7 +1030,7 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
                         if cfg!(not(target_arch = "wasm32")) {
                             player.velocity = Vec2::new(-x_vel, 12.0);
                             player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
