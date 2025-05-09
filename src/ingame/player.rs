@@ -685,7 +685,7 @@ fn keyboard_input(
         if player.state.check(PlayerState::COOLDOWN) {
             continue;
         }
-        if keys.pressed(KeyCode::KeyD) && !player.state.check(PlayerState::COOLDOWN) {
+        if keys.pressed(KeyCode::KeyD) {
             if !player.state.check(
                 PlayerState::JUMP_UP
                     | PlayerState::JUMP_BACKWARD
@@ -701,7 +701,7 @@ fn keyboard_input(
             }
             // direction is right
             player.state |= PlayerState::DIRECTION;
-        } else if keys.pressed(KeyCode::KeyA) && !player.state.check(PlayerState::COOLDOWN) {
+        } else if keys.pressed(KeyCode::KeyA) {
             if !player.state.check(
                 PlayerState::JUMP_UP
                     | PlayerState::JUMP_BACKWARD
@@ -1996,11 +1996,11 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
             player.state &= !(PlayerState::JUMP_UP
                 | PlayerState::JUMP_BACKWARD
                 | PlayerState::JUMP_FORWARD
-                | PlayerState::KICKING);
+                | PlayerState::KICKING
+                | PlayerState::WALKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 5.0;
-            //transform.translation.y = 270.0 - config.window_size.y/2.0 - 50.0;
             transform.translation.y = 220.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
@@ -2010,11 +2010,11 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
             player.state &= !(PlayerState::JUMP_UP
                 | PlayerState::JUMP_BACKWARD
                 | PlayerState::JUMP_FORWARD
-                | PlayerState::KICKING);
+                | PlayerState::KICKING
+                | PlayerState::WALKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 7.0;
-            //transform.translation.y = 270.0 - config.window_size.y/2.0 - 70.0;
             transform.translation.y = 200.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
@@ -2410,12 +2410,11 @@ fn avoid_collision(
 }
 
 // coefficiency for each attack
-const SKILL_COEFFICIENT: [f32; 5] = [
+const SKILL_COEFFICIENT: [f32; 4] = [
     1.0, // punch
     1.2, // kick
     1.0, // front kick
     1.5, // back kick
-    2.0, // skill attack
 ];
 // coefficiency for each body part
 const PARTS_COEFFICIENT: [f32; 4] = [
@@ -2445,8 +2444,6 @@ fn calculate_damage(
         damage *= SKILL_COEFFICIENT[2];
     } else if attacker_info.1.check(PlayerState::BACK_KICKING) {
         damage *= SKILL_COEFFICIENT[3];
-    } else if attacker_info.1.check(PlayerState::SKILL) {
-        damage *= SKILL_COEFFICIENT[4];
     }
 
     // If attacker is performes a jumping kick or double jump kick, double the damage
