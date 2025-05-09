@@ -82,23 +82,24 @@ struct SoulAbsorb;
 /// Represents the current state of a player using bit flags.
 /// Multiple states can be active simultaneously by combining flags with bitwise OR.
 ///
-/// | State          | Bit Pattern         | Description                         |
-/// |----------------|---------------------|-------------------------------------|
-/// | IDLE           | 0b0000000000000000  | Default state, no action            |
-/// | WALKING        | 0b0000000000000001  | Player is moving horizontally       |
-/// | JUMP UP        | 0b0000000000000010  | Player is in first jump             |
-/// | SKILL          | 0b0000000000000100  | Player is performing skill attack   |
-/// | KICKING        | 0b0000000000001000  | Player is performing kick           |
-/// | PUNCHING       | 0b0000000000010000  | Player is performing punch          |
-/// | FRONT_KICKING  | 0b0000000000100000  | Player is performing knee kick      |
-/// | BACK_KICKING   | 0b0000000001000000  | Player is performing back kick      |
-/// | COOLDOWN       | 0b0000000010000000  | Player is in cooldown state         |
-/// | DIRECTION      | 0b0000000100000000  | Player is moving right              |
-/// | JUMP FORWARD   | 0b0000001000000000  | Player is jumping forward           |
-/// | JUMP BACKWARD  | 0b0000010000000000  | Player is jumping backward          |
-/// | BEND DOWN      | 0b0000100000000000  | Player is bending down              |
-/// | ROLL BACK      | 0b0001000000000000  | Player is rolling back              |
-/// | ROLL FORWARD   | 0b0010000000000000  | Player is rolling forward           |
+/// | State           | Bit Pattern         | Description                         |
+/// |-----------------|---------------------|-------------------------------------|
+/// | IDLE            | 0b0000000000000000  | Default state, no action            |
+/// | WALKING         | 0b0000000000000001  | Player is moving horizontally       |
+/// | JUMP UP         | 0b0000000000000010  | Player is in first jump             |
+/// | SKILL           | 0b0000000000000100  | Player is performing skill attack   |
+/// | KICKING         | 0b0000000000001000  | Player is performing kick           |
+/// | PUNCHING        | 0b0000000000010000  | Player is performing punch          |
+/// | FRONT_KICKING   | 0b0000000000100000  | Player is performing knee kick      |
+/// | BACK_KICKING    | 0b0000000001000000  | Player is performing back kick      |
+/// | COOLDOWN        | 0b0000000010000000  | Player is in cooldown state         |
+/// | DIRECTION       | 0b0000000100000000  | Player is moving right              |
+/// | JUMP FORWARD    | 0b0000001000000000  | Player is jumping forward           |
+/// | JUMP BACKWARD   | 0b0000010000000000  | Player is jumping backward          |
+/// | BEND DOWN       | 0b0000100000000000  | Player is bending down              |
+/// | ROLL BACK       | 0b0001000000000000  | Player is rolling back              |
+/// | ROLL FORWARD    | 0b0010000000000000  | Player is rolling forward           |
+/// | ATTACK_DISABLED | 0b0100000000000000  | Player is in attack cooldown state  |
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub struct PlayerState(u16);
 
@@ -137,35 +138,37 @@ impl Default for PlayerState {
 impl Debug for PlayerState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let states = [
-            (PlayerState::WALKING, "WALKING"),
-            (PlayerState::JUMP_UP, "JUMPING"),
-            (PlayerState::JUMP_BACKWARD, "JUMP_BACKWARD"),
-            (PlayerState::JUMP_FORWARD, "JUMP_FORWARD"),
-            (PlayerState::KICKING, "KICKING"),
-            (PlayerState::PUNCHING, "PUNCHING"),
-            (PlayerState::FRONT_KICKING, "FRONT_KICKING"),
-            (PlayerState::BACK_KICKING, "BACK_KICKING"),
-            (PlayerState::COOLDOWN, "COOLDOWN"),
+            (0x0000, "IDLE"),
+            (0x0001, "WALKING"),
+            (0x0002, "JUMP_UP"),
+            (0x0004, "SKILL"),
+            (0x0008, "KICKING"),
+            (0x0010, "PUNCHING"),
+            (0x0020, "FRONT_KICKING"),
+            (0x0040, "BACK_KICKING"),
+            (0x0080, "COOLDOWN"),
+            (0x0100, "DIRECTION"),
+            (0x0200, "JUMP_FORWARD"),
+            (0x0400, "JUMP_BACKWARD"),
+            (0x0800, "BEND_DOWN"),
+            (0x1000, "ROLL_BACK"),
+            (0x2000, "ROLL_FORWARD"),
+            (0x4000, "ATTACK_DISABLED"),
         ];
 
-        if self.0 == 0 {
-            write!(f, "IDLE")?;
-            return Ok(());
-        }
+        let active_states: Vec<&str> = states.iter()
+            .filter(|(flag, _)| flag > &0 && (self.0 & *flag as u16) != 0)
+            .map(|(_, name)| *name)
+            .collect();
 
-        let mut first = true;
-        for (state, name) in states {
-            if self.check(state) {
-                if !first {
-                    write!(f, "|")?;
-                }
-                write!(f, "{}", name)?;
-                first = false;
-            }
+        if f.alternate() {
+            // detailed format (using #?)
+            write!(f, "{}", active_states.join(" | "))?;
+            write!(f, " (0b{:016b})", self.0)
+        } else {
+            // normal format
+            write!(f, "{}", active_states.join("|"))
         }
-
-        // Also include the raw binary representation
-        write!(f, " ({:#010b})", self.0)
     }
 }
 
@@ -185,10 +188,11 @@ impl PlayerState {
     pub const BEND_DOWN: Self = Self(0b0000100000000000);
     pub const ROLL_BACK: Self = Self(0b0001000000000000);
     pub const ROLL_FORWARD: Self = Self(0b0010000000000000);
+    pub const ATTACK_DISABLED: Self = Self(0b0100000000000000);
 
     // ignore cooldown state
     pub fn is_idle(&self) -> bool {
-        self.0 & !Self::COOLDOWN.0 & !Self::DIRECTION.0 == 0
+        self.0 & !Self::COOLDOWN.0 & !Self::DIRECTION.0 & !Self::ATTACK_DISABLED.0 == 0
     }
     pub fn check(&self, state: Self) -> bool {
         self.0 & state.0 != 0
@@ -885,6 +889,9 @@ fn player_movement(
                         if player.state.check(PlayerState::COOLDOWN) {
                             player.state &= !PlayerState::COOLDOWN;
                         }
+                        if player.state.check(PlayerState::ATTACK_DISABLED) {
+                            player.state &= !PlayerState::ATTACK_DISABLED;
+                        }
                         player.set_animation(IDLE_POSE2, 1, 15);
                     }
                 } else if player.animation.phase == 1 {
@@ -1079,7 +1086,7 @@ fn player_movement(
                 } else if player.animation.phase == 1 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
                 }
@@ -1119,7 +1126,7 @@ fn player_movement(
                     player.update_animation();
                     if player.animation.count == 0 {
                         player.pose.body = -20.0;
-                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
                 }
@@ -1159,7 +1166,7 @@ fn player_movement(
                 } else if player.animation.phase == 6 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
                 }
@@ -1173,7 +1180,7 @@ fn player_movement(
                     } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
@@ -1181,7 +1188,7 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
@@ -1194,7 +1201,7 @@ fn player_movement(
                     } else if player.animation.phase == 1 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
@@ -1202,7 +1209,7 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation();
                         if player.animation.count == 0 {
-                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
@@ -2216,13 +2223,13 @@ fn check_attack(
                 let mut attacker_parts: &BodyParts = &BodyParts::NULL;
                 let mut opponent_parts: &BodyParts = &BodyParts::NULL;
                 let mut attacker_power: f32 = 0.0;
-                for (player, player_id) in player_query.iter() {
+                for (mut player, player_id) in player_query.iter_mut() {
                     if player.state.check(
                         PlayerState::KICKING
                             | PlayerState::BACK_KICKING
                             | PlayerState::FRONT_KICKING
                             | PlayerState::PUNCHING,
-                    ) {
+                    ) && !player.state.check(PlayerState::ATTACK_DISABLED) {
                         // Check if the attacker is already set
                         if id1 == player_id {
                             attacker_parts = parts1;
@@ -2254,6 +2261,7 @@ fn check_attack(
                             continue;
                         }
                         attacker_id = *player_id;
+                        player.state |= PlayerState::ATTACK_DISABLED;
                         opponent_id = if PlayerID(0) == attacker_id {
                             PlayerID(1)
                         } else {
