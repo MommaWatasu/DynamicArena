@@ -15,7 +15,8 @@ cargo run --features "bevy/dynamic_linking pause"
 [tasks.windowsDEV]
 description = "Run project for development on windows"
 condition = { platforms = ["windows"] }
-command = "cargo run --features \"bevy/dynamic_linking pause\""
+args = ["cargo", "run", "--features", "bevy/dynamic_linking pause"]
+command = "powershell"
 
 [tasks.wasmDEV]
 description = "Run project for development"
@@ -34,7 +35,8 @@ cargo build --release --features pause
 [tasks.windowsBETA]
 description = "Run project for beta on windows"
 condition = { platforms = ["windows"] }
-command = "cargo run --release --features pause"
+args = ["cargo", "build", "--release", "--features", "pause"]
+command = "powershell"
 
 [tasks.RELEASE]
 description = "Build project for release"
@@ -53,7 +55,8 @@ cargo build --target wasm32-unknown-unknown --release
 [tasks.windowsRELEASE]
 description = "Build project for release on windows"
 condition = { platforms = ["windows"] }
-command = "cargo run --release"
+args = ["--target", "--release"]
+command = "powershell"
 
 [tasks.wasmDEPLOY]
 description = "create wasm directory to deploy, and launch the local server to test"
