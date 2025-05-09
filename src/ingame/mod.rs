@@ -1259,10 +1259,11 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(debug_assertions)]
+        // add debug plugin for rapier2d
+        app.add_plugins(RapierDebugRenderPlugin::default());
         #[cfg(feature="pause")]
         app
-            // add debug plugin for rapier2d
-            .add_plugins(RapierDebugRenderPlugin::default())
             .add_plugins(PausePlugin)
             .add_systems(Update, check_pause);
 
