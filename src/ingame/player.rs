@@ -2342,7 +2342,7 @@ const PARTS_COEFFICIENT: [f32; 4] = [
     1.0, // arm
     1.5, // leg
 ];
-const DEFENCE_COEFICIENCY: f32 = 25.0;
+const DEFENCE_COEFICIENCY: f32 = 20.0;
 const DEFENCE_OFFSET: f32 = 50.0;
 
 fn calculate_damage(
