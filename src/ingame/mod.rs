@@ -9,24 +9,24 @@ use pose::{LOSER_POSE, WINNER_POSE};
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
 mod controller;
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 mod pause;
 mod player;
 mod pose;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 use crate::PATH_BOLD_FONT;
 use crate::{
-    AppState, GameConfig, SoundEffect, DEFAULT_FONT_SIZE, PATH_BOLD_MONOSPACE_FONT,
-    PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX, TITLE_FONT_SIZE,
+    AppState, GameConfig, SoundEffect, PATH_BOLD_MONOSPACE_FONT,
+    PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX, TITLE_FONT_SIZE, DEFAULT_FONT_SIZE
 };
 
 use agent::*;
 #[cfg(not(target_arch = "wasm32"))]
 use controller::*;
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 use pause::*;
 use player::*;
 #[cfg(target_arch = "wasm32")]
@@ -95,6 +95,12 @@ pub struct SkillEntity {
     id: u8,
 }
 
+#[derive(Component)]
+struct DamageDisplay {
+    pub is_red: bool,
+    pub alpha: f32,
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 pub fn rand() -> f32 {
     rand::random::<f32>()
@@ -113,7 +119,9 @@ fn setup(
     config: Res<GameConfig>,
 ) {
     info!("setup");
-    #[cfg(debug_assertions)]
+    #[cfg(feature="pause")]
+    info!("pause feature enabled");
+    #[cfg(feature="pause")]
     commands
         .spawn((
             Button,
@@ -175,6 +183,76 @@ fn setup(
                 TextLayout::new_with_justify(JustifyText::Center),
                 TextColor(Color::WHITE),
             ));
+        });
+    // damage display
+    commands.spawn((
+        InGame,
+        Node {
+            justify_self: JustifySelf::Center,
+            align_self: AlignSelf::Start,
+            justify_content: JustifyContent::SpaceBetween,
+            width: Val::Percent(100.0),
+            height: Val::Percent(20.0),
+            ..default()
+        },
+    ))
+        .with_children(|builder|{
+            builder.spawn((
+                Node {
+                    justify_self: JustifySelf::Start,
+                    align_self: AlignSelf::End,
+                    justify_content: JustifyContent::Center,
+                    width: Val::Percent(20.0),
+                    height: Val::Px(100.0),
+                    margin: UiRect::horizontal(Val::Px(100.0)),
+                    ..default()
+                },
+            ))
+                .with_children(|builder| {
+                    builder.spawn((
+                        Text::new("Damage"),
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                            font_size: TITLE_FONT_SIZE,
+                            ..default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextColor(Color::srgba(0.0, 0.0, 5.0, 0.0)),
+                        DamageDisplay {
+                            is_red: false,
+                            alpha: 0.0,
+                        },
+                        PlayerID(0),
+                    ));
+                });
+            builder.spawn((
+                Node {
+                    justify_self: JustifySelf::End,
+                    align_self: AlignSelf::End,
+                    justify_content: JustifyContent::Center,
+                    width: Val::Percent(20.0),
+                    height: Val::Px(100.0),
+                    margin: UiRect::horizontal(Val::Px(100.0)),
+                    ..default()
+                },
+            ))
+                .with_children(|builder| {
+                    builder.spawn((
+                        Text::new("Damage"),
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                            font_size: TITLE_FONT_SIZE,
+                            ..default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextColor(Color::srgba(0.0, 0.0, 5.0, 0.0)),
+                        DamageDisplay {
+                            is_red: true,
+                            alpha: 0.0,
+                        },
+                        PlayerID(1),
+                    ));
+                });
         });
 
     // health bar for player 2
@@ -1142,7 +1220,7 @@ fn move_background(mut query: Query<&mut Transform, With<SkyBackground>>) {
     }
 }
 
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 fn check_pause(
     mut state: ResMut<NextState<AppState>>,
     keys: Res<ButtonInput<KeyCode>>,
@@ -1181,7 +1259,7 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature="pause")]
         app
             // add debug plugin for rapier2d
             .add_plugins(RapierDebugRenderPlugin::default())

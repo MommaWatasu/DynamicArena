@@ -8,6 +8,9 @@ bevy = "0.16.0"
 # temporarily use Git repository until bevy_rapier is updated
 bevy_rapier2d = { git = "https://github.com/dimforge/bevy_rapier.git", branch = "master" }
 
+[features]
+pause = []
+
 [profile.dev]
 opt-level = 2
 

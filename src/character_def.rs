@@ -15,7 +15,6 @@ pub struct CharacterProfile {
     pub defense: f32,
 }
 
-pub const FIRE_COLOR: Color = Color::srgba(3.0, 0.0, 0.0, 0.8);
 pub const SOUL_COLOR: [Color; 3] = [
     Color::srgb(0.0, 20.0, 18.0),
     Color::srgb(0.0, 20.0, 15.0),
@@ -50,22 +49,22 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 3.0,
         #[cfg(target_arch = "wasm32")]
         agility: 1.5,
-        dexterity: 1.0,
+        dexterity: 1.1,
         power: 100.0,
         defense: 100.0
     },
     CharacterProfile {
         name: "Matsumoto",
         description: "ボットの作成者で、体力の多いファイター。スピードは遅いが強靭な肉体とパワーで全てを解決する。",
-        skill_name: "地獄業火",
-        skill_description: "スキル発動後最初の攻撃が大幅に強化される",
+        skill_name: "驚天動地",
+        skill_description: "巨大なハンマーを振り下ろして、地面にいる敵に大ダメージを与える",
         color: Color::srgb(1.0, 0.0, 0.0),
         health: 1200,
         #[cfg(not(target_arch = "wasm32"))]
         agility: 2.0,
         #[cfg(target_arch = "wasm32")]
         agility: 1.0,
-        dexterity: 0.8,
+        dexterity: 1.0,
         power: 130.0,
         defense: 150.0
     },

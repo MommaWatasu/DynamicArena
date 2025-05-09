@@ -91,7 +91,7 @@ enum AppState {
     ChooseCharacter,
     Ingame,
     Result,
-    #[cfg(debug_assertions)]
+    #[cfg(feature="pause")]
     Pause,
 }
 
