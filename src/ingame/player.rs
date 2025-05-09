@@ -760,22 +760,42 @@ fn keyboard_input(
                 PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD,
             ) && player.state.check(PlayerState::WALKING)
             {
-                if player.state.check(PlayerState::DIRECTION) {
-                    // player is walking right
-                    // then player will jump forward
-                    player.state |= PlayerState::JUMP_FORWARD;
-                    player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
-                    // stop moving for preparing motion
-                    player.velocity = Vec2::ZERO;
-                    player.energy += 1;
+                if player.pose.facing {
+                    if player.state.check(PlayerState::DIRECTION) {
+                        // player is walking right
+                        // then player will jump forward
+                        player.state |= PlayerState::JUMP_FORWARD;
+                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
+                        player.energy += 1;
+                    } else {
+                        // player is walking left
+                        // then player will jump backward
+                        player.state |= PlayerState::JUMP_BACKWARD;
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
+                        player.energy += 1;
+                    }
                 } else {
-                    // player is walking left
-                    // then player will jump backward
-                    player.state |= PlayerState::JUMP_BACKWARD;
-                    player.set_animation(JUMP_UP_POSE1, 0, 10);
-                    // stop moving for preparing motion
-                    player.velocity = Vec2::ZERO;
-                    player.energy += 1;
+                    if !player.state.check(PlayerState::DIRECTION) {
+                        // player is walking right
+                        // then player will jump forward
+                        player.state |= PlayerState::JUMP_FORWARD;
+                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
+                        player.energy += 1;
+                    } else {
+                        // player is walking left
+                        // then player will jump backward
+                        player.state |= PlayerState::JUMP_BACKWARD;
+                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
+                        player.energy += 1;
+                    }
                 }
             }
         }
@@ -970,7 +990,11 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                        let x_vel = if player.state.check(PlayerState::DIRECTION) {
+                            CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
+                        } else {
+                            -CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
+                        };
                         if cfg!(not(target_arch = "wasm32")) {
                             player.velocity = Vec2::new(x_vel, 12.0);
                             if player.state.check(PlayerState::KICKING) {
@@ -1052,12 +1076,16 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation();
                     if player.animation.count == 0 {
-                        let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                        let x_vel = if player.state.check(PlayerState::DIRECTION) {
+                            CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
+                        } else {
+                            -CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
+                        };
                         if cfg!(not(target_arch = "wasm32")) {
-                            player.velocity = Vec2::new(-x_vel, 12.0);
+                            player.velocity = Vec2::new(x_vel, 12.0);
                             player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
                         } else {
-                            player.velocity = Vec2::new(-x_vel, 8.0);
+                            player.velocity = Vec2::new(x_vel, 8.0);
                             player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
                         }
                     }

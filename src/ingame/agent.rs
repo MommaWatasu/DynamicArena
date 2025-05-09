@@ -34,11 +34,12 @@ enum Policy {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum Action {
-    MoveRight,
-    MoveLeft,
+    MoveForward,
+    MoveBackward,
     JumpUP,
     JumpForward,
     JumpBackward,
+    JumpKick,
     Bend,
     Kick,
     BackKick,
@@ -124,7 +125,7 @@ impl Agent {
                 } else if environment.agent_health < 0.6 {
                     if environment.distance < 300.0 {
                         let rand = rand();
-                        if rand < 0.6 {
+                        if rand < 0.8 {
                             self.policy = Policy::Offensive;
                         } else {
                             self.policy = Policy::Defensive;
@@ -210,12 +211,7 @@ impl Agent {
                     }
                 } else {
                     if environment.distance < 400.0 {
-                        let rand = rand();
-                        if rand < 0.9 {
-                            self.policy = Policy::Offensive;
-                        } else {
-                            self.policy = Policy::Defensive;
-                        }
+                        self.policy = Policy::Offensive;
                     } else if environment.distance < 600.0 {
                         let rand = rand();
                         if rand < 0.6 {
@@ -251,34 +247,31 @@ impl Agent {
                     && (environment.player_state.check(PlayerState::BEND_DOWN)
                         || environment.player_state.is_idle())
                 {
-                    return Action::JumpForward;
-                } else {
-                    if environment.agent_facing {
-                        return Action::MoveRight;
+                    return Action::JumpKick;
+                } else if environment.distance < 800.0 {
+                    let rand = rand();
+                    if rand < 0.3 {
+                        return Action::JumpForward;
                     } else {
-                        return Action::MoveLeft;
+                        return Action::MoveForward;
                     }
+                } else {
+                    return Action::MoveForward;
                 }
             }
             Policy::Defensive => {
                 if environment.player_state.check(PlayerState::KICKING) {
                     return Action::JumpUP;
                 }
-                if environment.distance < 250.0 {
-                    if environment.agent_facing {
-                        return Action::JumpBackward;
-                    } else {
-                        return Action::MoveRight;
-                    }
+                if environment.distance < 150.0 {
+                    return Action::JumpBackward;
+                } else if environment.distance < 250.0 {
+                    return Action::MoveBackward;
                 }
                 if environment.player_state.check(PlayerState::PUNCHING) {
                     return Action::Bend;
                 }
-                if environment.agent_facing {
-                    return Action::MoveLeft;
-                } else {
-                    return Action::MoveRight;
-                }
+                return Action::MoveBackward;
             }
             Policy::Neutral => {
                 return Action::None;
@@ -320,12 +313,12 @@ pub fn agent_system(
         }
         let action = agent.select_action(&environment);
         if let Some((mut player, _, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
-            if action != Action::MoveLeft && action != Action::MoveRight {
+            if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
             }
             match action {
-                Action::MoveRight => {
+                Action::MoveForward => {
                     if player.state.check(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_BACKWARD
@@ -342,10 +335,15 @@ pub fn agent_system(
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 10);
                     }
-                    // direction is right
-                    player.state |= PlayerState::DIRECTION;
+                    if player.pose.facing {
+                        // direction is right
+                        player.state |= PlayerState::DIRECTION;
+                    } else {
+                        // direction is left
+                        player.state &= !PlayerState::DIRECTION;
+                    }
                 }
-                Action::MoveLeft => {
+                Action::MoveBackward => {
                     if player.state.check(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_BACKWARD
@@ -362,8 +360,13 @@ pub fn agent_system(
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 10);
                     }
-                    // direction is left
-                    player.state &= !PlayerState::DIRECTION;
+                    if player.pose.facing {
+                        // direction is right
+                        player.state &= !PlayerState::DIRECTION;
+                    } else {
+                        // direction is left
+                        player.state |= PlayerState::DIRECTION;
+                    }
                 }
                 Action::JumpUP => {
                     // character 0 and 2 can only single jump
@@ -404,6 +407,8 @@ pub fn agent_system(
                         // then player will jump forward
                         if player.pose.facing {
                             player.state |= PlayerState::DIRECTION;
+                        } else {
+                            player.state &= !PlayerState::DIRECTION;
                         }
                         player.state |= PlayerState::JUMP_FORWARD;
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
@@ -417,9 +422,24 @@ pub fn agent_system(
                         // then player will jump backward
                         if !player.pose.facing {
                             player.state &= !PlayerState::DIRECTION;
+                        } else {
+                            player.state |= PlayerState::DIRECTION;
                         }
                         player.state |= PlayerState::JUMP_BACKWARD;
                         player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
+                        // stop moving for preparing motion
+                        player.velocity = Vec2::ZERO;
+                    }
+                }
+                Action::JumpKick => {
+                    if player.state.is_idle() {
+                        // agent is walking right
+                        // then player will jump kick
+                        if player.pose.facing {
+                            player.state |= PlayerState::DIRECTION;
+                        }
+                        player.state |= PlayerState::JUMP_FORWARD | PlayerState::KICKING;
+                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                     }
