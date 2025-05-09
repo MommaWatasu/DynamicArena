@@ -159,7 +159,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
 }
 
 fn create_controller_box(
-    builder: &mut ChildSpawnerCommands,
+    builder: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
     gamepads: &[Entity; 2],
     id: u8,
@@ -332,7 +332,7 @@ fn check_buttons(
 fn exit(mut commands: Commands, query: Query<Entity, With<ConnectController>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }
 

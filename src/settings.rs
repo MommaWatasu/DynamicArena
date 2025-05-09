@@ -4,7 +4,6 @@ use crate::{
 };
 use bevy::{
     prelude::*,
-    audio::Volume,
     window::{PrimaryWindow, WindowMode},
 };
 use std::fmt::Display;
@@ -219,7 +218,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
 
 fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
     asset_server: &Res<AssetServer>,
-    builder: &mut ChildSpawnerCommands,
+    builder: &mut ChildBuilder,
     item: SettingItem<T>,
     config_num: u32,
 ) {
@@ -396,9 +395,8 @@ fn update_setting(
                 text.0 = format!("{:.1}", new_value);
                 if element.0 == 0 {
                     config.sound_volume = new_value;
-                    if let Ok(mut sink) = audio.single_mut() {
-                        sink.set_volume(Volume::Linear(new_value));
-                    }
+                    let sink = audio.single_mut();
+                    sink.set_volume(new_value);
                 }
             }
         }
@@ -422,7 +420,7 @@ fn update_setting(
                 } else if element.0 == 2 {
                     config.level = Level::from(new_value);
                 } else if element.0 == 3 {
-                    windows.single_mut().unwrap().mode = if { new_value } == 1 {
+                    windows.single_mut().mode = if { new_value } == 1 {
                         WindowMode::Windowed
                     } else {
                         WindowMode::BorderlessFullscreen(MonitorSelection::Primary)
@@ -460,7 +458,7 @@ fn check_back(
 fn exit(mut commands: Commands, query: Query<Entity, With<Settings>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }
 

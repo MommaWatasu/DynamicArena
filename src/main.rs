@@ -103,7 +103,7 @@ fn main() {
         .init_state::<AppState>()
         .insert_resource(GameConfig::default())
         .insert_resource(ClearColor(Color::WHITE))
-        .insert_resource(GlobalVolume::new(Volume::Linear(0.5)))
+        .insert_resource(GlobalVolume::new(0.5))
         .add_systems(Startup, setup)
         .add_plugins(mainmenu::MainmenuPlugin)
         .add_plugins(settings::SettingsPlugin)
@@ -150,10 +150,10 @@ fn setup(
         );
     }
     // set window config
-    if let Ok(mut window) = windows.single_mut() {
-        window.mode = WindowMode::BorderlessFullscreen(MonitorSelection::Primary);
-        window.resolution = config.window_size.into();
-    }
+    let mut window = windows.single_mut();
+    window.mode = WindowMode::BorderlessFullscreen(MonitorSelection::Primary);
+    window.resolution = config.window_size.into();
+
     // camera
     commands.spawn((
         Camera2d,

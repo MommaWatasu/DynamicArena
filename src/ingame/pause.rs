@@ -81,7 +81,7 @@ fn check_resume(
 fn exit(mut commands: Commands, query: Query<Entity, With<Pause>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }
 
