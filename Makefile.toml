@@ -2,22 +2,39 @@
 description = "Build project for development"
 script = ['''
 #!/bin/bash
-cargo build --features bevy/dynamic_linking
+cargo build --features "bevy/dynamic_linking pause"
 ''']
 
 [tasks.DEV]
 description = "Run project for development"
 script = ['''
 #!/bin/bash
-cargo run --features bevy/dynamic_linking
+cargo run --features "bevy/dynamic_linking pause"
 ''']
+
+[tasks.windowsDEV]
+description = "Run project for development on windows"
+condition = { platforms = ["windows"] }
+command = "cargo run --features \"bevy/dynamic_linking pause\""
 
 [tasks.wasmDEV]
 description = "Run project for development"
 script = ['''
 #!/bin/bash
-cargo run --target wasm32-unknown-unknown --features bevy/dynamic_linking
+cargo run --target wasm32-unknown-unknown --features bevy/dynamic_linking pause
 ''']
+
+[tasks.BETA]
+description = "Build project for beta"
+script = ['''
+#!/bin/bash
+cargo build --release --features pause
+''']
+
+[tasks.windowsBETA]
+description = "Run project for beta on windows"
+condition = { platforms = ["windows"] }
+command = "cargo run --release --features pause"
 
 [tasks.RELEASE]
 description = "Build project for release"
@@ -32,6 +49,11 @@ script = ['''
 #/bin/bash
 cargo build --target wasm32-unknown-unknown --release
 ''']
+
+[tasks.windowsRELEASE]
+description = "Build project for release on windows"
+condition = { platforms = ["windows"] }
+command = "cargo run --release"
 
 [tasks.wasmDEPLOY]
 description = "create wasm directory to deploy, and launch the local server to test"

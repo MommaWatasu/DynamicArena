@@ -9,14 +9,14 @@ use pose::{LOSER_POSE, WINNER_POSE};
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
 mod controller;
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 mod pause;
 mod player;
 mod pose;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 use crate::PATH_BOLD_FONT;
 use crate::{
     AppState, GameConfig, SoundEffect, DEFAULT_FONT_SIZE, PATH_BOLD_MONOSPACE_FONT,
@@ -26,7 +26,7 @@ use crate::{
 use agent::*;
 #[cfg(not(target_arch = "wasm32"))]
 use controller::*;
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 use pause::*;
 use player::*;
 #[cfg(target_arch = "wasm32")]
@@ -113,7 +113,9 @@ fn setup(
     config: Res<GameConfig>,
 ) {
     info!("setup");
-    #[cfg(debug_assertions)]
+    #[cfg(feature="pause")]
+    info!("pause feature enabled");
+    #[cfg(feature="pause")]
     commands
         .spawn((
             Button,
@@ -1142,7 +1144,7 @@ fn move_background(mut query: Query<&mut Transform, With<SkyBackground>>) {
     }
 }
 
-#[cfg(debug_assertions)]
+#[cfg(feature="pause")]
 fn check_pause(
     mut state: ResMut<NextState<AppState>>,
     keys: Res<ButtonInput<KeyCode>>,
@@ -1181,7 +1183,7 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature="pause")]
         app
             // add debug plugin for rapier2d
             .add_plugins(RapierDebugRenderPlugin::default())
