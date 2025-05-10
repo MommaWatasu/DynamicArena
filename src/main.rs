@@ -161,6 +161,7 @@ fn setup(
             hdr: true, // HDR is required for the bloom effect
             ..default()
         },
+        Transform::default(),
         Bloom::NATURAL,
     ));
     next_state.set(AppState::Mainmenu);

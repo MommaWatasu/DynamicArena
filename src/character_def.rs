@@ -56,7 +56,7 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
     CharacterProfile {
         name: "Matsumoto",
         description: "ボットの作成者で、体力の多いファイター。スピードは遅いが強靭な肉体とパワーで全てを解決する。",
-        skill_name: "驚天動地",
+        skill_name: "鉄拳制裁",
         skill_description: "巨大なハンマーを振り下ろして、地面にいる敵に大ダメージを与える",
         color: Color::srgb(1.0, 0.0, 0.0),
         health: 1200,

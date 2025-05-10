@@ -868,16 +868,13 @@ fn player_movement(
     mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<
         (&mut Player, &PlayerID, &mut Transform, &mut Visibility),
-        (Without<BackGround>, Without<Camera2d>, Without<SkillEntity>),
+        Without<BackGround>,
     >,
     mut ground_query: Query<
         &mut Transform,
         (
             With<BackGround>,
-            Without<Player>,
-            Without<Camera2d>,
-            Without<SkillEntity>,
-            Without<Mesh2d>
+            Without<Player>
         ),
     >,
 ) {
@@ -1441,7 +1438,7 @@ fn skill_animation(
     mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<
         (&mut Player, &PlayerID, &mut Transform, &mut Visibility),
-        (Without<BackGround>, Without<Camera2d>, Without<SkillEntity>),
+        (Without<Camera2d>, Without<SkillEntity>),
     >,
     energy_query: Query<(&mut EnergyBar, &mut Mesh2d, &PlayerID), Without<SkillEntity>>,
     mut skill_name_query: Query<
@@ -1450,14 +1447,18 @@ fn skill_animation(
     >,
     mut thunder_query: Query<
         (&SkillEntity, &mut Visibility, &mut Transform),
-        (Without<SkillName>, Without<Player>, Without<BackGround>, Without<Mesh2d>),
+        (Without<SkillName>, Without<Player>, Without<Mesh2d>),
     >,
     curtain_query: Query<(Entity, &SkillEntity, &Mesh2d), Without<EnergyBar>>,
     mut hammer_query: Query<
         (Entity, &SkillEntity, &Mesh2d, &mut Transform),
-        (Without<SkillName>, Without<Player>, Without<BackGround>),
+        (Without<SkillName>, Without<Player>),
     >,
     mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
+    mut camera_query: Query<
+        &mut Transform,
+        (With<Camera2d>, Without<SkillEntity>, Without<Player>, Without<Mesh2d>)
+    >,
 ) {
     // normal animation
     if fighting.0 == 0 {
@@ -1857,6 +1858,9 @@ fn skill_animation(
                                     }
                                 }
                             }
+                            let mut transform = camera_query.single_mut();
+                            transform.translation.x = rand() * 50.0;
+                            transform.translation.y = rand() * 50.0;
                         }
                         if player.animation.count == 20 {
                             if let Some((entity, _, _)) = curtain_query.iter().find(|x| x.1.id == 3) {
