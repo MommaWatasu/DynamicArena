@@ -234,15 +234,19 @@ impl Agent {
             Policy::Offensive => {
                 if environment.distance < 150.0 {
                     let rand = rand();
-                    if rand < 0.5 {
+                    if rand < 0.2 {
+                        return Action::Kick;
+                    } else if rand < 0.6 {
                         return Action::Punch;
-                    } else if rand < 0.8 {
+                    } else if rand < 0.9 {
                         return Action::FrontKick;
                     } else {
-                        return Action::Kick;
+                        return Action::BackKick;
                     }
                 } else if environment.distance < 250.0 {
                     return Action::BackKick;
+                } else if environment.distance < 325.0 {
+                    return Action::MoveForward;
                 } else if environment.distance < 500.0
                     && (environment.player_state.check(PlayerState::BEND_DOWN)
                         || environment.player_state.is_idle())
