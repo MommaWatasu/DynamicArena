@@ -1733,6 +1733,10 @@ fn skill_animation(
                                     }
                                 }
                             }
+                            // earthquake effect
+                            let mut transform = camera_query.single_mut();
+                            transform.translation.x = rand() * 100.0;
+                            transform.translation.y = rand() * 100.0;
                         }
                         if player.animation.count == 10 {
                             damage = 150;
@@ -1858,6 +1862,7 @@ fn skill_animation(
                                     }
                                 }
                             }
+                            // earthquake effect
                             let mut transform = camera_query.single_mut();
                             transform.translation.x = rand() * 50.0;
                             transform.translation.y = rand() * 50.0;
