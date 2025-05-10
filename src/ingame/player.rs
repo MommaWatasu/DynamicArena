@@ -204,10 +204,10 @@ struct AnimationTimer {
     timer: Timer,
 }
 
-struct PlayerAnimation {
+pub struct PlayerAnimation {
     diff_pose: Pose,
     diff_y: f32,
-    phase: u8,
+    pub phase: u8,
     count: u8,
 }
 
@@ -215,7 +215,7 @@ struct PlayerAnimation {
 pub struct Player {
     pub character_id: isize,
     pub pose: Pose,
-    animation: PlayerAnimation,
+    pub animation: PlayerAnimation,
     pub state: PlayerState,
     pub velocity: Vec2,
     pub health: u32,
@@ -686,15 +686,7 @@ fn keyboard_input(
             continue;
         }
         if keys.pressed(KeyCode::KeyD) {
-            if !player.state.check(
-                PlayerState::JUMP_UP
-                    | PlayerState::JUMP_BACKWARD
-                    | PlayerState::JUMP_FORWARD
-                    | PlayerState::BEND_DOWN
-                    | PlayerState::ROLL_BACK
-                    | PlayerState::ROLL_FORWARD
-                    | PlayerState::WALKING,
-            ) {
+            if player.state.is_idle() {
                 // player is just walking
                 player.state |= PlayerState::WALKING;
                 player.set_animation(WALKING_POSE1, 0, 10);
@@ -702,15 +694,7 @@ fn keyboard_input(
             // direction is right
             player.state |= PlayerState::DIRECTION;
         } else if keys.pressed(KeyCode::KeyA) {
-            if !player.state.check(
-                PlayerState::JUMP_UP
-                    | PlayerState::JUMP_BACKWARD
-                    | PlayerState::JUMP_FORWARD
-                    | PlayerState::BEND_DOWN
-                    | PlayerState::ROLL_BACK
-                    | PlayerState::ROLL_FORWARD
-                    | PlayerState::WALKING,
-            ) {
+            if player.state.is_idle() {
                 // player is just walking
                 player.state |= PlayerState::WALKING;
                 player.set_animation(WALKING_POSE1, 0, 10);
@@ -998,7 +982,7 @@ fn player_movement(
                         if cfg!(not(target_arch = "wasm32")) {
                             player.velocity = Vec2::new(x_vel, 12.0);
                             if player.state.check(PlayerState::KICKING) {
-                                player.set_animation(JUMPING_KICK_POSE, 1, 10);
+                                player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
                             } else {
                                 player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
                             }

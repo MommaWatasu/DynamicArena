@@ -264,7 +264,12 @@ impl Agent {
                     return Action::JumpUP;
                 }
                 if environment.distance < 150.0 {
-                    return Action::JumpBackward;
+                    let rand = rand();
+                    if rand < 0.3 {
+                        return Action::JumpBackward;
+                    } else {
+                        return Action::MoveBackward;
+                    }
                 } else if environment.distance < 250.0 {
                     return Action::MoveBackward;
                 }
@@ -313,25 +318,21 @@ pub fn agent_system(
         }
         let action = agent.select_action(&environment);
         if let Some((mut player, _, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
-            //println!("agent state: {:?}", player.state);
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
             }
             match action {
                 Action::MoveForward => {
-                    if player.state.check(
+                    if !player.state.check(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_BACKWARD
                             | PlayerState::JUMP_FORWARD
                             | PlayerState::BEND_DOWN
                             | PlayerState::ROLL_BACK
-                            | PlayerState::ROLL_FORWARD,
+                            | PlayerState::ROLL_FORWARD
+                            | PlayerState::WALKING
                     ) {
-                        // player is jumping or bending or rolling
-                        // then just adding state
-                        player.state |= PlayerState::WALKING;
-                    } else if !player.state.check(PlayerState::WALKING) {
                         // player is just walking
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 10);
@@ -345,18 +346,15 @@ pub fn agent_system(
                     }
                 }
                 Action::MoveBackward => {
-                    if player.state.check(
+                    if !player.state.check(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_BACKWARD
                             | PlayerState::JUMP_FORWARD
                             | PlayerState::BEND_DOWN
                             | PlayerState::ROLL_BACK
-                            | PlayerState::ROLL_FORWARD,
+                            | PlayerState::ROLL_FORWARD
+                            | PlayerState::WALKING
                     ) {
-                        // player is jumping or bending or rolling
-                        // then just adding state
-                        player.state |= PlayerState::WALKING;
-                    } else if !player.state.check(PlayerState::WALKING) {
                         // player is just walking
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 10);
@@ -438,6 +436,8 @@ pub fn agent_system(
                         // then player will jump kick
                         if player.pose.facing {
                             player.state |= PlayerState::DIRECTION;
+                        } else {
+                            player.state &= !PlayerState::DIRECTION;
                         }
                         player.state |= PlayerState::JUMP_FORWARD | PlayerState::KICKING;
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
@@ -498,7 +498,9 @@ pub fn agent_system(
                         // player is walking
                         // then player will idle
                         player.state &= !PlayerState::WALKING;
-                        player.set_animation(IDLE_POSE1, 0, 10);
+                        if player.state.is_idle() {
+                            player.set_animation(IDLE_POSE1, 0, 10);
+                        }
                     }
                 }
             }
