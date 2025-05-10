@@ -1648,11 +1648,19 @@ fn skill_animation(
                                 ),
                                 MeshMaterial2d(materials.add(ColorMaterial::default())),
                                 SkillEntity { id: 4 },
-                                Transform::from_translation(Vec3::new(
-                                    130.0,
-                                    400.0,
-                                    1.0,
-                                )),
+                                if player.pose.facing {
+                                    Transform::from_translation(Vec3::new(
+                                        130.0,
+                                        400.0,
+                                        1.0,
+                                    ))
+                                } else {
+                                    Transform::from_translation(Vec3::new(
+                                        -130.0,
+                                        400.0,
+                                        1.0,
+                                    ))
+                                },
                             ));
                     }
                 } else if player.animation.phase == 3 {
