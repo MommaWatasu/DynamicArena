@@ -189,7 +189,10 @@ impl PlayerState {
 
     // ignore cooldown state
     pub fn is_idle(&self) -> bool {
-        self.0 & !Self::COOLDOWN.0 & !Self::DIRECTION.0 & !Self::ATTACK_DISABLED.0 == 0
+        self.0 & !(Self::COOLDOWN.0 | Self::DIRECTION.0 | Self::ATTACK_DISABLED.0) == 0
+    }
+    pub fn is_just_walk(&self) -> bool {
+        self.0 & !(Self::COOLDOWN.0 | Self::DIRECTION.0 | Self::ATTACK_DISABLED.0 | Self::WALKING.0) == 0
     }
     pub fn check(&self, state: Self) -> bool {
         self.0 & state.0 != 0
@@ -716,7 +719,7 @@ fn keyboard_input(
                 // then player will bend down
                 player.state |= PlayerState::BEND_DOWN;
                 player.set_animation(BEND_DOWN_POSE1, 0, 5);
-            } else if player.state.check(PlayerState::WALKING) {
+            } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING) {
                 if player.state.check(PlayerState::DIRECTION) {
                     // player is walking right
                     // then player will roll forward
@@ -740,9 +743,7 @@ fn keyboard_input(
                 player.state |= PlayerState::JUMP_UP;
                 player.set_animation(JUMP_UP_POSE1, 0, 10);
                 player.energy += 1;
-            } else if !player.state.check(
-                PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD,
-            ) && player.state.check(PlayerState::WALKING)
+            } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING)
             {
                 if player.pose.facing {
                     if player.state.check(PlayerState::DIRECTION) {
