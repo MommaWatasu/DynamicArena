@@ -720,19 +720,33 @@ fn keyboard_input(
                 player.state |= PlayerState::BEND_DOWN;
                 player.set_animation(BEND_DOWN_POSE1, 0, 5);
             } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING) {
-                if player.state.check(PlayerState::DIRECTION) {
-                    // player is walking right
-                    // then player will roll forward
-                    player.state |= PlayerState::ROLL_FORWARD;
-                    player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                if player.pose.facing {
+                    if player.state.check(PlayerState::DIRECTION) {
+                        // player is walking right
+                        // then player will roll forward
+                        player.state |= PlayerState::ROLL_FORWARD;
+                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                    } else {
+                        // player is walking left
+                        // then player will roll back
+                        player.state |= PlayerState::ROLL_BACK;
+                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                    }
                 } else {
-                    // player is walking left
-                    // then player will roll back
-                    player.state |= PlayerState::ROLL_BACK;
-                    player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                    if !player.state.check(PlayerState::DIRECTION) {
+                        // player is walking right
+                        // then player will roll forward
+                        player.state |= PlayerState::ROLL_FORWARD;
+                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                    } else {
+                        // player is walking left
+                        // then player will roll back
+                        player.state |= PlayerState::ROLL_BACK;
+                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                    }
                 }
                 let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
-                    * CHARACTER_PROFILES[player.character_id as usize].agility;
+                    * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
                 player.velocity = Vec2::new(x_vel, 0.0);
             }
         }
