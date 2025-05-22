@@ -43,7 +43,7 @@ enum Action {
     Bend,
     Kick,
     BackKick,
-    FrontKick,
+    RangedAttack,
     Punch,
     None,
 }
@@ -238,8 +238,8 @@ impl Agent {
                         return Action::Kick;
                     } else if rand < 0.6 {
                         return Action::Punch;
-                    } else if rand < 0.9 {
-                        return Action::FrontKick;
+                    // FIXME: FRONT KICK is removed.
+                    // new action should be added...
                     } else {
                         return Action::BackKick;
                     }
@@ -487,12 +487,12 @@ pub fn agent_system(
                         player.set_animation(BACK_KICK_POSE1, 0, 10);
                     }
                 }
-                Action::FrontKick => {
+                Action::RangedAttack => {
                     if player.state.is_idle() {
                         // player is idle
                         // then player will knee kick
-                        player.state |= PlayerState::FRONT_KICKING;
-                        player.set_animation(FRONT_KICK_POSE, 0, 10);
+                        player.state |= PlayerState::RANGED_ATTACK;
+                        player.set_animation(PUNCH_POSE, 0, 10);
                     }
                 }
                 Action::Punch => {

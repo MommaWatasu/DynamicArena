@@ -696,24 +696,6 @@ pub const BACK_KICK_POSE2: Pose = Pose {
     left_lower_leg: 0.0,
 };
 
-pub const FRONT_KICK_POSE: Pose = Pose {
-    facing: true,
-    offset: [20.0, 10.0],
-    old_offset: [0.0, 0.0],
-    foot_offset: [0.0, 0.0, 0.0, -10.0],
-    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
-    head: 10.0,
-    body: 0.0,
-    right_upper_arm: -30.0,
-    right_lower_arm: 90.0,
-    right_upper_leg: 10.0,
-    right_lower_leg: -40.0,
-    left_upper_arm: -40.0,
-    left_lower_arm: 90.0,
-    left_upper_leg: 110.0,
-    left_lower_leg: -20.0,
-};
-
 pub const PUNCH_POSE: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],

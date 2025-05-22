@@ -4,7 +4,7 @@ use crate::GameMode;
 use crate::{
     character_def::*,
     ingame::{GameState, InGame, DamageDisplay},
-    AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX,
+    AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX, PATH_IMAGE_PREFIX
 };
 use bevy::{prelude::*, asset::RenderAssetUsages, render::mesh::{VertexAttributeValues, PrimitiveTopology, Indices}};
 use bevy_rapier2d::prelude::*;
@@ -73,6 +73,14 @@ pub struct HealthBar(pub f32, pub f32);
 #[derive(Component)]
 pub struct EnergyBar(pub f32, pub f32);
 
+#[derive(Component)]
+pub struct FireBar(pub f32, pub f32);
+
+#[derive(Component)]
+struct FireAnimation {
+    facing: bool,
+}
+
 #[derive(Resource)]
 struct SoulAbsorb;
 
@@ -87,7 +95,7 @@ struct SoulAbsorb;
 /// | SKILL           | 0b0000000000000100  | Player is performing skill attack   |
 /// | KICKING         | 0b0000000000001000  | Player is performing kick           |
 /// | PUNCHING        | 0b0000000000010000  | Player is performing punch          |
-/// | FRONT_KICKING   | 0b0000000000100000  | Player is performing knee kick      |
+/// | FIRE_EMISSION   | 0b0000000000100000  | Player is performing ranged attack  |
 /// | BACK_KICKING    | 0b0000000001000000  | Player is performing back kick      |
 /// | COOLDOWN        | 0b0000000010000000  | Player is in cooldown state         |
 /// | DIRECTION       | 0b0000000100000000  | Player is moving right              |
@@ -141,7 +149,7 @@ impl Debug for PlayerState {
             (0x0004, "SKILL"),
             (0x0008, "KICKING"),
             (0x0010, "PUNCHING"),
-            (0x0020, "FRONT_KICKING"),
+            (0x0020, "RANGED_ATTACK"),
             (0x0040, "BACK_KICKING"),
             (0x0080, "COOLDOWN"),
             (0x0100, "DIRECTION"),
@@ -176,7 +184,7 @@ impl PlayerState {
     pub const SKILL: Self = Self(0b0000000000000100);
     pub const KICKING: Self = Self(0b0000000000001000);
     pub const PUNCHING: Self = Self(0b0000000000010000);
-    pub const FRONT_KICKING: Self = Self(0b0000000000100000);
+    pub const RANGED_ATTACK: Self = Self(0b0000000000100000);
     pub const BACK_KICKING: Self = Self(0b0000000001000000);
     pub const COOLDOWN: Self = Self(0b0000000010000000);
     pub const DIRECTION: Self = Self(0b0000000100000000);
@@ -223,6 +231,7 @@ pub struct Player {
     pub velocity: Vec2,
     pub health: u32,
     pub energy: u8,
+    pub fire_charge: u16,
 }
 
 impl Player {
@@ -240,6 +249,7 @@ impl Player {
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
             energy: 0,
+            fire_charge: FIRE_CHARGE_MAX,
         }
     }
     pub fn new_opposite(character_id: isize) -> Self {
@@ -256,6 +266,7 @@ impl Player {
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
             energy: 0,
+            fire_charge: FIRE_CHARGE_MAX,
         }
     }
     pub fn reset(&mut self, id: &PlayerID) {
@@ -273,6 +284,7 @@ impl Player {
         self.state = PlayerState::default();
         self.velocity = Vec2::ZERO;
         self.health = CHARACTER_PROFILES[self.character_id as usize].health;
+        self.fire_charge = FIRE_CHARGE_MAX;
     }
     pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
         let real_count =
@@ -825,11 +837,11 @@ fn keyboard_input(
             }
         }
         if keys.just_pressed(KeyCode::KeyJ) {
-            if player.state.is_idle() {
+            if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
                 // player is idle
                 // then player will front kick
-                player.state |= PlayerState::FRONT_KICKING;
-                player.set_animation(FRONT_KICK_POSE, 0, 10);
+                player.state |= PlayerState::RANGED_ATTACK;
+                player.set_animation(PUNCH_POSE, 0, 10);
                 player.energy += 2;
             }
         }
@@ -879,8 +891,10 @@ fn player_movement(
     time: Res<Time>,
     config: Res<GameConfig>,
     player_collision: Res<PlayerCollision>,
+    asset_server: Res<AssetServer>,
     mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut player_query: Query<
         (&mut Player, &PlayerID, &mut Transform, &mut Visibility),
         Without<BackGround>,
@@ -899,7 +913,7 @@ fn player_movement(
     }
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, _, mut transform, _) in player_query.iter_mut() {
+        for (mut player, player_id, mut transform, _) in player_query.iter_mut() {
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
                 player.update_animation();
@@ -911,6 +925,11 @@ fn player_movement(
                 }
                 continue;
             }
+
+            if !player.state.check(PlayerState::RANGED_ATTACK) && player.fire_charge < FIRE_CHARGE_MAX {
+                player.fire_charge += 1;
+            }
+
             // player is idle
             if player.state.is_idle() | player.state.check(PlayerState::COOLDOWN) {
                 player.velocity = Vec2::ZERO;
@@ -1223,12 +1242,39 @@ fn player_movement(
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
-                } else if player.state.check(PlayerState::FRONT_KICKING) {
+                } else if player.state.check(PlayerState::RANGED_ATTACK) {
                     if player.animation.phase == 0 {
                         player.update_animation();
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
+                            commands.spawn((
+                                Sprite {
+                                    image: asset_server.load(format!("{}fire_arrow_atlas.png", PATH_IMAGE_PREFIX)),
+                                    texture_atlas: Some(TextureAtlas {
+                                        layout: texture_atlas_layouts.add(
+                                            TextureAtlasLayout::from_grid(UVec2::new(216, 112), 1, 10, None, None)
+                                        ),
+                                        index: 0
+                                    }),
+                                    flip_x: if player.pose.facing {
+                                        true
+                                    } else {
+                                        false
+                                    },
+                                    ..Default::default()
+                                },
+                                PlayerID(player_id.0),
+                                FireAnimation {
+                                    facing: player.pose.facing,
+                                },
+                                Transform::from_translation(Vec3::new(
+                                    transform.translation.x,
+                                    transform.translation.y + 100.0,
+                                    20.0,
+                                )),
+                            ));
+                            
                         }
                     }
                 } else if player.state.check(PlayerState::BACK_KICKING) {
@@ -2294,7 +2340,6 @@ fn check_attack(
                     if player.state.check(
                         PlayerState::KICKING
                             | PlayerState::BACK_KICKING
-                            | PlayerState::FRONT_KICKING
                             | PlayerState::PUNCHING,
                     ) && !player.state.check(PlayerState::ATTACK_DISABLED) {
                         // Check if the attacker is already set
@@ -2310,7 +2355,6 @@ fn check_attack(
                         if player.state.check(
                             PlayerState::KICKING
                                 | PlayerState::BACK_KICKING
-                                | PlayerState::FRONT_KICKING,
                         ) && attacker_parts.is_arm()
                         {
                             continue;
@@ -2434,10 +2478,9 @@ fn avoid_collision(
 }
 
 // coefficiency for each attack
-const SKILL_COEFFICIENT: [f32; 4] = [
+const SKILL_COEFFICIENT: [f32; 3] = [
     1.0, // punch
     1.2, // kick
-    1.0, // front kick
     1.5, // back kick
 ];
 // coefficiency for each body part
@@ -2464,10 +2507,8 @@ fn calculate_damage(
         damage *= SKILL_COEFFICIENT[0];
     } else if attacker_info.1.check(PlayerState::KICKING) {
         damage *= SKILL_COEFFICIENT[1];
-    } else if attacker_info.1.check(PlayerState::FRONT_KICKING) {
-        damage *= SKILL_COEFFICIENT[2];
     } else if attacker_info.1.check(PlayerState::BACK_KICKING) {
-        damage *= SKILL_COEFFICIENT[3];
+        damage *= SKILL_COEFFICIENT[2];
     }
 
     // If attacker is performes a jumping kick or double jump kick, double the damage
@@ -2498,6 +2539,103 @@ fn calculate_damage(
     return (damage * DEFENCE_COEFICIENCY
         / (opponent_profile.defense + defence_bonus + DEFENCE_OFFSET))
         .floor() as u32;
+}
+
+fn update_fire_animation(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    config: Res<GameConfig>,
+    mut fire_query: Query<(Entity, &PlayerID, &mut FireAnimation, &mut Transform, &mut Sprite), (Without<Player>, Without<DamageDisplay>)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &Transform), (Without<FireAnimation>, Without<DamageDisplay>)>,
+    mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay), (Without<Player>, Without<FireAnimation>)>,
+    mut fire_charge_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID)>,
+) {
+    for (entity, fire_player_id, fire_animation, mut fire_transform, mut sprite) in fire_query.iter_mut() {
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index += 1;
+            if atlas.index == 10 {
+                atlas.index = 0;
+            }
+        }
+        if fire_animation.facing {
+            fire_transform.translation.x += 20.0;
+        } else {
+            fire_transform.translation.x -= 20.0;
+        }
+        if fire_transform.translation.x < -config.window_size.x / 2.0
+            || fire_transform.translation.x > config.window_size.x / 2.0
+        {
+            commands.entity(entity).despawn();
+            if let Some((mut player, player_id, _)) = player_query
+                .iter_mut()
+                .find(|(_, id, _)| id.0 == fire_player_id.0)
+            {
+                player.fire_charge = 0;
+                for (_, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
+                    if player_id == fire_id {
+                        if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
+                                for i in 0..4 {
+                                    colors[i][0] = 1.0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let mut hit = false;
+        for (mut player, player_id, transform) in player_query.iter_mut() {
+            if player_id != fire_player_id {
+                if transform.translation.x > fire_transform.translation.x - 150.0
+                && transform.translation.x < fire_transform.translation.x + 150.0
+                && transform.translation.y > fire_transform.translation.y - 150.0
+                && transform.translation.y < fire_transform.translation.y + 150.0 {
+                    let mut damage = 50;
+                    if player.state.check(PlayerState::BEND_DOWN) {
+                        damage = 40;
+                    }
+                    player.health = player.health.saturating_sub(damage);
+                    commands.entity(entity).despawn();
+                    hit = true;
+
+                    for (damage_player_id, mut damage_text, mut damage_color, mut damage_display) in
+                        damage_display_query.iter_mut()
+                    {
+                        if damage_player_id.0 == player_id.0 {
+                            damage_text.0 = format!("{}", damage);
+                            damage_color.0 = Color::srgba(0.0, 0.0, 5.0, 1.0);
+                            damage_display.is_red = false;
+                            damage_display.alpha = 1.0;
+                        }
+                    }
+                }
+            }
+        }
+        if hit {
+            if let Some((mut player, player_id, _)) = player_query
+                .iter_mut()
+                .find(|(_, id, _)| id.0 == fire_player_id.0)
+            {
+                player.fire_charge = 0;
+                for (_, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
+                    if player_id == fire_id {
+                        if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
+                                for i in 0..4 {
+                                    colors[i][0] = 1.0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn update_damage_display(
@@ -2555,7 +2693,7 @@ fn update_health_bar(
     }
 }
 
-/// Updates the health bar of the player character based on their current health.
+/// Updates the energy bar of the player character based on their current energy.
 fn update_energy_bar(
     mut meshes: ResMut<Assets<Mesh>>,
     mut player_query: Query<(&mut Player, &PlayerID)>,
@@ -2595,6 +2733,51 @@ fn update_energy_bar(
                             for i in 2..4 {
                                 colors[i][0] = 10.0;
                                 colors[i][2] = 0.0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Updates the fire_charge bar of the player character based on their current fire_charge.
+fn update_fire_bar(
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut player_query: Query<(&mut Player, &PlayerID)>,
+    mut fire_charge_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID)>
+) {
+    for (player, player_id) in player_query.iter_mut() {
+        for (mut fire_bar, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
+            if player_id == fire_id {
+                let target_ratio = player.fire_charge as f32 / FIRE_CHARGE_MAX as f32;
+                if fire_bar.0 == target_ratio {
+                    continue;
+                };
+                fire_bar.0 += 0.002;
+                if fire_bar.0 > target_ratio {
+                    fire_bar.0 = target_ratio;
+                }
+                if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                    if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
+                        mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
+                    {
+                        positions[3][0] = fire_bar.1 * fire_bar.0;
+                        if cfg!(target_arch = "wasm32") {
+                            positions[2][0] = fire_bar.1 * fire_bar.0
+                                + if player_id.0 == 0 { 25.0 } else { -25.0 };
+                        } else {
+                            positions[2][0] = fire_bar.1 * fire_bar.0
+                                + if player_id.0 == 0 { 50.0 } else { -50.0 };
+                        }
+                    }
+                    if fire_bar.0 == 1.0 {
+                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                            mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                        {
+                            for i in 0..4 {
+                                colors[i][0] = 10.0;
                             }
                         }
                     }
@@ -2671,6 +2854,14 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             update_energy_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+        )
+        .add_systems(
+            Update,
+            update_fire_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>))
+        )
+        .add_systems(
+            Update,
+            update_fire_animation.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
         )
         .add_systems(
             Update,
