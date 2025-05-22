@@ -1221,7 +1221,8 @@ fn main_game_system(
         (Without<BackGround>, Without<Foot>),
     >,
     mut foot_query: Query<&mut Transform, (With<Foot>, Without<Player>, Without<BackGround>)>,
-    mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID)>,
+    mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID), Without<FireBar>>,
+    mut fire_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID), Without<HealthBar>>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
     sound_query: Query<Entity, With<SoundEffect>>,
 ) {
@@ -1454,6 +1455,31 @@ fn main_game_system(
                                 } else {
                                     positions[2][0] = health_bar.1 * health_bar.0
                                         + if health_id.0 == 0 { 50.0 } else { -50.0 };
+                                }
+                            }
+                        }
+                    }
+                    // reset fire bar
+                    for (mut fire_bar, mesh_handler, fire_id) in fire_query.iter_mut() {
+                        fire_bar.0 = 1.0;
+                        if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
+                            if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
+                            {
+                                positions[3][0] = fire_bar.1 * fire_bar.0;
+                                if cfg!(target_arch = "wasm32") {
+                                    positions[2][0] = fire_bar.1 * fire_bar.0
+                                        + if fire_id.0 == 0 { 25.0 } else { -25.0 };
+                                } else {
+                                    positions[2][0] = fire_bar.1 * fire_bar.0
+                                        + if fire_id.0 == 0 { 50.0 } else { -50.0 };
+                                }
+                            }
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
+                                for i in 0..4 {
+                                    colors[i][0] = 10.0;
                                 }
                             }
                         }

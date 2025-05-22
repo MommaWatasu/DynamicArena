@@ -488,7 +488,7 @@ pub fn agent_system(
                     }
                 }
                 Action::RangedAttack => {
-                    if player.state.is_idle() {
+                    if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
                         // player is idle
                         // then player will knee kick
                         player.state |= PlayerState::RANGED_ATTACK;
