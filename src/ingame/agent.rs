@@ -283,7 +283,7 @@ impl Agent {
                 return Action::MoveBackward;
             }
             Policy::Neutral => {
-                return Action::None;
+                return Action::Bend;
             }
         }
     }

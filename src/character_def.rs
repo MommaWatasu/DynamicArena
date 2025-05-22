@@ -61,7 +61,7 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         color: Color::srgb(1.0, 0.0, 0.0),
         health: 1200,
         #[cfg(not(target_arch = "wasm32"))]
-        agility: 2.0,
+        agility: 2.8,
         #[cfg(target_arch = "wasm32")]
         agility: 1.0,
         dexterity: 1.0,
