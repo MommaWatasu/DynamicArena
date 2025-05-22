@@ -69,7 +69,7 @@ pub struct Agent {
 impl Agent {
     pub fn new(level: Level) -> Self {
         Self {
-            timer: Timer::from_seconds(1.0 / AGENT_FREQUENCY, TimerMode::Repeating),
+            timer: Timer::from_seconds(0.3 / AGENT_FREQUENCY, TimerMode::Repeating),
             count: 0,
             level,
             policy: Policy::Neutral,
@@ -252,15 +252,15 @@ impl Agent {
                         || environment.player_state.is_idle())
                 {
                     return Action::JumpKick;
-                } else if environment.distance < 800.0 {
+                } else if environment.distance < 1050.0 {
+                    return Action::MoveForward;
+                } else {
                     let rand = rand();
-                    if rand < 0.3 {
+                    if rand < 0.2 {
                         return Action::JumpForward;
                     } else {
                         return Action::MoveForward;
                     }
-                } else {
-                    return Action::MoveForward;
                 }
             }
             Policy::Defensive => {
@@ -269,7 +269,7 @@ impl Agent {
                 }
                 if environment.distance < 150.0 {
                     let rand = rand();
-                    if rand < 0.3 {
+                    if rand < 0.5 {
                         return Action::JumpBackward;
                     } else {
                         return Action::MoveBackward;
@@ -283,7 +283,13 @@ impl Agent {
                 return Action::MoveBackward;
             }
             Policy::Neutral => {
-                return Action::Bend;
+                let rand = rand();
+                if rand < 0.7 {
+                    return Action::None;
+                }
+                else {
+                    return Action::Bend;
+                }
             }
         }
     }
