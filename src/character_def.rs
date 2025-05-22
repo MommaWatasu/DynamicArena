@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 pub const ENERGY_MAX: u8 = 100;
+pub const FIRE_CHARGE_MAX: u16 = 300;
 
 pub struct CharacterProfile {
     pub name: &'static str,
