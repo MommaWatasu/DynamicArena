@@ -1777,6 +1777,10 @@ fn skill_animation(
                             }
                             player.set_animation(IDLE_POSE1, 5, 30);
                             player.velocity = Vec2::ZERO;
+
+                            let mut transform = camera_query.single_mut();
+                            transform.translation.x = 0.0;
+                            transform.translation.y = 0.0;
                         }
                     } else if player.character_id == 1 {
                         player.animation.count += 1;
@@ -1888,6 +1892,10 @@ fn skill_animation(
                             }
                             player.animation.phase = 7;
                             player.animation.count = 0;
+
+                            let mut transform = camera_query.single_mut();
+                            transform.translation.x = 0.0;
+                            transform.translation.y = 0.0;
                         }
                     }
                 } else {
@@ -2658,7 +2666,7 @@ impl Plugin for PlayerPlugin {
         )
         .add_systems(
             Update,
-            update_health_bar.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
+            update_health_bar.run_if(in_state(AppState::Ingame)),
         )
         .add_systems(
             Update,

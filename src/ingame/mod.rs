@@ -914,9 +914,16 @@ fn update_timer(
     text.0 = format!("{:.2}", timer.0);
 }
 
-fn check_gameset(mut gamestate: ResMut<GameState>, query: Query<(&HealthBar, &PlayerID)>) {
-    for (bar, player_id) in query.iter() {
-        if bar.0 <= 0.0 {
+fn check_gameset(
+    mut gamestate: ResMut<GameState>,
+    fighting: ResMut<Fighting>,
+    player_query: Query<(&Player, &PlayerID)>
+) {
+    if fighting.0 != 0 {
+        return;
+    }
+    for (player, player_id) in player_query.iter() {
+        if player.health == 0 {
             let round = gamestate.round as usize - 1;
             gamestate.winners[round] = if player_id.0 == 0 { 2 } else { 1 };
             gamestate.win_types[round] = true;
