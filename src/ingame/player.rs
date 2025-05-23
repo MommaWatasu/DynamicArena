@@ -82,30 +82,31 @@ struct FireAnimation {
 }
 
 #[derive(Resource)]
-struct SoulAbsorb;
+pub struct SoulAbsorb;
 
 /// Represents the current state of a player using bit flags.
 /// Multiple states can be active simultaneously by combining flags with bitwise OR.
 ///
-/// | State           | Bit Pattern         | Description                         |
-/// |-----------------|---------------------|-------------------------------------|
-/// | IDLE            | 0b0000000000000000  | Default state, no action            |
-/// | WALKING         | 0b0000000000000001  | Player is moving horizontally       |
-/// | JUMP UP         | 0b0000000000000010  | Player is in first jump             |
-/// | SKILL           | 0b0000000000000100  | Player is performing skill attack   |
-/// | KICKING         | 0b0000000000001000  | Player is performing kick           |
-/// | PUNCHING        | 0b0000000000010000  | Player is performing punch          |
-/// | FIRE_EMISSION   | 0b0000000000100000  | Player is performing ranged attack  |
-/// | BACK_KICKING    | 0b0000000001000000  | Player is performing back kick      |
-/// | COOLDOWN        | 0b0000000010000000  | Player is in cooldown state         |
-/// | DIRECTION       | 0b0000000100000000  | Player is moving right              |
-/// | JUMP FORWARD    | 0b0000001000000000  | Player is jumping forward           |
-/// | JUMP BACKWARD   | 0b0000010000000000  | Player is jumping backward          |
-/// | BEND DOWN       | 0b0000100000000000  | Player is bending down              |
-/// | ROLL BACK       | 0b0001000000000000  | Player is rolling back              |
-/// | ROLL FORWARD    | 0b0010000000000000  | Player is rolling forward           |
-/// | ATTACK_DISABLED | 0b0100000000000000  | Player is in attack cooldown state  |
-#[derive(PartialEq, Eq, Copy, Clone)]
+/// | State           | Bit Pattern        | Description                         |
+/// |-----------------|--------------------|-------------------------------------|
+/// | IDLE            | 0b0000000000000000 | Default state, no action            |
+/// | WALKING         | 0b0000000000000001 | Player is moving horizontally       |
+/// | JUMP_UP         | 0b0000000000000010 | Player is in first jump             |
+/// | SKILL           | 0b0000000000000100 | Player is performing skill attack   |
+/// | KICKING         | 0b0000000000001000 | Player is performing kick           |
+/// | PUNCHING        | 0b0000000000010000 | Player is performing punch          |
+/// | FIRE_EMISSION   | 0b0000000000100000 | Player is performing ranged attack  |
+/// | BACK_KICKING    | 0b0000000001000000 | Player is performing back kick      |
+/// | COOLDOWN        | 0b0000000010000000 | Player is in cooldown state         |
+/// | DIRECTION       | 0b0000000100000000 | Player is moving right              |
+/// | JUMP_FORWARD    | 0b0000001000000000 | Player is jumping forward           |
+/// | JUMP_BACKWARD   | 0b0000010000000000 | Player is jumping backward          |
+/// | BEND_DOWN       | 0b0000100000000000 | Player is bending down              |
+/// | ROLL_BACK       | 0b0001000000000000 | Player is rolling back              |
+/// | ROLL_FORWARD    | 0b0010000000000000 | Player is rolling forward           |
+/// | ATTACK_DISABLED | 0b0100000000000000 | Player is in attack cooldown state  |
+/// | STUN            | 0b1000000000000000 | Player is stunned                   |
+#[derive(PartialEq, Eq, Copy, Clone, Default)]
 pub struct PlayerState(u16);
 
 impl BitOr for PlayerState {
@@ -133,13 +134,13 @@ impl Not for PlayerState {
         Self(!self.0)
     }
 }
-
+/*
 impl Default for PlayerState {
     fn default() -> Self {
         Self(0)
     }
 }
-
+*/
 impl Debug for PlayerState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let states = [
@@ -159,6 +160,7 @@ impl Debug for PlayerState {
             (0x1000, "ROLL_BACK"),
             (0x2000, "ROLL_FORWARD"),
             (0x4000, "ATTACK_DISABLED"),
+            (0x8000, "STUN"),
         ];
 
         let active_states: Vec<&str> = states.iter()
@@ -194,6 +196,7 @@ impl PlayerState {
     pub const ROLL_BACK: Self = Self(0b0001000000000000);
     pub const ROLL_FORWARD: Self = Self(0b0010000000000000);
     pub const ATTACK_DISABLED: Self = Self(0b0100000000000000);
+    pub const STUN:Self = Self(0b1000000000000000);
 
     // ignore cooldown state
     pub fn is_idle(&self) -> bool {
@@ -219,7 +222,7 @@ pub struct PlayerAnimation {
     diff_pose: Pose,
     diff_y: f32,
     pub phase: u8,
-    count: u8,
+    pub count: u8,
 }
 
 #[derive(Component)]
@@ -870,7 +873,6 @@ fn keyboard_input(
     }
 }
 
-// TODO: clean up trait bounds
 /// Handles the movement and animation of the player character.
 ///
 /// # Arguments
@@ -929,6 +931,25 @@ fn player_movement(
 
             if !player.state.check(PlayerState::RANGED_ATTACK) && player.fire_charge < FIRE_CHARGE_MAX {
                 player.fire_charge += 1;
+            }
+
+            // player is stunning
+            if player.state.check(PlayerState::STUN) {
+                player.update_animation();
+                if !player.state.check(PlayerState::BEND_DOWN) {
+                    // if the player is not bend down
+                    // the player will slip a little
+                    if player.pose.facing {
+                        transform.translation.x -= 10.0;
+                    } else {
+                        transform.translation.x += 10.0;
+                    }
+                }
+                if player.animation.count == 0 {
+                    player.state = PlayerState::COOLDOWN;
+                    player.set_animation(IDLE_POSE1, 0, 10);
+                    player.animation.diff_y = (270.0 - config.window_size.y / 2.0 - transform.translation.y) / 10.0;
+                }
             }
 
             // player is idle
@@ -1486,8 +1507,6 @@ fn player_movement(
     }
 }
 
-// TODO: cleanup trait bounds
-// TODO: add motion to shake camera for skilll animation of character 2
 // This function handles the skill animation
 fn skill_animation(
     mut commands: Commands,
@@ -2437,6 +2456,15 @@ fn check_attack(
                         }
                     }
                     player.health = player.health.saturating_sub(damage);
+                    if !player.state.check(PlayerState::BEND_DOWN) {
+                        if player.state.is_idle() {
+                            player.state = PlayerState::STUN | PlayerState::BEND_DOWN;
+                            player.set_animation(STUN_POSE, 0, 5);
+                        } else {
+                            player.state = PlayerState::STUN;
+                            player.set_animation(STUN_POSE, 0, 5);
+                        }
+                    }
                 }
             }
             CollisionEvent::Stopped(entity1, entity2, _) => {
@@ -2602,6 +2630,16 @@ fn update_fire_animation(
                     commands.entity(entity).despawn();
                     hit = true;
 
+                    if !player.state.check(PlayerState::BEND_DOWN) {
+                        if player.state.is_idle() {
+                            player.state = PlayerState::STUN | PlayerState::BEND_DOWN;
+                            player.set_animation(STUN_POSE, 0, 5);
+                        } else {
+                            player.state = PlayerState::STUN;
+                            player.set_animation(STUN_POSE, 0, 5);
+                        }
+                    }
+
                     for (damage_player_id, mut damage_text, mut damage_color, mut damage_display) in
                         damage_display_query.iter_mut()
                     {
@@ -2752,14 +2790,7 @@ fn update_fire_bar(
     for (player, player_id) in player_query.iter_mut() {
         for (mut fire_bar, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
             if player_id == fire_id {
-                let target_ratio = player.fire_charge as f32 / FIRE_CHARGE_MAX as f32;
-                if fire_bar.0 == target_ratio {
-                    continue;
-                };
-                fire_bar.0 += 0.002;
-                if fire_bar.0 > target_ratio {
-                    fire_bar.0 = target_ratio;
-                }
+                fire_bar.0 = player.fire_charge as f32 / FIRE_CHARGE_MAX as f32;
                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
                     if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
                         mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)

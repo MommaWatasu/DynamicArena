@@ -67,7 +67,7 @@ impl GameState {
 }
 
 #[derive(Resource)]
-struct Fighting(u8);
+pub struct Fighting(u8);
 
 #[derive(Component)]
 struct InGame;

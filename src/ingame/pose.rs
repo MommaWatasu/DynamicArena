@@ -768,6 +768,24 @@ pub const HAMMER_POSE2: Pose = Pose {
     left_lower_leg: -60.0,
 };
 
+pub const STUN_POSE: Pose = Pose {
+    facing: true,
+    offset: [0.0, 0.0],
+    old_offset: [0.0, 0.0],
+    foot_offset: [0.0, 5.0, 0.0, -10.0],
+    old_foot_offset: [0.0, 0.0, 0.0, 0.0],
+    head: 0.0,
+    body: -20.0,
+    right_upper_arm: 30.0,
+    right_lower_arm: 150.0,
+    right_upper_leg: 10.0,
+    right_lower_leg: -40.0,
+    left_upper_arm: 50.0,
+    left_lower_arm: 130.0,
+    left_upper_leg: 70.0,
+    left_lower_leg: -60.0,
+};
+
 pub const WINNER_POSE: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
