@@ -73,7 +73,7 @@ impl Default for GameConfig {
             mode: GameMode::SinglePlayer,
             level: Level::Normal,
             characters_id: [-1, -1],
-            sound_volume: 1.0,
+            sound_volume: 0.5,
             #[cfg(not(target_arch = "wasm32"))]
             gamepads: [Entity::from_raw(0), Entity::from_raw(0)],
         }
