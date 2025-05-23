@@ -45,6 +45,7 @@ enum Action {
     BackKick,
     RangedAttack,
     Punch,
+    Skill,
     None,
 }
 
@@ -538,6 +539,19 @@ pub fn agent_system(
                         player.state |= PlayerState::PUNCHING;
                         player.set_animation(PUNCH_POSE, 0, 10);
                         player.energy += 2;
+                    }
+                }
+                Action::Skill => {
+                    if player.state.is_idle() && player.energy == ENERGY_MAX {
+                        // player is idle
+                        // then player will use skill
+                        player.state |= PlayerState::SKILL;
+                        fighting.0 = player_id.0 + 1;
+                        player.animation.phase = 0;
+                        player.animation.count = 0;
+                        if player.character_id == 1 {
+                            commands.insert_resource(SoulAbsorb);
+                        }
                     }
                 }
                 Action::None => {
