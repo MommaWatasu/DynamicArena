@@ -16,6 +16,7 @@ pub enum Level {
 }
 
 impl From<u32> for Level {
+    /// Convert a u32 value to a Level enum
     fn from(value: u32) -> Self {
         match value {
             1 => Level::Easy,
@@ -30,6 +31,25 @@ enum Policy {
     Offensive,
     Defensive,
     Neutral,
+}
+
+struct PolicyScore {
+    offensive: f32,
+    defensive: f32,
+    neutral: f32,
+}
+
+impl PolicyScore {
+    /// Determine the best policy based on highest score
+    fn get_best_policy(&self) -> Policy {
+        if self.offensive >= self.defensive && self.offensive >= self.neutral {
+            Policy::Offensive
+        } else if self.defensive >= self.neutral {
+            Policy::Defensive
+        } else {
+            Policy::Neutral
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -61,6 +81,10 @@ struct Environment {
     agent_fire_charge: u16,
     player_energy: u8,
     player_fire_charge: u16,
+    health_advantage: f32,  // positive if agent has more health
+    energy_advantage: i16,  // positive if agent has more energy
+    fire_charge_advantage: i32, // positive if agent has more fire charge
+    is_player_vulnerable: bool, // player is in stunned or cooldown state
 }
 
 #[derive(Resource)]
@@ -72,6 +96,7 @@ pub struct Agent {
 }
 
 impl Agent {
+    /// Create a new agent with specified difficulty level
     pub fn new(level: Level) -> Self {
         Self {
             timer: Timer::from_seconds(0.12 / AGENT_FREQUENCY, TimerMode::Repeating),
@@ -80,256 +105,461 @@ impl Agent {
             policy: Policy::Neutral,
         }
     }
+    /// Select the appropriate combat policy based on environment and difficulty level
     fn select_policy(&mut self, environment: &Environment) {
         match self.level {
-            // Easy: weak strategy
-            // in this mode, agent performs few patterns
+            // Easy: Simplified strategy with basic patterns
             Level::Easy => {
+                let policy_score = self.calculate_policy_score(environment);
+                
                 if environment.agent_health < 0.5 {
+                    // Low health - be more cautious
                     if !environment.agent_state.is_idle() {
                         self.policy = Policy::Neutral;
                     } else if environment.distance < 150.0 {
                         let rand = rand();
-                        if rand < 0.7 {
+                        if rand < 0.8 {  // Increased defensive tendency
                             self.policy = Policy::Defensive;
                         } else {
                             self.policy = Policy::Offensive;
                         }
                     } else if environment.distance > 500.0 {
-                        self.policy = Policy::Neutral;
+                        self.policy = if policy_score.offensive > 0.3 { Policy::Offensive } else { Policy::Neutral };
                     } else {
-                        self.policy = Policy::Offensive;
+                        // Medium distance - consider player state
+                        if environment.is_player_vulnerable {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            self.policy = Policy::Defensive;
+                        }
                     }
                 } else {
+                    // Good health - more aggressive
                     if environment.distance < 150.0 {
-                        self.policy = Policy::Offensive;
+                        self.policy = if environment.is_player_vulnerable { Policy::Offensive } else { 
+                            if rand() < 0.7 { Policy::Offensive } else { Policy::Defensive }
+                        };
                     } else if environment.distance > 500.0 {
-                        self.policy = Policy::Neutral;
+                        self.policy = if policy_score.offensive > 0.4 { Policy::Offensive } else { Policy::Neutral };
                     } else {
-                        self.policy = Policy::Defensive;
+                        self.policy = if environment.player_energy > 80 { Policy::Defensive } else { Policy::Offensive };
                     }
                 }
             }
-            // Normal: normal strategy
-            // in this mode, agent performs adequate patterns
-            // and more aggressive than easy mode
+            // Normal: Enhanced strategy with better situational awareness
             Level::Normal => {
+                let policy_score = self.calculate_policy_score(environment);
+                
+                // Critical health threshold
                 if environment.agent_health < 0.3 {
-                    if environment.distance < 150.0 {
-                        self.policy = Policy::Defensive;
-                    } else if environment.distance < 500.0 {
-                        let rand = rand();
-                        if rand < 0.4 {
-                            self.policy = Policy::Defensive;
-                        } else if rand < 0.7 {
-                            self.policy = Policy::Neutral;
-                        } else {
-                            self.policy = Policy::Offensive;
-                        }
-                    } else {
-                        let rand = rand();
-                        if rand < 0.2 {
-                            self.policy = Policy::Offensive;
-                        } else {
-                            self.policy = Policy::Neutral;
-                        }
-                    }
+                    self.policy = self.select_desperate_policy(environment);
                 } else if environment.agent_health < 0.6 {
-                    if environment.distance < 300.0 {
-                        let rand = rand();
-                        if rand < 0.8 {
+                    // Medium health - balanced approach
+                    if environment.is_player_vulnerable {
+                        self.policy = Policy::Offensive;
+                    } else if environment.distance < 200.0 && environment.player_energy < 30 {
+                        // Player is tired at close range - be aggressive
+                        self.policy = Policy::Offensive;
+                    } else if environment.distance < 300.0 {
+                        let combined_score = policy_score.offensive - policy_score.defensive;
+                        if combined_score > 0.2 {
                             self.policy = Policy::Offensive;
-                        } else {
+                        } else if combined_score < -0.2 {
                             self.policy = Policy::Defensive;
-                        }
-                    } else if environment.distance < 600.0 {
-                        let rand = rand();
-                        if rand < 0.4 {
-                            self.policy = Policy::Offensive;
                         } else {
                             self.policy = Policy::Neutral;
                         }
                     } else {
-                        let rand = rand();
-                        if rand < 0.4 {
+                        // Long range strategy
+                        if environment.agent_fire_charge > environment.player_fire_charge + 30 {
                             self.policy = Policy::Offensive;
                         } else {
                             self.policy = Policy::Neutral;
                         }
                     }
                 } else {
-                    if environment.distance < 400.0 {
-                        let rand = rand();
-                        if rand < 0.8 {
-                            self.policy = Policy::Offensive;
-                        } else {
-                            self.policy = Policy::Defensive;
-                        }
-                    } else if environment.distance < 600.0 {
-                        let rand = rand();
-                        if rand < 0.5 {
-                            self.policy = Policy::Offensive;
-                        } else {
-                            self.policy = Policy::Neutral;
-                        }
+                    // Good health - more confident
+                    if environment.health_advantage > 0.2 {
+                        // Health advantage - maintain pressure
+                        self.policy = if environment.distance > 400.0 { Policy::Neutral } else { Policy::Offensive };
                     } else {
-                        self.policy = Policy::Offensive;
+                        // Use comprehensive scoring
+                        let best_policy = policy_score.get_best_policy();
+                        self.policy = best_policy;
                     }
                 }
             }
             Level::Hard => {
-                if environment.agent_health < 0.3 {
-                    if environment.distance < 150.0 {
-                        self.policy = Policy::Defensive;
-                    } else if environment.distance < 500.0 {
-                        let rand = rand();
-                        if rand < 0.4 {
-                            self.policy = Policy::Defensive;
-                        } else if rand < 0.7 {
-                            self.policy = Policy::Neutral;
-                        } else {
-                            self.policy = Policy::Offensive;
-                        }
-                    } else {
-                        let rand = rand();
-                        if rand < 0.2 {
-                            self.policy = Policy::Offensive;
-                        } else {
-                            self.policy = Policy::Neutral;
-                        }
-                    }
-                } else if environment.agent_health < 0.6 {
+                // Advanced strategy for Hard mode
+                // Priority: Resource advantage, precise timing, prediction
+                if environment.is_player_vulnerable {
+                    self.policy = Policy::Offensive;
+                } else if environment.health_advantage > 0.3 {
+                    // Significant health advantage - maintain pressure
                     if environment.distance < 300.0 {
+                        self.policy = Policy::Offensive;
+                    } else {
                         let rand = rand();
                         if rand < 0.7 {
                             self.policy = Policy::Offensive;
                         } else {
-                            self.policy = Policy::Defensive;
-                        }
-                    } else if environment.distance < 600.0 {
-                        let rand = rand();
-                        if rand < 0.5 {
-                            self.policy = Policy::Offensive;
-                        } else {
                             self.policy = Policy::Neutral;
                         }
+                    }
+                } else if environment.health_advantage < -0.3 {
+                    // Health disadvantage - be cautious
+                    if environment.distance < 150.0 {
+                        self.policy = Policy::Defensive;
                     } else {
                         let rand = rand();
                         if rand < 0.5 {
-                            self.policy = Policy::Offensive;
+                            self.policy = Policy::Defensive;
                         } else {
                             self.policy = Policy::Neutral;
                         }
                     }
                 } else {
-                    if environment.distance < 400.0 {
+                    // Balanced situation - use resource advantage
+                    if environment.energy_advantage > 20 || environment.fire_charge_advantage > 50 {
                         self.policy = Policy::Offensive;
-                    } else if environment.distance < 600.0 {
-                        let rand = rand();
-                        if rand < 0.6 {
-                            self.policy = Policy::Offensive;
+                    } else if environment.energy_advantage < -20 {
+                        self.policy = Policy::Defensive;
+                    } else {
+                        // Dynamic policy based on distance and player state
+                        if environment.distance < 200.0 {
+                            let rand = rand();
+                            if rand < 0.6 {
+                                self.policy = Policy::Offensive;
+                            } else {
+                                self.policy = Policy::Defensive;
+                            }
                         } else {
                             self.policy = Policy::Neutral;
                         }
-                    } else {
-                        self.policy = Policy::Offensive;
                     }
                 }
             }
         }
     }
+    
+    /// Calculate scores for each policy based on environmental factors
+    fn calculate_policy_score(&self, environment: &Environment) -> PolicyScore {
+        let mut offensive_score: f32 = 0.0;
+        let mut defensive_score: f32 = 0.0;
+        let mut neutral_score: f32 = 0.0;
+        
+        // Health-based scoring
+        if environment.health_advantage > 0.2 {
+            offensive_score += 0.3;
+        } else if environment.health_advantage < -0.2 {
+            defensive_score += 0.3;
+        } else {
+            neutral_score += 0.1;
+        }
+        
+        // Energy advantage scoring
+        if environment.energy_advantage > 15 {
+            offensive_score += 0.2;
+        } else if environment.energy_advantage < -15 {
+            defensive_score += 0.2;
+        }
+        
+        // Fire charge advantage
+        if environment.fire_charge_advantage > 30 {
+            offensive_score += 0.15;
+        }
+        
+        // Distance-based scoring
+        if environment.distance < 200.0 {
+            if environment.agent_health > 0.6 {
+                offensive_score += 0.2;
+            } else {
+                defensive_score += 0.15;
+            }
+        } else if environment.distance > 500.0 {
+            neutral_score += 0.2;
+            if environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                offensive_score += 0.1;
+            }
+        }
+        
+        // Player state considerations
+        if environment.is_player_vulnerable {
+            offensive_score += 0.4; // Strong incentive to attack vulnerable opponents
+        }
+        
+        if environment.player_state.check(PlayerState::WALKING) && environment.distance < 300.0 {
+            offensive_score += 0.1;
+        }
+        
+        // Agent state considerations
+        if !environment.agent_state.is_idle() {
+            neutral_score += 0.1; // Prefer neutral when not idle
+        }
+        
+        // Level-specific adjustments
+        match self.level {
+            Level::Easy => {
+                defensive_score += 0.1; // Slightly more defensive
+            }
+            Level::Normal => {
+                // Balanced - no adjustment
+            }
+            Level::Hard => {
+                offensive_score += 0.15; // More aggressive
+                if environment.agent_energy == ENERGY_MAX {
+                    offensive_score += 0.1; // Ready for skill usage
+                }
+            }
+        }
+        
+        PolicyScore {
+            offensive: offensive_score.max(0.0).min(1.0),
+            defensive: defensive_score.max(0.0).min(1.0),
+            neutral: neutral_score.max(0.0).min(1.0),
+        }
+    }
+    
+    /// Choose policy when agent has critically low health
+    fn select_desperate_policy(&self, environment: &Environment) -> Policy {
+        // When in critical health, make calculated risks
+        if environment.is_player_vulnerable {
+            // Take the opportunity to attack when player is vulnerable
+            Policy::Offensive
+        } else if environment.distance < 150.0 {
+            // Too close when low health - be defensive
+            Policy::Defensive
+        } else if environment.distance > 400.0 {
+            // Safe distance - try to recover or use ranged attacks
+            if environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                Policy::Offensive
+            } else {
+                Policy::Neutral
+            }
+        } else {
+            // Medium distance - assess situation carefully
+            if environment.player_energy < 20 {
+                // Player is tired - risky but potentially rewarding attack
+                Policy::Offensive
+            } else if environment.energy_advantage > 10 {
+                // We have energy advantage despite low health
+                Policy::Offensive
+            } else {
+                // Play it safe
+                Policy::Defensive
+            }
+        }
+    }
+    
+    /// Select the best action based on current policy and environment
     fn select_action(&self, environment: &Environment) -> Action {
         if environment.agent_state.check(PlayerState::COOLDOWN) {
             return Action::None;
         }
+        
+        // Priority actions based on game state
+        if self.should_use_skill(environment) {
+            return Action::Skill;
+        }
+        
+        if self.should_counter_attack(environment) {
+            return self.get_counter_action(environment);
+        }
+        
+        if self.should_punish_vulnerability(environment) {
+            return self.get_punishment_action(environment);
+        }
+        
         match self.policy {
-            Policy::Offensive => {
-                if environment.agent_energy == ENERGY_MAX
-                    && (environment.player_state.check(PlayerState::IDLE)
-                        || environment.player_state.check(PlayerState::WALKING)) {
-                    return Action::Skill
-                } else if environment.distance < 150.0 {
-                    let rand = rand();
-                    if rand < 0.2 {
-                        return Action::Kick;
-                    } else if rand < 0.5 {
-                        return Action::Punch;
-                    } else if rand < 0.6
-                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
-                            return Action::RangedAttack;
-                    } else {
-                        return Action::BackKick;
-                    }
-                } else if environment.distance < 225.0 {
-                    let rand = rand();
-                    if rand < 0.25
-                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
-                            return Action::RangedAttack;
-                    } else {
-                        return Action::BackKick;
-                    }
-                } else if environment.distance < 325.0 {
-                    return Action::MoveForward;
-                } else if environment.distance < 500.0
-                    && (environment.player_state.check(PlayerState::BEND_DOWN)
-                        || environment.player_state.is_idle()) {
-                    return Action::JumpKick;
-                } else if environment.distance < 500.0 
-                    && environment.player_state.check(PlayerState::WALKING)
-                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
-                    return Action::RangedAttack;
-                } else if environment.distance < 500.0
-                    && (environment.player_state.check(PlayerState::JUMP_FORWARD)) {
-                        return Action::BackKick;
-                } else if environment.distance < 1050.0 {
-                    let rand = rand();
-                    if rand < 0.5
-                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
-                        return Action::RangedAttack;
-                    } else {
-                        return Action::MoveForward;
-                    }
-                } else {
-                    let rand = rand();
-                    if rand < 0.2 {
-                        return Action::JumpForward;
-                    } else {
-                        return Action::MoveForward;
-                    }
-                }
-            }
-            Policy::Defensive => {
-                if environment.player_state.check(PlayerState::KICKING) {
-                    return Action::JumpUP;
-                }
-                if environment.distance < 100.0 {
-                    let rand = rand();
-                    if rand < 0.5 {
-                        return Action::JumpBackward;
-                    } else {
-                        return Action::MoveBackward;
-                    }
-                } else if environment.distance < 250.0 {
-                    return Action::MoveBackward;
-                }
-                if environment.player_state.check(PlayerState::PUNCHING) {
-                    return Action::Bend;
-                }
+            Policy::Offensive => self.select_offensive_action(environment),
+            Policy::Defensive => self.select_defensive_action(environment),
+            Policy::Neutral => self.select_neutral_action(environment),
+        }
+    }
+    
+    /// Check if agent should use skill ability
+    fn should_use_skill(&self, environment: &Environment) -> bool {
+        environment.agent_energy == ENERGY_MAX && 
+        (environment.player_state.check(PlayerState::IDLE) || 
+         environment.player_state.check(PlayerState::WALKING) ||
+         environment.is_player_vulnerable) &&
+        environment.distance < 400.0
+    }
+    
+    /// Check if agent should counter-attack player's action
+    fn should_counter_attack(&self, environment: &Environment) -> bool {
+        environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING)
+    }
+    
+    /// Get appropriate counter-action based on player's attack
+    fn get_counter_action(&self, environment: &Environment) -> Action {
+        if environment.player_state.check(PlayerState::KICKING) {
+            if environment.distance < 150.0 {
+                return Action::JumpUP;
+            } else {
                 return Action::MoveBackward;
             }
-            Policy::Neutral => {
+        }
+        if environment.player_state.check(PlayerState::PUNCHING) {
+            if environment.distance < 120.0 {
+                return Action::Bend;
+            } else {
+                return Action::BackKick;
+            }
+        }
+        if environment.player_state.check(PlayerState::BACK_KICKING) {
+            return Action::MoveForward;
+        }
+        Action::None
+    }
+    
+    /// Check if player is vulnerable and within punish range
+    fn should_punish_vulnerability(&self, environment: &Environment) -> bool {
+        environment.is_player_vulnerable && environment.distance < 300.0
+    }
+    
+    /// Get action to punish vulnerable player
+    fn get_punishment_action(&self, environment: &Environment) -> Action {
+        if environment.distance < 150.0 {
+            let rand = rand();
+            if rand < 0.4 {
+                Action::Kick
+            } else if rand < 0.7 {
+                Action::Punch
+            } else {
+                Action::BackKick
+            }
+        } else if environment.distance < 300.0 {
+            if environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                Action::RangedAttack
+            } else {
+                Action::JumpKick
+            }
+        } else {
+            Action::MoveForward
+        }
+    }
+    
+    /// Select aggressive action based on distance and resources
+    fn select_offensive_action(&self, environment: &Environment) -> Action {
+        // Improved offensive strategy with better resource management
+        if environment.distance < 150.0 {
+            let rand = rand();
+            if environment.agent_energy >= 80 && rand < 0.3 {
+                return Action::Kick;
+            } else if rand < 0.4 {
+                return Action::Punch;
+            } else if rand < 0.6 && environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                return Action::RangedAttack;
+            } else {
+                return Action::BackKick;
+            }
+        } else if environment.distance < 200.0 {
+            let rand = rand();
+            if rand < 0.4 && environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                return Action::RangedAttack;
+            } else if rand < 0.7 {
+                return Action::BackKick;
+            } else {
+                return Action::MoveForward;
+            }
+        } else if environment.distance < 350.0 {
+            // More aggressive approach at medium distance
+            if environment.player_state.check(PlayerState::WALKING) {
+                return Action::JumpKick;
+            } else {
+                return Action::MoveForward;
+            }
+        } else if environment.distance < 500.0 {
+            if environment.player_state.check(PlayerState::BEND_DOWN) || 
+               environment.player_state.is_idle() {
+                return Action::JumpKick;
+            } else if environment.player_state.check(PlayerState::WALKING) && 
+                     environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                return Action::RangedAttack;
+            } else if environment.player_state.check(PlayerState::JUMP_FORWARD) {
+                return Action::BackKick;
+            } else {
+                return Action::MoveForward;
+            }
+        } else if environment.distance < 800.0 {
+            let rand = rand();
+            if rand < 0.6 && environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                return Action::RangedAttack;
+            } else if rand < 0.8 {
+                return Action::MoveForward;
+            } else {
+                return Action::JumpForward;
+            }
+        } else {
+            let rand = rand();
+            if rand < 0.3 {
+                return Action::JumpForward;
+            } else {
+                return Action::MoveForward;
+            }
+        }
+    }
+    
+    /// Select defensive action to avoid damage and maintain distance
+    fn select_defensive_action(&self, environment: &Environment) -> Action {
+        // Enhanced defensive strategy
+        if environment.distance < 80.0 {
+            let rand = rand();
+            if rand < 0.6 {
+                return Action::JumpBackward;
+            } else {
+                return Action::MoveBackward;
+            }
+        } else if environment.distance < 200.0 {
+            if environment.player_state.check(PlayerState::WALKING) {
+                return Action::MoveBackward;
+            } else {
                 let rand = rand();
-                if rand < 0.7 {
-                    return Action::None;
-                }
-                else {
-                    return Action::Bend;
+                if rand < 0.3 && environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                    return Action::RangedAttack;
+                } else {
+                    return Action::MoveBackward;
                 }
             }
+        } else if environment.distance < 400.0 {
+            // Maintain distance and look for opportunities
+            if environment.player_state.check(PlayerState::JUMP_FORWARD) {
+                return Action::BackKick;
+            } else if environment.agent_fire_charge == FIRE_CHARGE_MAX && 
+                     environment.player_state.check(PlayerState::WALKING) {
+                return Action::RangedAttack;
+            } else {
+                return Action::MoveBackward;
+            }
+        } else {
+            // Safe distance - prepare for counter-attack
+            let rand = rand();
+            if rand < 0.4 {
+                return Action::None;
+            } else {
+                return Action::Bend;
+            }
+        }
+    }
+    
+    /// Select neutral action for positioning and resource management
+    fn select_neutral_action(&self, environment: &Environment) -> Action {
+        let rand = rand();
+        if rand < 0.5 {
+            return Action::None;
+        } else if rand < 0.8 {
+            return Action::Bend;
+        } else if environment.agent_fire_charge == FIRE_CHARGE_MAX && 
+                 environment.distance > 300.0 && environment.distance < 600.0 {
+            return Action::RangedAttack;
+        } else {
+            return Action::None;
         }
     }
 }
 
+/// Main agent system that controls AI behavior and decision making
 pub fn agent_system(
     mut commands: Commands,
     mut fighting: ResMut<Fighting>,
@@ -363,6 +593,16 @@ pub fn agent_system(
             environment.agent_energy = player.energy;
             environment.agent_fire_charge = player.fire_charge;
         }
+        
+        // Calculate enhanced environment variables
+        environment.health_advantage = environment.agent_health - environment.player_health;
+        environment.energy_advantage = environment.agent_energy as i16 - environment.player_energy as i16;
+        environment.fire_charge_advantage = environment.agent_fire_charge as i32 - environment.player_fire_charge as i32;
+        environment.is_player_vulnerable = environment.player_state.check(
+            PlayerState::STUN | PlayerState::COOLDOWN | PlayerState::SKILL
+        ) || (environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING) 
+              && environment.distance > 200.0);
+        
         if agent.count == AGENT_FREQUENCY as u8 * 2 {
             agent.count = 0;
             agent.select_policy(&environment);
@@ -580,7 +820,7 @@ pub struct AgentPlugin;
 
 impl Plugin for AgentPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Agent::new(Level::Normal)).add_systems(
+        app.insert_resource(Agent::new(Level::Hard)).add_systems(
             Update,
             agent_system.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
         );
