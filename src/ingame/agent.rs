@@ -368,7 +368,6 @@ pub fn agent_system(
             agent.select_policy(&environment);
         }
         let action = agent.select_action(&environment);
-        println!("Agent Action: {:?}", action);
         if let Some((mut player, player_id, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
