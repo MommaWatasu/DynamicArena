@@ -1198,6 +1198,7 @@ fn check_gameset(
             gamestate.winners[round] = if player_id.0 == 0 { 2 } else { 1 };
             gamestate.win_types[round] = true;
             if gamestate.phase == 5 {
+                gamestate.count = 0;
                 gamestate.phase = 6;
             }
             break;
