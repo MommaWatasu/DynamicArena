@@ -948,7 +948,7 @@ fn player_movement(
                 if player.animation.count == 0 {
                     player.state = PlayerState::COOLDOWN;
                     player.set_animation(IDLE_POSE1, 0, 10);
-                    player.animation.diff_y = (270.0 - config.window_size.y / 2.0 - transform.translation.y) / 10.0;
+                    player.animation.diff_y = (270.0 - config.window_size.y / 2.0 - transform.translation.y) / player.animation.count as f32;
                 }
             }
 
@@ -2090,7 +2090,7 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
                 | PlayerState::WALKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 5.0;
+            player.animation.diff_y = 50.0 / player.animation.count as f32;
             transform.translation.y = 220.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
@@ -2104,7 +2104,7 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
                 | PlayerState::WALKING);
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 7.0;
+            player.animation.diff_y = 70.0 / player.animation.count as f32;
             transform.translation.y = 200.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
@@ -2133,8 +2133,7 @@ fn check_ground(
             player.state &=
                 !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 2.5;
-            //transform.translation.y = 135.0 - config.window_size.y/2.0 - 25.0;
+            player.animation.diff_y = 25.0 / player.animation.count as f32;
             transform.translation.y = 110.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         } else if player.state.check(PlayerState::JUMP_UP)
@@ -2144,8 +2143,7 @@ fn check_ground(
             player.state &=
                 !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
             player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 3.5;
-            //transform.translation.y = 135.0 - config.window_size.y/2.0 - 35.0;
+            player.animation.diff_y = 35.0 / player.animation.count as f32;
             transform.translation.y = 100.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
