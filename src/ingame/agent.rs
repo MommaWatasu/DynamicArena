@@ -86,8 +86,15 @@ impl Agent {
             // in this mode, agent performs few patterns
             Level::Easy => {
                 if environment.agent_health < 0.5 {
-                    if environment.distance < 150.0 {
-                        self.policy = Policy::Defensive;
+                    if !environment.agent_state.is_idle() {
+                        self.policy = Policy::Neutral;
+                    } else if environment.distance < 150.0 {
+                        let rand = rand();
+                        if rand < 0.7 {
+                            self.policy = Policy::Defensive;
+                        } else {
+                            self.policy = Policy::Offensive;
+                        }
                     } else if environment.distance > 500.0 {
                         self.policy = Policy::Neutral;
                     } else {
@@ -361,6 +368,7 @@ pub fn agent_system(
             agent.select_policy(&environment);
         }
         let action = agent.select_action(&environment);
+        println!("Agent Action: {:?}", action);
         if let Some((mut player, player_id, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
@@ -368,15 +376,7 @@ pub fn agent_system(
             }
             match action {
                 Action::MoveForward => {
-                    if !player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_BACKWARD
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::BEND_DOWN
-                            | PlayerState::ROLL_BACK
-                            | PlayerState::ROLL_FORWARD
-                            | PlayerState::WALKING
-                    ) {
+                    if player.state.is_idle() {
                         // player is just walking
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 10);
