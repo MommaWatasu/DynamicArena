@@ -2383,10 +2383,7 @@ fn check_attack(
                         }
 
                         // Check if the attacker is already set
-                        if attacker_id != PlayerID(2)
-                            && attacker_power
-                                > CHARACTER_PROFILES[player.character_id as usize].power
-                        {
+                        if attacker_id != PlayerID(2) {
                             continue;
                         }
                         attacker_id = *player_id;
