@@ -15,7 +15,7 @@ cargo run --features "bevy/dynamic_linking pause"
 [tasks.windowsDEV]
 description = "Run project for development on windows"
 condition = { platforms = ["windows"] }
-args = ["cargo", "run", "--features", "bevy/dynamic_linking pause"]
+args = ["cargo", "run", "--features", "'bevy/dynamic_linking pause'"]
 command = "powershell"
 
 [tasks.wasmDEV]
