@@ -237,7 +237,11 @@ impl Agent {
         }
         match self.policy {
             Policy::Offensive => {
-                if environment.distance < 150.0 {
+                if agent_energy == ENERGY_MAX
+                    && (environment.player_state.check(PlayerState::IDLE)
+                        || environment.player_state.check(PlayerState::WALKING)) {
+                    return Action::Skill
+                } else if environment.distance < 150.0 {
                     let rand = rand();
                     if rand < 0.2 {
                         return Action::Kick;
