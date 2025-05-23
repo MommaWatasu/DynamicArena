@@ -533,6 +533,7 @@ pub fn agent_system(
                     if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
                         // player is idle
                         // then player will knee kick
+                        player.fire_charge = 0;
                         player.state |= PlayerState::RANGED_ATTACK;
                         player.set_animation(PUNCH_POSE, 0, 10);
                         player.energy += 2;
@@ -551,6 +552,7 @@ pub fn agent_system(
                     if player.state.is_idle() && player.energy == ENERGY_MAX {
                         // player is idle
                         // then player will use skill
+                        player.energy = 0;
                         player.state |= PlayerState::SKILL;
                         fighting.0 = player_id.0 + 1;
                         player.animation.phase = 0;

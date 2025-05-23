@@ -843,6 +843,7 @@ fn keyboard_input(
             if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
                 // player is idle
                 // then player will front kick
+                player.fire_charge = 0;
                 player.state |= PlayerState::RANGED_ATTACK;
                 player.set_animation(PUNCH_POSE, 0, 10);
                 player.energy += 2;
@@ -861,6 +862,7 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is idle
                 // then player will use skill
+                player.energy = 0;
                 player.state |= PlayerState::SKILL;
                 fighting.0 = player_id.0 + 1;
                 player.animation.phase = 0;
@@ -1966,7 +1968,6 @@ fn skill_animation(
                     }
                 } else {
                     // finish skill
-                    player.energy = 0;
                     player.animation.phase = 0;
                     player.animation.count = 0;
                     player.state &= !PlayerState::SKILL;
@@ -2594,7 +2595,6 @@ fn update_fire_animation(
                 .iter_mut()
                 .find(|(_, id, _)| id.0 == fire_player_id.0)
             {
-                player.fire_charge = 0;
                 for (_, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
                     if player_id == fire_id {
                         if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
@@ -2653,7 +2653,6 @@ fn update_fire_animation(
                 .iter_mut()
                 .find(|(_, id, _)| id.0 == fire_player_id.0)
             {
-                player.fire_charge = 0;
                 for (_, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
                     if player_id == fire_id {
                         if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
