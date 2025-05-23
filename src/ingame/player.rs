@@ -2354,7 +2354,6 @@ fn check_attack(
                 let mut opponent_id: PlayerID = PlayerID(2);
                 let mut attacker_parts: &BodyParts = &BodyParts::NULL;
                 let mut opponent_parts: &BodyParts = &BodyParts::NULL;
-                let mut attacker_power: f32 = 0.0;
                 for (mut player, player_id) in player_query.iter_mut() {
                     if player.state.check(
                         PlayerState::KICKING
@@ -2394,7 +2393,6 @@ fn check_attack(
                         } else {
                             PlayerID(0)
                         };
-                        attacker_power = CHARACTER_PROFILES[player.character_id as usize].power;
                     }
                 }
                 if attacker_id == PlayerID(2) {
@@ -2591,7 +2589,7 @@ fn update_fire_animation(
             || fire_transform.translation.x > config.window_size.x / 2.0
         {
             commands.entity(entity).despawn();
-            if let Some((mut player, player_id, _)) = player_query
+            if let Some((_, player_id, _)) = player_query
                 .iter_mut()
                 .find(|(_, id, _)| id.0 == fire_player_id.0)
             {
@@ -2649,7 +2647,7 @@ fn update_fire_animation(
             }
         }
         if hit {
-            if let Some((mut player, player_id, _)) = player_query
+            if let Some((_, player_id, _)) = player_query
                 .iter_mut()
                 .find(|(_, id, _)| id.0 == fire_player_id.0)
             {
