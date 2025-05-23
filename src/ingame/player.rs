@@ -916,8 +916,8 @@ fn player_movement(
         for (mut player, player_id, mut transform, _) in player_query.iter_mut() {
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
+                transform.translation.y += (270.0 - config.window_size.y / 2.0 - transform.translation.y) / player.animation.count as f32;
                 player.update_animation();
-                transform.translation.y += (270.0 - config.window_size.y / 2.0 - transform.translation.y) / (10 - player.animation.count) as f32;
                 if player.animation.count == 0 {
                     player.animation.phase = 1;
                     commands.remove_resource::<Fighting>();
@@ -2778,7 +2778,7 @@ fn update_fire_bar(
                             mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
                         {
                             for i in 0..4 {
-                                colors[i][0] = 10.0;
+                                colors[i][0] = 20.0;
                             }
                         }
                     }

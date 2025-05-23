@@ -756,10 +756,10 @@ fn setup(
                 .with_inserted_attribute(
                     Mesh::ATTRIBUTE_COLOR,
                     vec![
-                        [10.0, 0.0, 0.0, 1.0],
-                        [10.0, 0.0, 0.0, 1.0],
-                        [10.0, 0.0, 0.0, 1.0],
-                        [10.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
                     ],
                 )
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
@@ -891,10 +891,10 @@ fn setup(
                 .with_inserted_attribute(
                     Mesh::ATTRIBUTE_COLOR,
                     vec![
-                        [10.0, 0.0, 0.0, 1.0],
-                        [10.0, 0.0, 0.0, 1.0],
-                        [10.0, 0.0, 0.0, 1.0],
-                        [10.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
+                        [20.0, 0.0, 0.0, 1.0],
                     ],
                 )
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
@@ -1479,7 +1479,7 @@ fn main_game_system(
                                 mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
                             {
                                 for i in 0..4 {
-                                    colors[i][0] = 10.0;
+                                    colors[i][0] = 20.0;
                                 }
                             }
                         }
