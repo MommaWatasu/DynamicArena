@@ -236,24 +236,42 @@ impl Agent {
                     let rand = rand();
                     if rand < 0.2 {
                         return Action::Kick;
-                    } else if rand < 0.6 {
+                    } else if rand < 0.5 {
                         return Action::Punch;
                     // FIXME: FRONT KICK is removed.
                     // new action should be added...
-                    } else {
+                    } else if rand < 0.95 {
                         return Action::BackKick;
+                    } else {
+                        return Action::RangedAttack;
                     }
-                } else if environment.distance < 250.0 {
-                    return Action::BackKick;
+                } else if environment.distance < 225.0 {
+                    let rand = rand();
+                    if rand < 0.8 {
+                        return Action::Backkick;
+                    } else {
+                        return Action::RangedAttack;
+                    }
                 } else if environment.distance < 325.0 {
                     return Action::MoveForward;
                 } else if environment.distance < 500.0
                     && (environment.player_state.check(PlayerState::BEND_DOWN)
-                        || environment.player_state.is_idle())
-                {
+                        || environment.player_state.is_idle()) {
                     return Action::JumpKick;
+                } else if environment.distance < 500.0 
+                    && (environment.player_state.check(PlayerState::MoveForward)){
+                    return Action::RangedAttack;
+                } else if environment.distance < 500.0
+                    && (environment.player_state.check(PlayerState::JumpAttack)
+                        || environment.player_state.check(PlayerState::Jumpforward)) {
+                        return Action::Backkick;
                 } else if environment.distance < 1050.0 {
-                    return Action::MoveForward;
+                    let rand = rand();
+                    if rand < 0.6 {
+                        return Action::MoveForward;
+                    } else {
+                        return Action::RangedAttack;
+                    }
                 } else {
                     let rand = rand();
                     if rand < 0.2 {
@@ -267,7 +285,7 @@ impl Agent {
                 if environment.player_state.check(PlayerState::KICKING) {
                     return Action::JumpUP;
                 }
-                if environment.distance < 150.0 {
+                if environment.distance < 100.0 {
                     let rand = rand();
                     if rand < 0.5 {
                         return Action::JumpBackward;
