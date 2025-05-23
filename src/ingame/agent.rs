@@ -237,7 +237,7 @@ impl Agent {
         }
         match self.policy {
             Policy::Offensive => {
-                if agent_energy == ENERGY_MAX
+                if environment.agent_energy == ENERGY_MAX
                     && (environment.player_state.check(PlayerState::IDLE)
                         || environment.player_state.check(PlayerState::WALKING)) {
                     return Action::Skill
