@@ -324,6 +324,8 @@ impl Agent {
 }
 
 pub fn agent_system(
+    mut commands: Commands,
+    mut fighting: ResMut<Fighting>,
     time: Res<Time>,
     game_config: Res<GameConfig>,
     mut agent: ResMut<Agent>,
@@ -359,7 +361,7 @@ pub fn agent_system(
             agent.select_policy(&environment);
         }
         let action = agent.select_action(&environment);
-        if let Some((mut player, _, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
+        if let Some((mut player, player_id, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
