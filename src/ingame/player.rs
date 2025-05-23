@@ -917,6 +917,7 @@ fn player_movement(
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
                 player.update_animation();
+                transform.translation.y += (270.0 - config.window_size.y / 2.0 - transform.translation.y) / (10 - player.animation.count) as f32;
                 if player.animation.count == 0 {
                     player.animation.phase = 1;
                     commands.remove_resource::<Fighting>();
