@@ -74,7 +74,7 @@ pub struct Agent {
 impl Agent {
     pub fn new(level: Level) -> Self {
         Self {
-            timer: Timer::from_seconds(0.3 / AGENT_FREQUENCY, TimerMode::Repeating),
+            timer: Timer::from_seconds(0.12 / AGENT_FREQUENCY, TimerMode::Repeating),
             count: 0,
             level,
             policy: Policy::Neutral,
