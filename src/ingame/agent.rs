@@ -242,19 +242,19 @@ impl Agent {
                         return Action::Kick;
                     } else if rand < 0.5 {
                         return Action::Punch;
-                    // FIXME: FRONT KICK is removed.
-                    // new action should be added...
-                    } else if rand < 0.95 {
-                        return Action::BackKick;
+                    } else if rand < 0.6
+                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                            return Action::RangedAttack;
                     } else {
-                        return Action::RangedAttack;
+                        return Action::BackKick;
                     }
                 } else if environment.distance < 225.0 {
                     let rand = rand();
-                    if rand < 0.8 {
-                        return Action::BackKick;
+                    if rand < 0.25
+                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
+                            return Action::RangedAttack;
                     } else {
-                        return Action::RangedAttack;
+                        return Action::BackKick;
                     }
                 } else if environment.distance < 325.0 {
                     return Action::MoveForward;
@@ -263,18 +263,19 @@ impl Agent {
                         || environment.player_state.is_idle()) {
                     return Action::JumpKick;
                 } else if environment.distance < 500.0 
-                    && (environment.player_state.check(PlayerState::MoveForward)){
+                    && environment.player_state.check(PlayerState::WALKING)
+                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
                     return Action::RangedAttack;
                 } else if environment.distance < 500.0
-                    && (environment.player_state.check(PlayerState::JumpAttack)
-                        || environment.player_state.check(PlayerState::Jumpforward)) {
+                    && (environment.player_state.check(PlayerState::JUMP_FORWARD)) {
                         return Action::BackKick;
                 } else if environment.distance < 1050.0 {
                     let rand = rand();
-                    if rand < 0.6 {
-                        return Action::MoveForward;
-                    } else {
+                    if rand < 0.5
+                        && environment.agent_fire_charge == FIRE_CHARGE_MAX {
                         return Action::RangedAttack;
+                    } else {
+                        return Action::MoveForward;
                     }
                 } else {
                     let rand = rand();
