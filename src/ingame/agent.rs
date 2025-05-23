@@ -56,6 +56,10 @@ struct Environment {
     distance: f32,
     player_state: PlayerState,
     agent_facing: bool,
+    agent_energy: u8,
+    agent_fire_charge: u16,
+    player_energy: u8,
+    player_fire_charge: u16,
 }
 
 #[derive(Resource)]
@@ -248,7 +252,7 @@ impl Agent {
                 } else if environment.distance < 225.0 {
                     let rand = rand();
                     if rand < 0.8 {
-                        return Action::Backkick;
+                        return Action::BackKick;
                     } else {
                         return Action::RangedAttack;
                     }
@@ -264,7 +268,7 @@ impl Agent {
                 } else if environment.distance < 500.0
                     && (environment.player_state.check(PlayerState::JumpAttack)
                         || environment.player_state.check(PlayerState::Jumpforward)) {
-                        return Action::Backkick;
+                        return Action::BackKick;
                 } else if environment.distance < 1050.0 {
                     let rand = rand();
                     if rand < 0.6 {
@@ -332,6 +336,8 @@ pub fn agent_system(
                 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.player_state = player.state;
             environment.distance = transform.translation.x;
+            environment.player_energy = player.energy;
+            environment.player_fire_charge = player.fire_charge;
         }
         if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 1) {
             environment.agent_health = player.health as f32
@@ -339,6 +345,8 @@ pub fn agent_system(
             environment.agent_facing = player.pose.facing;
             environment.distance = (transform.translation.x - environment.distance).abs();
             environment.agent_state = player.state;
+            environment.agent_energy = player.energy;
+            environment.agent_fire_charge = player.fire_charge;
         }
         if agent.count == AGENT_FREQUENCY as u8 * 2 {
             agent.count = 0;
@@ -403,6 +411,7 @@ pub fn agent_system(
                         player.state |= PlayerState::JUMP_UP;
                         player.set_animation(JUMP_UP_POSE1, 0, 10);
                         player.velocity = Vec2::new(0.0, 12.0);
+                        player.energy += 1;
                     } else if !player.state.check(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_FORWARD
@@ -426,6 +435,7 @@ pub fn agent_system(
                                 CHARACTER_PROFILES[player.character_id as usize].agility;
                             player.velocity = Vec2::new(-x_vel, 12.0);
                         }
+                        player.energy += 1;
                     }
                 }
                 Action::JumpForward => {
@@ -441,6 +451,7 @@ pub fn agent_system(
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
+                        player.energy += 1;
                     }
                 }
                 Action::JumpBackward => {
@@ -456,6 +467,7 @@ pub fn agent_system(
                         player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
+                        player.energy += 1;
                     }
                 }
                 Action::JumpKick => {
@@ -471,6 +483,7 @@ pub fn agent_system(
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
+                        player.energy += 2;
                     }
                 }
                 Action::Bend => {
@@ -487,6 +500,7 @@ pub fn agent_system(
                         // then player will kick
                         player.state |= PlayerState::KICKING;
                         player.set_animation(KICK_POSE1, 0, 10);
+                        player.energy += 2;
                     } else if player.state.check(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_FORWARD
@@ -495,6 +509,7 @@ pub fn agent_system(
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::KICKING;
+                        player.energy += 2;
                     }
                 }
                 Action::BackKick => {
@@ -503,6 +518,7 @@ pub fn agent_system(
                         // then player will back kick
                         player.state |= PlayerState::BACK_KICKING;
                         player.set_animation(BACK_KICK_POSE1, 0, 10);
+                        player.energy += 2;
                     }
                 }
                 Action::RangedAttack => {
@@ -511,6 +527,7 @@ pub fn agent_system(
                         // then player will knee kick
                         player.state |= PlayerState::RANGED_ATTACK;
                         player.set_animation(PUNCH_POSE, 0, 10);
+                        player.energy += 2;
                     }
                 }
                 Action::Punch => {
@@ -519,6 +536,7 @@ pub fn agent_system(
                         // then player will punch
                         player.state |= PlayerState::PUNCHING;
                         player.set_animation(PUNCH_POSE, 0, 10);
+                        player.energy += 2;
                     }
                 }
                 Action::None => {
