@@ -235,6 +235,7 @@ pub struct Player {
     pub health: u32,
     pub energy: u8,
     pub fire_charge: u16,
+    pub stun_count: u16
 }
 
 impl Player {
@@ -253,6 +254,7 @@ impl Player {
             health: CHARACTER_PROFILES[character_id as usize].health,
             energy: 0,
             fire_charge: FIRE_CHARGE_MAX,
+            stun_count: 3,
         }
     }
     pub fn new_opposite(character_id: isize) -> Self {
@@ -270,6 +272,7 @@ impl Player {
             health: CHARACTER_PROFILES[character_id as usize].health,
             energy: 0,
             fire_charge: FIRE_CHARGE_MAX,
+            stun_count: 3,
         }
     }
     pub fn reset(&mut self, id: &PlayerID) {
@@ -923,6 +926,10 @@ fn player_movement(
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
         for (mut player, player_id, mut transform, _) in player_query.iter_mut() {
+            if player.stun_count > 3 {
+                player.stun_count -= 1;
+            }
+
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
                 transform.translation.y += (270.0 - config.window_size.y / 2.0 - transform.translation.y) / player.animation.count as f32;
@@ -2455,7 +2462,12 @@ fn check_attack(
                         }
                     }
                     player.health = player.health.saturating_sub(damage);
-                    if !player.state.check(PlayerState::BEND_DOWN) {
+                    if !player.state.check(PlayerState::BEND_DOWN) && player.stun_count <= 3 {
+                        player.stun_count -= 1;
+                        if player.stun_count == 0 {
+                            // after 3 hits, player will be invicible for 240 frames(4 seconds)
+                            player.stun_count = 243;
+                        }
                         if player.state.is_idle() {
                             player.state = PlayerState::STUN | PlayerState::BEND_DOWN;
                             player.set_animation(STUN_POSE, 0, 5);
