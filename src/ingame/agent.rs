@@ -613,6 +613,10 @@ pub fn agent_system(
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
             }
+            if action != Action::Bend {
+                // agent is not bending
+                player.state &= !PlayerState::BEND_DOWN;
+            }
             match action {
                 Action::MoveForward => {
                     if player.state.is_idle() {
@@ -629,15 +633,7 @@ pub fn agent_system(
                     }
                 }
                 Action::MoveBackward => {
-                    if !player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_BACKWARD
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::BEND_DOWN
-                            | PlayerState::ROLL_BACK
-                            | PlayerState::ROLL_FORWARD
-                            | PlayerState::WALKING
-                    ) {
+                    if player.state.is_idle() {
                         // player is just walking
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 10);
