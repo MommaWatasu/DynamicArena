@@ -748,7 +748,7 @@ pub fn agent_system(
                         PlayerState::JUMP_UP
                             | PlayerState::JUMP_FORWARD
                             | PlayerState::JUMP_BACKWARD,
-                    ) {
+                    ) && !player.state.check(PlayerState::KICKING) {
                         // player is jumping
                         // then just adding state
                         player.state |= PlayerState::KICKING;
