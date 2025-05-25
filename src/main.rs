@@ -8,6 +8,7 @@ use bevy::{
 
 mod character_def;
 mod choose_character;
+mod confirm;
 #[cfg(not(target_arch = "wasm32"))]
 mod connect_controller;
 mod ingame;
@@ -40,7 +41,7 @@ const PATH_SOUND_PREFIX: &str = "sounds/";
 pub struct SoundEffect;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-enum GameMode {
+pub enum GameMode {
     SinglePlayer = 1,
     MultiPlayer = 2,
 }
@@ -89,6 +90,7 @@ enum AppState {
     #[cfg(not(target_arch = "wasm32"))]
     ConnectController,
     ChooseCharacter,
+    Confirm,
     Ingame,
     Result,
     #[cfg(feature="pause")]
@@ -108,6 +110,7 @@ fn main() {
         .add_plugins(mainmenu::MainmenuPlugin)
         .add_plugins(settings::SettingsPlugin)
         .add_plugins(choose_character::ChooseCharacterPlugin)
+        .add_plugins(confirm::ConfirmPlugin)
         .add_plugins(ingame::GamePlugin)
         .add_plugins(result::ResultPlugin)
         .run();

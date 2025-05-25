@@ -11,8 +11,6 @@ struct ChooseCharacter;
 #[derive(Component)]
 struct CharacterID(isize);
 
-pub struct ChooseCharacterPlugin;
-
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     info!("setup");
     commands
@@ -297,7 +295,7 @@ fn check_buttons(
                         }
                         "Next>" => {
                             if text.1 .0 == Color::BLACK {
-                                state.set(AppState::Ingame);
+                                state.set(AppState::Confirm);
                             }
                             break;
                         }
@@ -316,6 +314,8 @@ fn exit(mut commands: Commands, query: Query<Entity, With<ChooseCharacter>>) {
         commands.entity(entity).despawn_recursive();
     }
 }
+
+pub struct ChooseCharacterPlugin;
 
 impl Plugin for ChooseCharacterPlugin {
     fn build(&self, app: &mut App) {
