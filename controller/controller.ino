@@ -1,67 +1,87 @@
-#include <Adafruit_MPU6050.h>
 #include <MadgwickAHRS.h>
 #include <BleGamepad.h>
 #include <Ticker.h>
 
-#define GPIO_PIN_A 19
+#define GPIO_PIN_BUTTON 27
+#define GPIO_PIN_JOYSTICK_PUSH 34
+#define GPIO_PIN_JOYSTICK_X 32
+#define GPIO_PIN_JOYSTICK_Y 25
 
 #define DELTA_TIME 10
 #define WDT_TIMEOUT 10
 
-Adafruit_MPU6050 mpu;
-Madgwick MadgwickFilter;
+//Madgwick MadgwickFilter;
 Ticker InputTicker;
-TimerHandle_t timer_button_a = NULL;
-BleGamepad bleGamepad("DynamicArena Controller", "MommaWatasu", 100);
-float accel_zero[2];
+TimerHandle_t timer_button = NULL;
+BleGamepad bleGamepad;//("DynamicArena Controller", "MommaWatasu", 100);
+//float accel_zero[2];
 
 // Button Initializer
 void initialize_buttons() {
-  pinMode(GPIO_PIN_A, INPUT_PULLUP);
+  pinMode(GPIO_PIN_BUTTON, INPUT);
+  pinMode(GPIO_PIN_JOYSTICK_PUSH, INPUT);
+  pinMode(GPIO_PIN_JOYSTICK_X, INPUT);
+  pinMode(GPIO_PIN_JOYSTICK_Y, INPUT);
 }
 
 // check all button states
 void check_buttons() {
-  if (digitalRead(GPIO_PIN_A) == HIGH) {
+  if (digitalRead(GPIO_PIN_BUTTON) == HIGH) {
     bleGamepad.press(BUTTON_1);
   } else {
     bleGamepad.release(BUTTON_1);
   }
 }
 
+void check_joystick() {
+  int joystick_x = analogRead(GPIO_PIN_JOYSTICK_X);
+  int joystick_y = analogRead(GPIO_PIN_JOYSTICK_Y);
+  if (joystick_x < 1000) {
+      if (joystick_y < 1000) {
+        bleGamepad.setHat(DPAD_DOWN_LEFT);
+      } else if (joystick_y > 3000) {
+        bleGamepad.setHat(DPAD_UP_LEFT);
+      } else {
+        bleGamepad.setHat(DPAD_LEFT);
+      }
+  } else if (joystick_x > 3000) {
+    if (joystick_y < 1000) {
+      bleGamepad.setHat(DPAD_DOWN_RIGHT);
+    } else if (joystick_y > 3000) {
+      bleGamepad.setHat(DPAD_UP_RIGHT);
+    } else {
+      bleGamepad.setHat(DPAD_RIGHT);
+    }
+  } else {
+    if (joystick_y < 1000) {
+      bleGamepad.setHat(DPAD_DOWN);
+    } else if (joystick_y > 3000) {
+      bleGamepad.setHat(DPAD_UP);
+    } else {
+      bleGamepad.setHat(DPAD_CENTERED);
+    }
+  }
+}
+
 void setup(){
   // Initialize Connections
-  Wire.begin();
   Serial.begin(115200);
   while (!Serial) {
     delay(10);
   }
 
-  // Initialize MPU6050
-  Serial.println("Initializing MPU6050...");
-  // start up
-  if (!mpu.begin()) {
-    Serial.println("Failed to initialize MPU6050. Please check out the connection...");
-    while (1) {
-      delay(10);
-    }
-  }
-  // configuration
-  mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
-  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.println("Complete");
-
   // Initialize Buttons
-  Serial.println("Initializing Buttons...");
+  Serial.println("Initializing GPIO INPUT...");
   initialize_buttons();
   Serial.println("Complete");
 
   // Initialize MadgwickFilter
+  /*
   Serial.println("Initializing MadgwickFilter...");
   MadgwickFilter.begin(100);
   MadgwickFilter.setGain(0.8);
   Serial.println("Complete");
+  */
 
   // Initialize BLEGamepad
   Serial.println("Initializing BLEGamepad...");
@@ -74,21 +94,12 @@ void setup(){
 }
 
 void pollControllerInput(){
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
-
-  // acceleration
-  float ax = a.acceleration.x - accel_zero[0];
-  float ay = a.acceleration.y - accel_zero[1];
-  float az = a.acceleration.z;
-  // gyro
-  float gx = g.gyro.x;
-  float gy = g.gyro.y;
-  float gz = g.gyro.z;
+  /*
   MadgwickFilter.updateIMU(gx, gy, gz, ax, ay, az);
   float roll = MadgwickFilter.getRoll();
   float pitch = MadgwickFilter.getPitch();
   float yaw  = MadgwickFilter.getYaw();
+  */
   /*
   Serial.print("roll:");Serial.print(roll); Serial.print(",");
   Serial.print("pitch:");Serial.print(pitch); Serial.print(",");
@@ -97,12 +108,9 @@ void pollControllerInput(){
   */
 
   if (bleGamepad.isConnected()) {
-    // set accel data
-    bleGamepad.setAccelerometer(ax, ay, az);
-    // set gyro data
-    bleGamepad.setGyroscope(roll, pitch, yaw);
     // set button state
     check_buttons();
+    check_joystick();
     bleGamepad.sendReport();
   }
 }
