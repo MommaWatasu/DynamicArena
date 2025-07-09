@@ -134,13 +134,7 @@ impl Not for PlayerState {
         Self(!self.0)
     }
 }
-/*
-impl Default for PlayerState {
-    fn default() -> Self {
-        Self(0)
-    }
-}
-*/
+
 impl Debug for PlayerState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let states = [
@@ -2525,10 +2519,10 @@ const SKILL_COEFFICIENT: [f32; 3] = [
 ];
 // coefficiency for each body part
 const PARTS_COEFFICIENT: [f32; 4] = [
-    0.9, // head
-    0.8, // body
-    1.0, // arm
-    1.5, // leg
+    1.5, // head
+    1.0, // body
+    0.9, // arm
+    0.8, // leg
 ];
 const DEFENCE_COEFICIENCY: f32 = 20.0;
 const DEFENCE_OFFSET: f32 = 50.0;
@@ -2551,7 +2545,7 @@ fn calculate_damage(
         damage *= SKILL_COEFFICIENT[2];
     }
 
-    // If attacker is performes a jumping kick or double jump kick, double the damage
+    // If attacker is performes a jumping kick, increase the damage
     if attacker_info
         .1
         .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD)
