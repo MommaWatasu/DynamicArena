@@ -25,28 +25,32 @@ fn controller_system(
                 continue;
             }
 
-            if gamepad.just_pressed(GamepadButton::South) {
-                if !player
-                    .state
-                    .check(PlayerState::KICKING | PlayerState::PUNCHING)
-                {
-                    if player.state.check(PlayerState::JUMP_UP) {
-                        player.state |= PlayerState::KICKING;
-                        player.set_animation(JUMPING_KICK_POSE, 0, 10);
-                    } else if !player.state.check(PlayerState::WALKING) {
-                        player.state |= PlayerState::KICKING;
-                        player.set_animation(KICK_POSE1, 0, 10);
-                    }
+            if gamepad.just_pressed(GamepadButton::West) {
+                if player.state.is_idle() {
+                    // player is idle
+                    // then player will kick
+                    player.state |= PlayerState::KICKING;
+                    player.set_animation(KICK_POSE1, 0, 5);
+                    player.energy += 2;
                 }
             }
 
-            if gamepad.pressed(GamepadButton::South) {
-                if player.state.check(PlayerState::JUMP_UP)
-                    & !player.state.check(PlayerState::KICKING)
-                {
-                    player.state |= PlayerState::KICKING;
-                    player.set_animation(JUMPING_KICK_POSE, 0, 10);
+            if gamepad.pressed(GamepadButton::DPadLeft) {
+                if player.state.is_idle() {
+                    // player is just walking
+                    player.state |= PlayerState::WALKING;
+                    player.set_animation(WALKING_POSE1, 0, 10);
                 }
+                // direction is left
+                player.state &= !PlayerState::DIRECTION;
+            } else if gamepad.pressed(GamepadButton::DPadRight) {
+                if player.state.is_idle() {
+                    // player is just walking
+                    player.state |= PlayerState::WALKING;
+                    player.set_animation(WALKING_POSE1, 0, 10);
+                }
+                // direction is right
+                player.state |= PlayerState::DIRECTION;
             }
         }
     }
