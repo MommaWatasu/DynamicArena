@@ -825,6 +825,7 @@ fn keyboard_input(
             } else if player
                 .state
                 .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD)
+                && !player.state.check(PlayerState::KICKING)
             {
                 // player is jumping
                 // then just adding state
