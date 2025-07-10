@@ -804,6 +804,7 @@ pub const WINNER_POSE: Pose = Pose {
     left_lower_leg: -60.0,
 };
 
+/*
 pub const LOSER_POSE: Pose = Pose {
     facing: true,
     offset: [0.0, -200.0],
@@ -821,3 +822,4 @@ pub const LOSER_POSE: Pose = Pose {
     left_upper_leg: 40.0,
     left_lower_leg: -80.0,
 };
+*/

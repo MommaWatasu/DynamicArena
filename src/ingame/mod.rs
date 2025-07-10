@@ -4,7 +4,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
 use bevy_rapier2d::prelude::*;
-use pose::{LOSER_POSE, WINNER_POSE};
+use pose::WINNER_POSE;
 
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
@@ -1363,8 +1363,6 @@ fn main_game_system(
                     for (id, mut player, _) in player_query.iter_mut() {
                         if gamestate.winners[gamestate.round as usize - 1] == id.0 + 1 {
                             player.set_animation(WINNER_POSE, 0, 10);
-                        } else {
-                            player.set_animation(LOSER_POSE, 0, 10);
                         }
                     }
                     gamestate.count = 1;
