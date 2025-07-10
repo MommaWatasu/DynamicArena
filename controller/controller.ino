@@ -13,12 +13,12 @@
 //Madgwick MadgwickFilter;
 Ticker InputTicker;
 TimerHandle_t timer_button = NULL;
-BleGamepad bleGamepad;//("DynamicArena Controller", "MommaWatasu", 100);
+BleGamepad bleGamepad("DynamicArenaController", "MommaWatasu", 100);
 //float accel_zero[2];
 
 // Button Initializer
 void initialize_buttons() {
-  pinMode(GPIO_PIN_BUTTON, INPUT);
+  pinMode(GPIO_PIN_BUTTON, INPUT_PULLUP);
   pinMode(GPIO_PIN_JOYSTICK_PUSH, INPUT);
   pinMode(GPIO_PIN_JOYSTICK_X, INPUT);
   pinMode(GPIO_PIN_JOYSTICK_Y, INPUT);
@@ -26,7 +26,7 @@ void initialize_buttons() {
 
 // check all button states
 void check_buttons() {
-  if (digitalRead(GPIO_PIN_BUTTON) == HIGH) {
+  if (digitalRead(GPIO_PIN_BUTTON) == LOW) {
     bleGamepad.press(BUTTON_1);
   } else {
     bleGamepad.release(BUTTON_1);
