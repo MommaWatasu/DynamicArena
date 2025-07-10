@@ -30,15 +30,13 @@ fn setup(
 
     // detect gamepads
     #[cfg(not(target_arch = "wasm32"))]
-    for (name, entity) in gamepads.iter() {
-        if **name == *"DynamicArena Controller" {
-            if config.gamepads[0] == Entity::from_raw(0) {
-                config.gamepads[0] = entity;
-            } else {
-                config.gamepads[1] = entity;
-            }
-            info!("detect gamepad: {:?}", entity);
+    for (_, entity) in gamepads.iter() {
+        if config.gamepads[0] == Entity::from_raw(0) {
+            config.gamepads[0] = entity;
+        } else {
+            config.gamepads[1] = entity;
         }
+        info!("detect gamepad: {:?}", entity);
     }
 
     commands
