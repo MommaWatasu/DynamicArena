@@ -2329,6 +2329,9 @@ fn update_pose(
     }
 }
 
+// TODO: sometimes attacker detection is going wrong
+// This is because of the way to determine the attacker
+// Now, attacker is determined based on their animation phase and count and PlayerState
 /// Checks for collisions between players and updates their states accordingly.
 fn check_attack(
     mut player_collision: ResMut<PlayerCollision>,
@@ -2360,6 +2363,7 @@ fn check_attack(
                 let mut opponent_id: PlayerID = PlayerID(2);
                 let mut attacker_parts: &BodyParts = &BodyParts::NULL;
                 let mut opponent_parts: &BodyParts = &BodyParts::NULL;
+                let mut attacker_phase: u8 = 0;
                 let mut attacker_count: u8 = 0;
                 for (mut player, player_id) in player_query.iter_mut() {
                     if player.state.check(
@@ -2390,10 +2394,14 @@ fn check_attack(
                         }
 
                         // Check if the attacker is already set
-                        if attacker_id != PlayerID(2) && attacker_count > player.animation.count {
+                        if attacker_id != PlayerID(2)
+                        && attacker_phase > player.animation.phase
+                        || (attacker_phase == player.animation.phase && attacker_count > player.animation.count)
+                        {
                             continue;
                         }
                         attacker_id = *player_id;
+                        attacker_phase = player.animation.phase;
                         attacker_count = player.animation.count;
                         player.state |= PlayerState::ATTACK_DISABLED;
                         opponent_id = if PlayerID(0) == attacker_id {
