@@ -11,6 +11,11 @@ use std::fmt::Display;
 #[derive(Component)]
 struct Settings;
 
+#[derive(Resource)]
+struct SettingIndex {
+    idx: u8
+};
+
 #[derive(Component, Clone)]
 struct SettingItem<T: Clone + ToString + Send + Sync + 'static> {
     name: String,
@@ -433,10 +438,24 @@ fn update_setting(
 
 fn controller_input(
     mut next_state: ResMut<NextState<AppState>>,
+    mut setting_index: ResMut<SettingIndex>,
     gamepads: Query<&Gamepad>,
 ) {
     for gamepad in gamepads.iter() {
-        if gamepad.just_pressed(GamepadButton::DPadDown) {
+        if gamepad.just_pressed(GamepadButton::DPadUp) {
+            if setting_index.idx != 0 {
+                setting_index.idx -= 1;
+            }
+
+        } else if gamepad.just_pressed(GamepadButton::DPadDown) {
+            if setting_index.idx != 2 {
+                setting_index.idx += 1;
+            }
+        }
+        if gamepad.just_pressed(GamepadButton::DPadLeft) {
+        } else if gamepad.just_pressed(GamepadButton::DPadRight) {
+        }
+        if gamepad.just_pressed(GamepadButton::West) {
             next_state.set(AppState::Mainmenu);
         }
     }
@@ -477,7 +496,9 @@ pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Settings), setup)
+        app
+            .insert_resource(SettingIndex { idx: 0 })
+            .add_systems(OnEnter(AppState::Settings), setup)
             .add_systems(OnExit(AppState::Settings), exit)
             .add_systems(Update, update_setting.run_if(in_state(AppState::Settings)))
             .add_systems(Update, check_back.run_if(in_state(AppState::Settings)))
