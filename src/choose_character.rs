@@ -327,8 +327,10 @@ fn controller_input(
         }
         if gamepad.just_pressed(GamepadButton::DPadRight) {
             if character_id != 2 {
-                config.characters_id[0] = character_id + 1;
-                config.characters_id[1] = choose_rand_character(config.characters_id[0]);
+                config.characters_id[id] = character_id + 1;
+                if config.mode == GameMode::SinglePlayer {
+                    config.characters_id[1-id] = choose_rand_character(config.characters_id[id]);
+                }
                 for (mut text, text_color, character_id_text) in text_query.iter_mut() {
                     if text_color.0 == text_player_color {
                         continue;
@@ -342,8 +344,10 @@ fn controller_input(
             }
         } else if gamepad.just_pressed(GamepadButton::DPadLeft) {
             if character_id != 0 {
-                config.characters_id[0] = character_id - 1;
-                config.characters_id[1] = choose_rand_character(config.characters_id[0]);
+                config.characters_id[id] = character_id - 1;
+                if config.mode == GameMode::SinglePlayer {
+                    config.characters_id[1-id] = choose_rand_character(config.characters_id[id]);
+                }
                 for (mut text, text_color, character_id_text) in text_query.iter_mut() {
                     if text_color.0 == text_player_color {
                         continue;
