@@ -114,8 +114,12 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            BorderColor(Color::BLACK),
-                            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                            if gamepads.iter().count() > 0 {
+                                BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+                            } else {
+                                BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+                            },
+                            BackgroundColor(Color::BLACK),
                         ))
                         .with_child((
                             Text::new("Start"),
@@ -141,8 +145,8 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            BorderColor(Color::BLACK),
-                            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                            BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0)),
+                            BackgroundColor(Color::BLACK),
                         ))
                         .with_child((
                             Text::new("Settings"),
@@ -168,8 +172,8 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            BorderColor(Color::BLACK),
-                            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                            BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0)),
+                            BackgroundColor(Color::BLACK),
                         ))
                         .with_child((
                             Text::new("Exit"),
@@ -189,15 +193,49 @@ fn controller_input(
     mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
     mut button_idx: ResMut<ButtonIndex>,
     gamepads: Query<&Gamepad>,
+    mut border_query: Query<(&mut BorderColor, &Children)>,
+    text_query: Query<&Text>,
 ) {
     for gamepad in gamepads.iter() {
         if gamepad.just_pressed(GamepadButton::DPadUp) {
             if button_idx.idx != 0 {
                 button_idx.idx -= 1;
+                for (mut border_color, children) in border_query.iter_mut() {
+                    if text_query.get(children[0]).is_err() {
+                        continue;
+                    }                    
+                    if border_color.0.alpha() != 0.0 {
+                        border_color.0.set_alpha(0.0);
+                    } else {
+                        if text_query.get(children[0]).unwrap().0 == "Start" && button_idx.idx == 0 {
+                            border_color.0.set_alpha(0.8);
+                        } else if text_query.get(children[0]).unwrap().0 == "Settings" && button_idx.idx == 1 {
+                            border_color.0.set_alpha(0.8);
+                        } else if text_query.get(children[0]).unwrap().0 == "Exit" && button_idx.idx == 2 {
+                            border_color.0.set_alpha(0.8);
+                        }
+                    }
+                }
             }
         } else if gamepad.just_pressed(GamepadButton::DPadDown) {
             if button_idx.idx != 2 {
                 button_idx.idx += 1;
+                for (mut border_color, children) in border_query.iter_mut() {
+                    if text_query.get(children[0]).is_err() {
+                        continue;
+                    }                    
+                    if border_color.0.alpha() != 0.0 {
+                        border_color.0.set_alpha(0.0);
+                    } else {
+                        if text_query.get(children[0]).unwrap().0 == "Start" && button_idx.idx == 0 {
+                            border_color.0.set_alpha(0.8);
+                        } else if text_query.get(children[0]).unwrap().0 == "Settings" && button_idx.idx == 1 {
+                            border_color.0.set_alpha(0.8);
+                        } else if text_query.get(children[0]).unwrap().0 == "Exit" && button_idx.idx == 2 {
+                            border_color.0.set_alpha(0.8);
+                        }
+                    }
+                }
             }
         } else if gamepad.just_pressed(GamepadButton::West) {
             match button_idx.idx {
