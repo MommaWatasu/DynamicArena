@@ -431,8 +431,19 @@ fn update_setting(
     }
 }
 
+fn controller_input(
+    mut next_state: ResMut<NextState<AppState>>,
+    gamepads: Query<&Gamepad>,
+) {
+    for gamepad in gamepads.iter() {
+        if gamepad.just_pressed(GamepadButton::DPadDown) {
+            next_state.set(AppState::Mainmenu);
+        }
+    }
+}
+
 fn check_back(
-    mut state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<&Text>,
 ) {
@@ -443,7 +454,7 @@ fn check_back(
                     let text = text_query.get(children[0]).unwrap();
                     match text.0.as_str() {
                         "<Back" => {
-                            state.set(AppState::Mainmenu);
+                            next_state.set(AppState::Mainmenu);
                             break;
                         }
                         _ => {}
@@ -469,6 +480,7 @@ impl Plugin for SettingsPlugin {
         app.add_systems(OnEnter(AppState::Settings), setup)
             .add_systems(OnExit(AppState::Settings), exit)
             .add_systems(Update, update_setting.run_if(in_state(AppState::Settings)))
-            .add_systems(Update, check_back.run_if(in_state(AppState::Settings)));
+            .add_systems(Update, check_back.run_if(in_state(AppState::Settings)))
+            .add_systems(Update, controller_input.run_if(in_state(AppState::Settings)));
     }
 }

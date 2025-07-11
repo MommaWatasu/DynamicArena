@@ -242,7 +242,7 @@ fn create_player_box(
 fn update(
     time: Res<Time>,
     mut timer: ResMut<StartGameTimer>,
-    mut state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     mut text_query: Query<&mut Text, With<CountText>>,
 ) {
     timer.0.tick(time.delta());
@@ -251,12 +251,25 @@ fn update(
     }
     // automatically start the game after 10 seconds
     if timer.0.just_finished() {
-        state.set(AppState::Ingame);
+        next_state.set(AppState::Ingame);
+    }
+}
+
+fn controller_input(
+    mut next_state: ResMut<NextState<AppState>>,
+    gamepads: Query<&Gamepad>,
+) {
+    for gamepad in gamepads.iter() {
+        if gamepad.just_pressed(GamepadButton::DPadDown) {
+            next_state.set(AppState::ChooseCharacter);
+        } else if gamepad.just_pressed(GamepadButton::West) {
+            next_state.set(AppState::Ingame);
+        }
     }
 }
 
 fn check_buttons(
-    mut state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<(&Text, &TextColor)>,
 ) {
@@ -267,11 +280,11 @@ fn check_buttons(
                     let text = text_query.get(children[0]).unwrap();
                     match text.0.as_str() {
                         "<Back" => {
-                            state.set(AppState::ChooseCharacter);
+                            next_state.set(AppState::ChooseCharacter);
                             break;
                         }
                         "戦闘開始" => {
-                            state.set(AppState::Ingame);
+                            next_state.set(AppState::Ingame);
                             break;
                         }
                         _ => {}
@@ -300,6 +313,7 @@ impl Plugin for ConfirmPlugin {
             .add_systems(OnEnter(AppState::Confirm), setup)
             .add_systems(OnExit(AppState::Confirm), exit)
             .add_systems(Update, update.run_if(in_state(AppState::Confirm)))
-            .add_systems(Update, check_buttons.run_if(in_state(AppState::Confirm)));
+            .add_systems(Update, check_buttons.run_if(in_state(AppState::Confirm)))
+            .add_systems(Update, controller_input.run_if(in_state(AppState::Confirm)));
     }
 }

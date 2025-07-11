@@ -83,7 +83,7 @@ fn setup(
                                 ..default()
                             },
                             BorderRadius::MAX,
-                            BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+                            BorderColor(Color::BLACK),
                         ))
                         .with_child((
                             Text::new("Next>"),
@@ -298,8 +298,8 @@ fn choose_rand_character(id: isize) -> isize {
     available_nums[random_index]
 }
 
-fn update_controller(
-    mut state: ResMut<NextState<AppState>>,
+fn controller_input(
+    mut next_state: ResMut<NextState<AppState>>,
     mut text_query: Query<(&mut Text, &TextColor, &CharacterID)>,
     mut config: ResMut<GameConfig>,
     gamepads: Query<(&Gamepad, Entity)>,
@@ -358,16 +358,16 @@ fn update_controller(
         }
         if gamepad.just_pressed(GamepadButton::DPadDown) {
             #[cfg(not(target_arch = "wasm32"))]
-            state.set(AppState::ConnectController);
+            next_state.set(AppState::ConnectController);
             #[cfg(target_arch = "wasm32")]
-            state.set(AppState::Mainmenu);
+            next_state.set(AppState::Mainmenu);
         } else if gamepad.just_pressed(GamepadButton::DPadUp) {
-            state.set(AppState::Confirm);
+            next_state.set(AppState::Confirm);
         }
     }
 }
 
-fn check_keyboard(
+fn keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut config: ResMut<GameConfig>,
     mut text_query: Query<(&mut Text, &TextColor, &CharacterID)>,
@@ -417,7 +417,7 @@ fn check_keyboard(
 }
 
 fn check_buttons(
-    mut state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<(&Text, &TextColor)>,
 ) {
@@ -429,13 +429,13 @@ fn check_buttons(
                     match text.0.as_str() {
                         "<Back" => {
                             #[cfg(not(target_arch = "wasm32"))]
-                            state.set(AppState::ConnectController);
+                            next_state.set(AppState::ConnectController);
                             #[cfg(target_arch = "wasm32")]
-                            state.set(AppState::Mainmenu);
+                            next_state.set(AppState::Mainmenu);
                             break;
                         }
                         "Next>" => {
-                            state.set(AppState::Confirm);
+                            next_state.set(AppState::Confirm);
                             break;
                         }
                         _ => {}
@@ -466,11 +466,11 @@ impl Plugin for ChooseCharacterPlugin {
             )
             .add_systems(
                 Update,
-                update_controller.run_if(in_state(AppState::ChooseCharacter)),
+                controller_input.run_if(in_state(AppState::ChooseCharacter)),
             )
             .add_systems(
                 Update,
-                check_keyboard.run_if(in_state(AppState::ChooseCharacter)),
+                keyboard_input.run_if(in_state(AppState::ChooseCharacter)),
             );
     }
 }

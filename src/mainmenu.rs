@@ -10,6 +10,11 @@ use crate::{
 #[derive(Component)]
 struct Mainmenu;
 
+#[derive(Resource)]
+struct ButtonIndex {
+    idx: u8
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -179,6 +184,41 @@ fn setup(
         });
 }
 
+fn controller_input(
+    mut next_state: ResMut<NextState<AppState>>,
+    mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
+    mut button_idx: ResMut<ButtonIndex>,
+    gamepads: Query<&Gamepad>,
+) {
+    for gamepad in gamepads.iter() {
+        if gamepad.just_pressed(GamepadButton::DPadUp) {
+            if button_idx.idx != 0 {
+                button_idx.idx -= 1;
+            }
+        } else if gamepad.just_pressed(GamepadButton::DPadDown) {
+            if button_idx.idx != 2 {
+                button_idx.idx += 1;
+            }
+        } else if gamepad.just_pressed(GamepadButton::West) {
+            match button_idx.idx {
+                0 => {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    next_state.set(AppState::ConnectController);
+                    #[cfg(target_arch = "wasm32")]
+                    next_state.set(AppState::ChooseCharacter);
+                }
+                1 => {
+                    next_state.set(AppState::Settings);
+                }
+                2 => {
+                    app_exit_events.send(AppExit::Success);
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 fn update(
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     mut next_state: ResMut<NextState<AppState>>,
@@ -223,8 +263,11 @@ pub struct MainmenuPlugin;
 
 impl Plugin for MainmenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Mainmenu), setup)
+        app
+            .insert_resource(ButtonIndex{ idx: 0 })
+            .add_systems(OnEnter(AppState::Mainmenu), setup)
             .add_systems(OnExit(AppState::Mainmenu), exit)
-            .add_systems(Update, update.run_if(in_state(AppState::Mainmenu)));
+            .add_systems(Update, update.run_if(in_state(AppState::Mainmenu)))
+            .add_systems(Update, controller_input.run_if(in_state(AppState::Mainmenu)));
     }
 }

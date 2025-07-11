@@ -298,8 +298,21 @@ fn update_controller(
     }
 }
 
+fn controller_input(
+    mut next_state: ResMut<NextState<AppState>>,
+    gamepads: Query<&Gamepad>,
+) {
+    for gamepad in gamepads.iter() {
+        if gamepad.just_pressed(GamepadButton::DPadDown) {
+            next_state.set(AppState::Mainmenu);
+        } else if gamepad.just_pressed(GamepadButton::DPadUp) {
+            next_state.set(AppState::ChooseCharacter);
+        }
+    }
+}
+
 fn check_buttons(
-    mut state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<(&Text, &TextColor)>,
 ) {
@@ -310,13 +323,13 @@ fn check_buttons(
                     let text = text_query.get(children[0]).unwrap();
                     match text.0.as_str() {
                         "<Back" => {
-                            state.set(AppState::Mainmenu);
+                            next_state.set(AppState::Mainmenu);
                             break;
                         }
                         "Next>" => {
                             // NOTE: For now, we will skip the controller check
                             //if text.1.0 == Color::BLACK {
-                            state.set(AppState::ChooseCharacter);
+                            next_state.set(AppState::ChooseCharacter);
                             //}
                             break;
                         }
@@ -349,6 +362,10 @@ impl Plugin for ConnectControllerPlugin {
             .add_systems(
                 Update,
                 update_controller.run_if(in_state(AppState::ConnectController)),
+            )
+            .add_systems(
+                Update,
+                controller_input.run_if(in_state(AppState::ConnectController)),
             );
     }
 }

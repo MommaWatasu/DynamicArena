@@ -246,6 +246,17 @@ fn create_total_result(builder: &mut ChildBuilder, asset_server: &Res<AssetServe
         });
 }
 
+fn controller_input(
+    mut next_state: ResMut<NextState<AppState>>,
+    gamepads: Query<&Gamepad>,
+) {
+    for gamepad in gamepads.iter() {
+        if gamepad.just_pressed(GamepadButton::West) {
+            next_state.set(AppState::Mainmenu);
+        }
+    }
+}
+
 fn check_exit_button(
     mut next_state: ResMut<NextState<AppState>>,
     query: Query<&Interaction, (Changed<Interaction>, With<Button>)>,
@@ -273,6 +284,7 @@ impl Plugin for ResultPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(AppState::Result), setup)
             .add_systems(OnExit(AppState::Result), exit)
-            .add_systems(Update, check_exit_button.run_if(in_state(AppState::Result)));
+            .add_systems(Update, check_exit_button.run_if(in_state(AppState::Result)))
+            .add_systems(Update, controller_input.run_if(in_state(AppSTate::Result)));
     }
 }
