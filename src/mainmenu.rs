@@ -18,6 +18,7 @@ struct ButtonIndex {
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    #[cfg(not(target_arch = "wasm32"))] button_idx: Res<ButtonIndex>,
     #[cfg(not(target_arch = "wasm32"))] mut config: ResMut<GameConfig>,
     #[cfg(not(target_arch = "wasm32"))] gamepads: Query<(&Name, Entity), With<Gamepad>>,
     audio: Query<&AudioPlayer>,
@@ -114,7 +115,8 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            if gamepads.iter().count() > 0 {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            if button_idx.idx == 0 {
                                 BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
                             } else {
                                 BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
@@ -145,7 +147,12 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0)),
+                            #[cfg(not(target_arch = "wasm32"))]
+                            if button_idx.idx == 1 {
+                                BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+                            } else {
+                                BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+                            },
                             BackgroundColor(Color::BLACK),
                         ))
                         .with_child((
@@ -172,6 +179,7 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
+                            #[cfg(not(target_arch = "wasm32"))]
                             BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0)),
                             BackgroundColor(Color::BLACK),
                         ))
