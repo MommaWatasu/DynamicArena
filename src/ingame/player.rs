@@ -766,6 +766,11 @@ fn keyboard_input(
                     * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
                 player.velocity = Vec2::new(x_vel, 0.0);
             }
+        } else if player.state.check(PlayerState::BEND_DOWN) {
+            // player is bending down
+            // then stop bending down
+            player.state &= !PlayerState::BEND_DOWN;
+            player.set_animation(IDLE_POSE1, 0, 10);
         }
         if keys.just_pressed(KeyCode::Space) {
             if player.state.is_idle() {

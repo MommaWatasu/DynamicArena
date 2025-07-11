@@ -614,7 +614,7 @@ pub fn agent_system(
                 player.state &= !PlayerState::WALKING;
             }
             if action != Action::Bend {
-                player.state = PlayerState::COOLDOWN;
+                player.state &= !PlayerState::BEND_DOWN;
             }
             match action {
                 Action::MoveForward => {
