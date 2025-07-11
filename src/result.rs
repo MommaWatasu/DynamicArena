@@ -285,6 +285,6 @@ impl Plugin for ResultPlugin {
         app.add_systems(OnEnter(AppState::Result), setup)
             .add_systems(OnExit(AppState::Result), exit)
             .add_systems(Update, check_exit_button.run_if(in_state(AppState::Result)))
-            .add_systems(Update, controller_input.run_if(in_state(AppSTate::Result)));
+            .add_systems(Update, controller_input.run_if(in_state(AppState::Result)));
     }
 }
