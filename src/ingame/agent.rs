@@ -613,6 +613,9 @@ pub fn agent_system(
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
             }
+            if action != Action::Bend {
+                player.state = PlayerState::COOLDOWN;
+            }
             match action {
                 Action::MoveForward => {
                     if player.state.is_idle() {
