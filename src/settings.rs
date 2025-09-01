@@ -14,7 +14,7 @@ struct Settings;
 #[derive(Resource)]
 struct SettingIndex {
     idx: u8
-};
+}
 
 #[derive(Component, Clone)]
 struct SettingItem<T: Clone + ToString + Send + Sync + 'static> {
