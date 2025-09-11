@@ -115,6 +115,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut game_state: ResMut<GameState>,
     config: Res<GameConfig>,
 ) {
@@ -1092,6 +1093,8 @@ fn setup(
             &mut commands,
             &mut meshes,
             &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             135.0 - config.window_size.y / 2.0,
         );
         spawn_player(
@@ -1100,6 +1103,8 @@ fn setup(
             &mut commands,
             &mut meshes,
             &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             135.0 - config.window_size.y / 2.0,
         );
     } else {
@@ -1109,6 +1114,8 @@ fn setup(
             &mut commands,
             &mut meshes,
             &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             270.0 - config.window_size.y / 2.0,
         );
         spawn_player(
@@ -1117,6 +1124,8 @@ fn setup(
             &mut commands,
             &mut meshes,
             &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             270.0 - config.window_size.y / 2.0,
         );
     }

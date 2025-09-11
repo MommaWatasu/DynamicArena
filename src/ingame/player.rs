@@ -13,8 +13,6 @@ use std::{
     ops::{BitAndAssign, BitOr, BitOrAssign, Not},
 };
 
-const SKIN_COLOR: Color = Color::srgb(0.9, 0.8, 0.7);
-
 // definition for normal display
 #[cfg(not(target_arch = "wasm32"))]
 const LIMB_LENGTH: f32 = 30.0;
@@ -394,11 +392,26 @@ pub fn spawn_player(
     id: u8,
     character_id: isize,
     builder: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    asset_server: &Res<AssetServer>,
     y_pos: f32,
 ) {
     let profile = &CHARACTER_PROFILES[character_id as usize];
+    
+    // load texture image
+    let texture_handle: Handle<Image> = asset_server.load(format!("{}blue_walk.png", PATH_IMAGE_PREFIX));
+    // transform texture image into atlas format
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handle,
+        UVec2::new(512, 512),
+        34,
+        1,
+        None,
+        None,
+    );
+    // make it possible to handle the atlas of the image
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
     builder
         .spawn((
             if id == 0 {
@@ -408,6 +421,21 @@ pub fn spawn_player(
             },
             PlayerID(id),
             InGame,
+            Sprite {
+                image: asset_server.load(format!("{}blue_walk.png", PATH_IMAGE_PREFIX)),
+                texture_atlas: Some(TextureAtlas {
+                    layout: texture_atlas_layouts.add(
+                        TextureAtlasLayout::from_grid(UVec2::new(512, 512), 34, 1, None, None)
+                    ),
+                    index: 0
+                }),
+                flip_x: if id == 0 {
+                    true
+                } else {
+                    false
+                },
+                ..Default::default()
+            },
             // Player 0 is on top of the screen
             #[cfg(not(target_arch = "wasm32"))]
             Transform::from_translation(Vec3::new(
@@ -427,11 +455,6 @@ pub fn spawn_player(
         .with_children(|builder| {
             builder
                 .spawn((
-                    #[cfg(not(target_arch = "wasm32"))]
-                    Mesh2d(meshes.add(Rectangle::new(BODY_THICKNESS * 4.0, 130.0))),
-                    #[cfg(target_arch = "wasm32")]
-                    Mesh2d(meshes.add(Rectangle::new(BODY_THICKNESS * 4.0, 65.0))),
-                    MeshMaterial2d(materials.add(profile.color)),
                     Transform::default(),
                     BodyParts::BODY,
                     PlayerID(id),
@@ -449,22 +472,12 @@ pub fn spawn_player(
                     // Neck is invisible(completely transparent)
                     builder
                         .spawn((
-                            #[cfg(not(target_arch = "wasm32"))]
-                            Mesh2d(meshes.add(Rectangle::new(10.0, 40.0))),
-                            #[cfg(target_arch = "wasm32")]
-                            Mesh2d(meshes.add(Rectangle::new(1.0, 20.0))),
-                            MeshMaterial2d(materials.add(Color::srgba(0.0, 0.0, 0.0, 0.0))),
                             BodyParts::HEAD,
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, HEAD_OFFSET, 2.0)),
                         ))
                         // Head
                         .with_child((
-                            #[cfg(not(target_arch = "wasm32"))]
-                            Mesh2d(meshes.add(Circle::new(40.0))),
-                            #[cfg(target_arch = "wasm32")]
-                            Mesh2d(meshes.add(Circle::new(20.0))),
-                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             //BodyParts::HEAD,
                             #[cfg(not(target_arch = "wasm32"))]
                             Transform::from_translation(Vec3::new(0.0, 20.0, -1.0)),
@@ -482,11 +495,6 @@ pub fn spawn_player(
                     // Right Upper Arm
                     builder
                         .spawn((
-                            Mesh2d(meshes.add(Capsule2d {
-                                radius: LIMB_RADIUS,
-                                half_length: LIMB_LENGTH,
-                            })),
-                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, true, true),
                             PlayerID(id),
                             // player 0 is right facing, and player 1 is left facing
@@ -500,11 +508,6 @@ pub fn spawn_player(
                         ))
                         // Right Lower Arm
                         .with_child((
-                            Mesh2d(meshes.add(Capsule2d {
-                                radius: LIMB_RADIUS,
-                                half_length: LIMB_LENGTH,
-                            })),
-                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, true, false),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, LOWER_ARM_OFFSET, 2.0)),
@@ -517,11 +520,6 @@ pub fn spawn_player(
                     // Left Upper Arm
                     builder
                         .spawn((
-                            Mesh2d(meshes.add(Capsule2d {
-                                radius: LIMB_RADIUS,
-                                half_length: LIMB_LENGTH,
-                            })),
-                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, false, true),
                             PlayerID(id),
                             // player 0 is right facing, and player 1 is left facing
@@ -535,11 +533,6 @@ pub fn spawn_player(
                         ))
                         // Left Lower Arm
                         .with_child((
-                            Mesh2d(meshes.add(Capsule2d {
-                                radius: LIMB_RADIUS,
-                                half_length: LIMB_LENGTH,
-                            })),
-                            MeshMaterial2d(materials.add(SKIN_COLOR)),
                             BodyParts::new(false, false, true, false, false),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(0.0, LOWER_ARM_OFFSET, 2.0)),
@@ -552,11 +545,6 @@ pub fn spawn_player(
                     // Right Upper Leg
                     builder
                         .spawn((
-                            Mesh2d(meshes.add(Capsule2d {
-                                radius: LIMB_RADIUS,
-                                half_length: LIMB_LENGTH,
-                            })),
-                            MeshMaterial2d(materials.add(profile.color)),
                             // right upper leg
                             BodyParts::new(false, false, false, true, true),
                             PlayerID(id),
@@ -573,11 +561,6 @@ pub fn spawn_player(
                         .with_children(|builder| {
                             builder
                                 .spawn((
-                                    Mesh2d(meshes.add(Capsule2d {
-                                        radius: LIMB_RADIUS,
-                                        half_length: LIMB_LENGTH,
-                                    })),
-                                    MeshMaterial2d(materials.add(profile.color)),
                                     // right lower leg
                                     BodyParts::new(false, false, false, true, false),
                                     PlayerID(id),
@@ -591,26 +574,11 @@ pub fn spawn_player(
                                     ActiveEvents::COLLISION_EVENTS,
                                     ActiveCollisionTypes::default()
                                         | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
-                                ))
-                                .with_child((
-                                    Foot(true),
-                                    PlayerID(id),
-                                    Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
-                                    MeshMaterial2d(materials.add(SKIN_COLOR)),
-                                    #[cfg(not(target_arch = "wasm32"))]
-                                    Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
-                                    #[cfg(target_arch = "wasm32")]
-                                    Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
                                 ));
                         });
                     // Left Upper Leg
                     builder
                         .spawn((
-                            Mesh2d(meshes.add(Capsule2d {
-                                radius: LIMB_RADIUS,
-                                half_length: LIMB_LENGTH,
-                            })),
-                            MeshMaterial2d(materials.add(profile.color)),
                             BodyParts::new(false, false, false, false, true),
                             PlayerID(id),
                             Transform::from_translation(Vec3::new(-20.0, UPPER_LEG_OFFSET, 1.0)),
@@ -624,11 +592,6 @@ pub fn spawn_player(
                         .with_children(|builder| {
                             builder
                                 .spawn((
-                                    Mesh2d(meshes.add(Capsule2d {
-                                        radius: LIMB_RADIUS,
-                                        half_length: LIMB_LENGTH,
-                                    })),
-                                    MeshMaterial2d(materials.add(profile.color)),
                                     BodyParts::new(false, false, false, false, false),
                                     PlayerID(id),
                                     Transform::from_translation(Vec3::new(
@@ -641,16 +604,6 @@ pub fn spawn_player(
                                     ActiveEvents::COLLISION_EVENTS,
                                     ActiveCollisionTypes::default()
                                         | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
-                                ))
-                                .with_child((
-                                    Foot(false),
-                                    PlayerID(id),
-                                    Mesh2d(meshes.add(Circle::new(LIMB_RADIUS))),
-                                    MeshMaterial2d(materials.add(SKIN_COLOR)),
-                                    #[cfg(not(target_arch = "wasm32"))]
-                                    Transform::from_translation(Vec3::new(0.0, -40.0, 1.0)),
-                                    #[cfg(target_arch = "wasm32")]
-                                    Transform::from_translation(Vec3::new(0.0, -20.0, 1.0)),
                                 ));
                         });
                 });
