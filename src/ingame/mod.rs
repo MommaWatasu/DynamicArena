@@ -1091,8 +1091,6 @@ fn setup(
             0,
             config.characters_id[0],
             &mut commands,
-            &mut meshes,
-            &mut materials,
             &mut texture_atlas_layouts,
             &asset_server,
             135.0 - config.window_size.y / 2.0,
@@ -1101,8 +1099,6 @@ fn setup(
             1,
             config.characters_id[1],
             &mut commands,
-            &mut meshes,
-            &mut materials,
             &mut texture_atlas_layouts,
             &asset_server,
             135.0 - config.window_size.y / 2.0,
@@ -1112,8 +1108,6 @@ fn setup(
             0,
             config.characters_id[0],
             &mut commands,
-            &mut meshes,
-            &mut materials,
             &mut texture_atlas_layouts,
             &asset_server,
             270.0 - config.window_size.y / 2.0,
@@ -1122,8 +1116,6 @@ fn setup(
             1,
             config.characters_id[1],
             &mut commands,
-            &mut meshes,
-            &mut materials,
             &mut texture_atlas_layouts,
             &asset_server,
             270.0 - config.window_size.y / 2.0,
@@ -1277,7 +1269,7 @@ fn main_game_system(
                 ));
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!(
-                        "{}/round{}.ogg",
+                        "{}round{}.ogg",
                         PATH_SOUND_PREFIX, gamestate.round
                     ))),
                     SoundEffect,
@@ -1288,7 +1280,7 @@ fn main_game_system(
                 text.0 = format!("ROUND {}", gamestate.round);
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!(
-                        "{}/round{}.ogg",
+                        "{}round{}.ogg",
                         PATH_SOUND_PREFIX, gamestate.round
                     ))),
                     SoundEffect,
@@ -1304,7 +1296,7 @@ fn main_game_system(
                 text.0 = "READY?".to_string();
                 // TODO: I have to think about how to handle spawned Audio Player entity
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/ready.ogg", PATH_SOUND_PREFIX))),
+                    AudioPlayer::new(asset_server.load(format!("{}ready.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
                 ));
                 gamestate.phase = 2;
@@ -1316,7 +1308,7 @@ fn main_game_system(
                 let (_, mut text, _) = status_bar_query.single_mut();
                 text.0 = "FIGHT!".to_string();
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/fight.ogg", PATH_SOUND_PREFIX))),
+                    AudioPlayer::new(asset_server.load(format!("{}fight.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
                 ));
                 gamestate.phase = 3;
@@ -1350,14 +1342,14 @@ fn main_game_system(
                 if gamestate.win_types[gamestate.round as usize - 1] {
                     commands.spawn((
                         AudioPlayer::new(
-                            asset_server.load(format!("{}/KO.ogg", PATH_SOUND_PREFIX)),
+                            asset_server.load(format!("{}KO.ogg", PATH_SOUND_PREFIX)),
                         ),
                         SoundEffect,
                     ));
                 } else {
                     commands.spawn((
                         AudioPlayer::new(
-                            asset_server.load(format!("{}/timeup.ogg", PATH_SOUND_PREFIX)),
+                            asset_server.load(format!("{}timeup.ogg", PATH_SOUND_PREFIX)),
                         ),
                         SoundEffect,
                     ));
@@ -1389,7 +1381,7 @@ fn main_game_system(
             if winner_id == 0 {
                 text.0 = "DRAW".to_string();
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/draw.ogg", PATH_SOUND_PREFIX))),
+                    AudioPlayer::new(asset_server.load(format!("{}draw.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
                 ));
             } else {
@@ -1397,7 +1389,7 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(
                         asset_server
-                            .load(format!("{}/player{}_win.ogg", PATH_SOUND_PREFIX, winner_id)),
+                            .load(format!("{}player{}_win.ogg", PATH_SOUND_PREFIX, winner_id)),
                     ),
                     SoundEffect,
                 ));

@@ -392,25 +392,18 @@ pub fn spawn_player(
     id: u8,
     character_id: isize,
     builder: &mut Commands,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
     asset_server: &Res<AssetServer>,
     y_pos: f32,
 ) {
-    let profile = &CHARACTER_PROFILES[character_id as usize];
-    
-    // load texture image
-    let texture_handle: Handle<Image> = asset_server.load(format!("{}blue_walk.png", PATH_IMAGE_PREFIX));
-    // transform texture image into atlas format
-    let texture_atlas = TextureAtlas::from_grid(
-        texture_handle,
-        UVec2::new(512, 512),
-        34,
-        1,
-        None,
-        None,
-    );
-    // make it possible to handle the atlas of the image
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    // let profile = &CHARACTER_PROFILES[character_id as usize];
+
+        // Load the sprite sheet using the `AssetServer`
+    let texture = asset_server.load(format!("{}blue_guy_test.png", PATH_IMAGE_PREFIX));
+
+    // The sprite sheet has 30 sprites arranged in a row, and they are all 512px x 512px
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 1, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     builder
         .spawn((
@@ -422,17 +415,15 @@ pub fn spawn_player(
             PlayerID(id),
             InGame,
             Sprite {
-                image: asset_server.load(format!("{}blue_walk.png", PATH_IMAGE_PREFIX)),
+                image: texture.clone(),
                 texture_atlas: Some(TextureAtlas {
-                    layout: texture_atlas_layouts.add(
-                        TextureAtlasLayout::from_grid(UVec2::new(512, 512), 34, 1, None, None)
-                    ),
-                    index: 0
+                    layout: texture_atlas_layout.clone(),
+                    index: 0,
                 }),
                 flip_x: if id == 0 {
-                    true
-                } else {
                     false
+                } else {
+                    true
                 },
                 ..Default::default()
             },
