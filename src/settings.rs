@@ -1,9 +1,10 @@
 use crate::{
-    ingame::agent::Level, AppState, GameConfig, GameMode, DEFAULT_FONT_SIZE, PATH_BOLD_FONT,
+    ingame::agent::Level, AppState, GameConfig, GameMode, BGM, SoundEffect, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT,
     PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT, PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 use bevy::{
     prelude::*,
+    audio::Volume,
     window::{PrimaryWindow, WindowMode},
 };
 use std::fmt::Display;
@@ -352,6 +353,8 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
 }
 
 fn update_setting(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
     button_query: Query<
         (&Interaction, &ConfigElement, &Children),
@@ -367,12 +370,20 @@ fn update_setting(
     >,
     text_query: Query<&Text, Without<ConfigElement>>,
     mut config: ResMut<GameConfig>,
-    mut audio: Query<&mut AudioSink>,
+    mut global_volume: ResMut<GlobalVolume>,
+    mut audio: Query<&mut AudioSink, With<BGM>>,
 ) {
     for (interaction, config_element, children) in &mut button_query.iter() {
         if interaction != &Interaction::Pressed {
             continue;
         }
+        commands.spawn((
+            AudioPlayer::new(asset_server.load(format!(
+                "{}setting_button.ogg",
+                PATH_SOUND_PREFIX,
+            ))),
+            SoundEffect,
+        ));
         let sign;
         match text_query.get(children[0]).unwrap().0.as_str() {
             "-" => {
@@ -400,6 +411,7 @@ fn update_setting(
                 text.0 = format!("{:.1}", new_value);
                 if element.0 == 0 {
                     config.sound_volume = new_value;
+                    global_volume.volume = Volume::new(new_value);
                     let sink = audio.single_mut();
                     sink.set_volume(new_value);
                 }
@@ -462,9 +474,12 @@ fn controller_input(
 }
 
 fn check_back(
+    mut commands: Commands,
     mut next_state: ResMut<NextState<AppState>>,
+    asset_server: Res<AssetServer>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<&Text>,
+    sound_query: Query<Entity, With<SoundEffect>>,
 ) {
     for (interaction, children) in &mut interaction_query.iter() {
         match *interaction {
@@ -473,6 +488,17 @@ fn check_back(
                     let text = text_query.get(children[0]).unwrap();
                     match text.0.as_str() {
                         "<Back" => {
+                            // reset audio player(unused sound effect entity)
+                            for entity in sound_query.iter() {
+                                commands.entity(entity).despawn_recursive();
+                            }
+                            commands.spawn((
+                                AudioPlayer::new(asset_server.load(format!(
+                                    "{}button_click.ogg",
+                                    PATH_SOUND_PREFIX,
+                                ))),
+                                SoundEffect,
+                            ));
                             next_state.set(AppState::Mainmenu);
                             break;
                         }

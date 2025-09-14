@@ -40,6 +40,9 @@ const PATH_SOUND_PREFIX: &str = "sounds/";
 #[derive(Component)]
 pub struct SoundEffect;
 
+#[derive(Component)]
+pub struct BGM;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum GameMode {
     SinglePlayer = 1,

@@ -7,6 +7,7 @@ All the fonts are taken from Google Fonts and licensed under the Open Font Licen
 - [big trees](https://www.cgtrader.com/free-3d-models/plant/conifer/sassafras-tree-collection-5-trees-in-the-scene)
 - [bush](https://www.cgtrader.com/free-3d-models/plant/bush/cypress-bush-05)
 - [fence](https://www.cgtrader.com/free-3d-models/architectural/architectural-street/wall-with-fence) (I modified this model and create another one which is used in the image)
+- [fist](https://www.cgtrader.com/free-3d-models/various/various-models/golden-fist-fighting-trophy-the-witcher-3-wild-hunt) (I created fist based on this model)
 
 The textures used in the model are taken from [cgbookcase](https://www.cgbookcase.com/).
 
@@ -32,3 +33,7 @@ The following system sounds are generated via [OpenAI-Edge-TTS](https://github.c
 - `timeup.ogg`
 
 `thunder.ogg` is created by [On-Jin 〜音人〜](https://on-jin.com).
+
+The following system sounds are created by [効果音ラボ](https://soundeffect-lab.info/)
+- `button_click.ogg`
+- `cursor_move.ogg`

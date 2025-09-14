@@ -1,5 +1,5 @@
 use crate::{
-    ingame::GameState, AppState, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
+    ingame::GameState, AppState, SoundEffect, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 use bevy::prelude::*;
@@ -258,12 +258,25 @@ fn controller_input(
 }
 
 fn check_exit_button(
+    mut commands: Commands,
     mut next_state: ResMut<NextState<AppState>>,
+    asset_server: Res<AssetServer>,
     query: Query<&Interaction, (Changed<Interaction>, With<Button>)>,
+    sound_query: Query<Entity, With<SoundEffect>>,
 ) {
     for interaction in query.iter() {
         match *interaction {
             Interaction::Pressed => {
+                for sound in sound_query.iter() {
+                    commands.entity(sound).despawn_recursive();
+                }
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!(
+                        "{}button_click.ogg",
+                        PATH_SOUND_PREFIX,
+                    ))),
+                    SoundEffect,
+                ));
                 next_state.set(AppState::Mainmenu);
             }
             _ => {}
