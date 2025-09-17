@@ -194,7 +194,7 @@ fn create_character_box(
             builder.spawn((
                 Node {
                     width: Val::Percent(100.0),
-                    height: Val::Percent(80.0),
+                    height: Val::Percent(85.0),
                     flex_direction: FlexDirection::Column,
                     ..default()
                 },
