@@ -27,7 +27,7 @@ fn setup(
     // if audio query is empty, spawn bgm
     if audio.is_empty() {
         commands.spawn((
-            AudioPlayer::new(asset_server.load(format!("{}/bgm.ogg", PATH_SOUND_PREFIX))),
+            AudioPlayer::new(asset_server.load(format!("{}/Lobby.ogg", PATH_SOUND_PREFIX))),
             PlaybackSettings::LOOP,
             GlobalTransform::default(),
             BGM,
