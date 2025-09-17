@@ -1217,12 +1217,11 @@ fn main_game_system(
     mut next_state: ResMut<NextState<AppState>>,
     mut status_bar_query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
     mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
-    mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>, Without<Foot>)>,
+    mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
     mut player_query: Query<
         (&PlayerID, &mut Player, &mut Transform),
-        (Without<BackGround>, Without<Foot>),
+        Without<BackGround>,
     >,
-    mut foot_query: Query<&mut Transform, (With<Foot>, Without<Player>, Without<BackGround>)>,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID), Without<FireBar>>,
     mut fire_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID), Without<HealthBar>>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
@@ -1430,14 +1429,6 @@ fn main_game_system(
                         } else {
                             transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
                             transform.translation.y = 270.0 - config.window_size.y / 2.0;
-                        }
-                    }
-                    for mut foot_transform in foot_query.iter_mut() {
-                        foot_transform.translation.x = 0.0;
-                        if cfg!(target_arch = "wasm32") {
-                            foot_transform.translation.y = -20.0;
-                        } else {
-                            foot_transform.translation.y = -40.0;
                         }
                     }
 

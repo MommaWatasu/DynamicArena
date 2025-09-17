@@ -15,27 +15,31 @@ use std::{
 
 // definition for normal display
 #[cfg(not(target_arch = "wasm32"))]
+const UPPER_ARM_LENGTH: f32 = 20.0;
+#[cfg(not(target_arch = "wasm32"))]
 const LIMB_LENGTH: f32 = 30.0;
 #[cfg(not(target_arch = "wasm32"))]
 const NECK_LENGTH: f32 = 40.0;
 #[cfg(not(target_arch = "wasm32"))]
-const LIMB_RADIUS: f32 = 15.0;
+const LIMB_RADIUS: f32 = 10.0;
 #[cfg(not(target_arch = "wasm32"))]
 const BODY_THICKNESS: f32 = 10.0;
 #[cfg(not(target_arch = "wasm32"))]
 const HEAD_OFFSET: f32 = 80.0;
 #[cfg(not(target_arch = "wasm32"))]
-const BODY_OFFSET: f32 = 40.0;
+const BODY_OFFSET: f32 = -20.0;
 #[cfg(not(target_arch = "wasm32"))]
-const UPPER_ARM_OFFSET: f32 = 30.0;
+const UPPER_ARM_OFFSET: f32 = 0.0;
 #[cfg(not(target_arch = "wasm32"))]
-const LOWER_ARM_OFFSET: f32 = -60.0;
+const LOWER_ARM_OFFSET: f32 = -50.0;
 #[cfg(not(target_arch = "wasm32"))]
 const UPPER_LEG_OFFSET: f32 = -100.0;
 #[cfg(not(target_arch = "wasm32"))]
 const LOWER_LEG_OFFSET: f32 = -60.0;
 
 // definition for web display
+#[cfg(target_arch = "wasm32")]
+const UPPER_ARM_LENGTH: f32 = 10.0;
 #[cfg(target_arch = "wasm32")]
 const LIMB_LENGTH: f32 = 15.0;
 #[cfg(target_arch = "wasm32")]
@@ -294,16 +298,25 @@ impl Player {
             count: real_count as u8,
         };
     }
-    pub fn update_animation(&mut self) {
+    pub fn update_animation(&mut self, sprite: &mut Sprite) {
         if self.animation.count == 0 {
             return;
+        }
+        if let Some(atlas) = sprite.texture_atlas.as_mut() {
+            atlas.index += 1;
+            if atlas.index == FRAMES_IDLE - 1 {
+                atlas.index = 0;
+            }
         }
         self.pose += self.animation.diff_pose;
         self.animation.count -= 1;
     }
-    pub fn update_animation_idle(&mut self, transform: &mut Transform) {
+    pub fn update_animation_idle(&mut self, transform: &mut Transform, sprite: &mut Sprite) {
         if self.animation.count == 0 {
             return;
+        }
+        if let Some(atlas) = sprite.texture_atlas.as_mut() {
+            atlas.index += 1;
         }
         self.pose += self.animation.diff_pose;
         self.animation.count -= 1;
@@ -365,11 +378,6 @@ impl Debug for BodyParts {
     }
 }
 
-// Represents a foot Entity
-// true for right foot, false for left foot
-#[derive(Component)]
-pub struct Foot(bool);
-
 #[derive(Resource)]
 struct PlayerCollision(u8);
 
@@ -398,11 +406,11 @@ pub fn spawn_player(
 ) {
     // let profile = &CHARACTER_PROFILES[character_id as usize];
 
-        // Load the sprite sheet using the `AssetServer`
-    let texture = asset_server.load(format!("{}blue_guy_test.png", PATH_IMAGE_PREFIX));
+    // Load the sprite sheet using the `AssetServer`
+    let texture = asset_server.load(format!("{}character{}/idle.png", PATH_IMAGE_PREFIX, character_id+1));
 
     // The sprite sheet has 30 sprites arranged in a row, and they are all 512px x 512px
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 1, None, None);
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 2, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     builder
@@ -446,7 +454,7 @@ pub fn spawn_player(
         .with_children(|builder| {
             builder
                 .spawn((
-                    Transform::default(),
+                    Transform::from_translation(Vec3::new(0.0, BODY_OFFSET, 0.0)),
                     BodyParts::BODY,
                     PlayerID(id),
                     #[cfg(not(target_arch = "wasm32"))]
@@ -492,7 +500,7 @@ pub fn spawn_player(
                             // so we need to change which arm is on top
                             Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, 2.0)),
                             RigidBody::KinematicPositionBased,
-                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            Collider::capsule_y(UPPER_ARM_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
                             ActiveCollisionTypes::default()
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
@@ -517,7 +525,7 @@ pub fn spawn_player(
                             // so we need to change which arm is on top
                             Transform::from_translation(Vec3::new(0.0, UPPER_ARM_OFFSET, -1.0)),
                             RigidBody::KinematicPositionBased,
-                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            Collider::capsule_y(UPPER_ARM_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
                             ActiveCollisionTypes::default()
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
@@ -852,7 +860,7 @@ fn player_movement(
     mut timer: ResMut<AnimationTimer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut player_query: Query<
-        (&mut Player, &PlayerID, &mut Transform, &mut Visibility),
+        (&mut Player, &PlayerID, &mut Sprite, &mut Transform, &mut Visibility),
         Without<BackGround>,
     >,
     mut ground_query: Query<
@@ -869,7 +877,7 @@ fn player_movement(
     }
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
-        for (mut player, player_id, mut transform, _) in player_query.iter_mut() {
+        for (mut player, player_id, mut sprite, mut transform, _) in player_query.iter_mut() {
             if player.stun_count > 3 {
                 player.stun_count -= 1;
             }
@@ -877,7 +885,7 @@ fn player_movement(
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
                 transform.translation.y += (270.0 - config.window_size.y / 2.0 - transform.translation.y) / player.animation.count as f32;
-                player.update_animation();
+                player.update_animation(&mut sprite);
                 if player.animation.count == 0 {
                     player.animation.phase = 1;
                     commands.remove_resource::<Fighting>();
@@ -893,7 +901,7 @@ fn player_movement(
 
             // player is stunning
             if player.state.check(PlayerState::STUN) {
-                player.update_animation();
+                player.update_animation(&mut sprite);
                 if !player.state.check(PlayerState::BEND_DOWN) {
                     // if the player is not bend down
                     // the player will slip a little
@@ -914,7 +922,7 @@ fn player_movement(
             if player.state.is_idle() | player.state.check(PlayerState::COOLDOWN) {
                 player.velocity = Vec2::ZERO;
                 if player.animation.phase == 0 {
-                    player.update_animation_idle(&mut transform);
+                    player.update_animation_idle(&mut transform, &mut sprite);
                     if player.animation.count == 0 {
                         if player.state.check(PlayerState::COOLDOWN) {
                             player.state &= !PlayerState::COOLDOWN;
@@ -925,12 +933,12 @@ fn player_movement(
                         player.set_animation(IDLE_POSE2, 1, 15);
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(IDLE_POSE1, 2, 15);
                     }
                 } else if player.animation.phase == 2 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(IDLE_POSE2, 1, 15);
                     }
@@ -945,7 +953,7 @@ fn player_movement(
                 }
 
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         if cfg!(not(target_arch = "wasm32")) {
                             player.velocity = Vec2::new(0.0, 12.0);
@@ -955,7 +963,7 @@ fn player_movement(
                         player.set_animation(JUMP_UP_POSE2, 1, 5);
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         if player.state.check(PlayerState::KICKING) {
                             let mut jumping_kick_pose = JUMPING_KICK_POSE;
@@ -972,7 +980,7 @@ fn player_movement(
                         jumping_kick_pose.body = 0.0;
                         player.set_animation(jumping_kick_pose, 2, 5);
                     }
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                 }
             } else if player.state.check(PlayerState::JUMP_FORWARD) {
                 // player is jumping forward
@@ -983,7 +991,7 @@ fn player_movement(
                 }
 
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         let x_vel = if player.state.check(PlayerState::DIRECTION) {
                             CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
@@ -1007,7 +1015,7 @@ fn player_movement(
                         }
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         #[cfg(not(target_arch = "wasm32"))]
                         if player.state.check(PlayerState::KICKING) {
@@ -1023,7 +1031,7 @@ fn player_movement(
                         }
                     }
                 } else if player.animation.phase == 2 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         #[cfg(not(target_arch = "wasm32"))]
                         if player.state.check(PlayerState::KICKING) {
@@ -1039,7 +1047,7 @@ fn player_movement(
                         }
                     }
                 } else if player.animation.phase == 3 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         #[cfg(not(target_arch = "wasm32"))]
                         if player.state.check(PlayerState::KICKING) {
@@ -1055,7 +1063,7 @@ fn player_movement(
                         }
                     }
                 } else if player.animation.phase == 4 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.pose.body = 0.0;
                     }
@@ -1069,7 +1077,7 @@ fn player_movement(
                 }
 
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         let x_vel = if player.state.check(PlayerState::DIRECTION) {
                             CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
@@ -1085,7 +1093,7 @@ fn player_movement(
                         }
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         #[cfg(not(target_arch = "wasm32"))]
                         player.set_animation(JUMP_BACKWARD_POSE3, 2, 15);
@@ -1093,7 +1101,7 @@ fn player_movement(
                         player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
                     }
                 } else if player.animation.phase == 2 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         #[cfg(not(target_arch = "wasm32"))]
                         player.set_animation(JUMP_BACKWARD_POSE4, 3, 30);
@@ -1101,7 +1109,7 @@ fn player_movement(
                         player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
                     }
                 } else if player.animation.phase == 3 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         #[cfg(not(target_arch = "wasm32"))]
                         player.set_animation(JUMP_BACKWARD_POSE5, 4, 15);
@@ -1109,7 +1117,7 @@ fn player_movement(
                         player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
                     }
                 } else if player.animation.phase == 4 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.pose.body = 0.0;
                     }
@@ -1117,12 +1125,12 @@ fn player_movement(
             } else if player.state.check(PlayerState::BEND_DOWN) {
                 // player is bending down
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(BEND_DOWN_POSE2, 1, 10);
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         // Bend Down Pose lasts until the player stands up
                         player.animation.phase = 2;
@@ -1131,37 +1139,37 @@ fn player_movement(
             } else if player.state.check(PlayerState::ROLL_FORWARD) {
                 // player is rolling forward
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_FORWARD_POSE2, 1, 5);
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_FORWARD_POSE3, 2, 5);
                     }
                 } else if player.animation.phase == 2 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_FORWARD_POSE4, 3, 5);
                     }
                 } else if player.animation.phase == 3 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_FORWARD_POSE5, 4, 5);
                     }
                 } else if player.animation.phase == 4 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_FORWARD_POSE6, 5, 5);
                     }
                 } else if player.animation.phase == 5 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_FORWARD_POSE7, 6, 5);
                     }
                 } else if player.animation.phase == 6 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.pose.body = -20.0;
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
@@ -1171,38 +1179,38 @@ fn player_movement(
             } else if player.state.check(PlayerState::ROLL_BACK) {
                 // player is rolling back
                 if player.animation.phase == 0 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.pose.body = -380.0;
                         player.set_animation(ROLL_BACK_POSE2, 1, 5);
                     }
                 } else if player.animation.phase == 1 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_BACK_POSE3, 2, 5);
                     }
                 } else if player.animation.phase == 2 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_BACK_POSE4, 3, 5);
                     }
                 } else if player.animation.phase == 3 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_BACK_POSE5, 4, 5);
                     }
                 } else if player.animation.phase == 4 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_BACK_POSE6, 5, 5);
                     }
                 } else if player.animation.phase == 5 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(ROLL_BACK_POSE7, 6, 5);
                     }
                 } else if player.animation.phase == 6 {
-                    player.update_animation();
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                         player.set_animation(IDLE_POSE1, 0, 10);
@@ -1211,12 +1219,12 @@ fn player_movement(
             } else {
                 if player.state.check(PlayerState::KICKING) {
                     if player.animation.phase == 0 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.set_animation(KICK_POSE2, 1, 10);
                         }
                     } else if player.animation.phase == 1 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
@@ -1224,7 +1232,7 @@ fn player_movement(
                     }
                 } else if player.state.check(PlayerState::RANGED_ATTACK) {
                     if player.animation.phase == 0 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
@@ -1259,12 +1267,12 @@ fn player_movement(
                     }
                 } else if player.state.check(PlayerState::BACK_KICKING) {
                     if player.animation.phase == 0 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.set_animation(BACK_KICK_POSE2, 1, 5);
                         }
                     } else if player.animation.phase == 1 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
@@ -1272,7 +1280,7 @@ fn player_movement(
                     }
                 } else if player.state.check(PlayerState::PUNCHING) {
                     if player.animation.phase == 0 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
@@ -1302,17 +1310,17 @@ fn player_movement(
                             -CHARACTER_PROFILES[player.character_id as usize].agility;
                     }
                     if player.animation.phase == 0 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.set_animation(WALKING_POSE2, 1, 15);
                         }
                     } else if player.animation.phase == 1 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.set_animation(WALKING_POSE1, 0, 15);
                         }
                     } else if player.animation.phase == 2 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.set_animation(WALKING_POSE2, 1, 15);
                         }
@@ -1338,7 +1346,7 @@ fn player_movement(
         // Check if players are at opposite ends of the screen
         // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge
         let mut at_edges: [u8; 2] = [0; 2];
-        for (_, player_id, transform, _) in player_query.iter() {
+        for (_, player_id, _, transform, _) in player_query.iter() {
             if transform.translation.x < -config.window_size.x / 2.0 + 100.0 {
                 at_edges[player_id.0 as usize] = 1;
             } else if transform.translation.x > config.window_size.x / 2.0 - 100.0 {
@@ -1352,9 +1360,9 @@ fn player_movement(
 
         if (at_edges[0] == 1 || at_edges[0] == 2) && at_edges[1] == 0 {
             let mut diff = 0.0;
-            if let Some((_, _, mut transform, _)) = player_query
+            if let Some((_, _, _, mut transform, _)) = player_query
                 .iter_mut()
-                .find(|(_, player_id, _, _)| player_id.0 == 0)
+                .find(|(_, player_id, _, _, _)| player_id.0 == 0)
             {
                 if at_edges[0] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
@@ -1374,17 +1382,17 @@ fn player_movement(
                 ground.translation.x = config.window_size.x / 2.0 - 2000.0;
             } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
                 ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-            } else if let Some((_, _, mut transform, _)) = player_query
+            } else if let Some((_, _, _, mut transform, _)) = player_query
                 .iter_mut()
-                .find(|(_, player_id, _, _)| player_id.0 == 1)
+                .find(|(_, player_id, _, _, _)| player_id.0 == 1)
             {
                 transform.translation.x += diff;
             }
         } else if at_edges[0] == 0 && (at_edges[1] == 1 || at_edges[1] == 2) {
             let mut diff = 0.0;
-            if let Some((_, _, mut transform, _)) = player_query
+            if let Some((_, _, _, mut transform, _)) = player_query
                 .iter_mut()
-                .find(|(_, player_id, _, _)| player_id.0 == 1)
+                .find(|(_, player_id, _, _, _)| player_id.0 == 1)
             {
                 if at_edges[1] == 1 {
                     // If player 0 is at the left edge, move camera to the left and move players to the right
@@ -1404,9 +1412,9 @@ fn player_movement(
                 ground.translation.x = config.window_size.x / 2.0 - 2000.0;
             } else if ground.translation.x > 2000.0 - config.window_size.x / 2.0 {
                 ground.translation.x = 2000.0 - config.window_size.x / 2.0;
-            } else if let Some((_, _, mut transform, _)) = player_query
+            } else if let Some((_, _, _, mut transform, _)) = player_query
                 .iter_mut()
-                .find(|(_, player_id, _, _)| player_id.0 == 0)
+                .find(|(_, player_id, _, _, _)| player_id.0 == 0)
             {
                 transform.translation.x += diff;
             }
@@ -1414,8 +1422,8 @@ fn player_movement(
             if (at_edges[0] == 1 && at_edges[1] == 3) || (at_edges[0] == 3 && at_edges[1] == 1) {
                 // If both players are at the same edge, move the camera to the edge
                 let mut diff = 0.0;
-                if let Some((_, _, mut transform, _)) =
-                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                if let Some((_, _, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _, _)| {
                         player_id.0 == if at_edges[0] == 1 { 0 } else { 1 }
                     })
                 {
@@ -1423,8 +1431,8 @@ fn player_movement(
                     transform.translation.x = -config.window_size.x / 2.0 + 100.0;
                 }
                 ground.translation.x += diff;
-                if let Some((_, _, mut transform, _)) =
-                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                if let Some((_, _, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _, _)| {
                         player_id.0 == if at_edges[0] == 1 { 1 } else { 0 }
                     })
                 {
@@ -1435,8 +1443,8 @@ fn player_movement(
             {
                 // If both players are at the same edge, move the camera to the edge
                 let mut diff = 0.0;
-                if let Some((_, _, mut transform, _)) =
-                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                if let Some((_, _, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _, _)| {
                         player_id.0 == if at_edges[0] == 2 { 0 } else { 1 }
                     })
                 {
@@ -1444,15 +1452,15 @@ fn player_movement(
                     transform.translation.x = config.window_size.x / 2.0 - 100.0;
                 }
                 ground.translation.x += diff;
-                if let Some((_, _, mut transform, _)) =
-                    player_query.iter_mut().find(|(_, player_id, _, _)| {
+                if let Some((_, _, _, mut transform, _)) =
+                    player_query.iter_mut().find(|(_, player_id, _, _, _)| {
                         player_id.0 == if at_edges[0] == 2 { 1 } else { 0 }
                     })
                 {
                     transform.translation.x += diff;
                 }
             } else {
-                for (_, player_id, mut transform, _) in player_query.iter_mut() {
+                for (_, player_id, _, mut transform, _) in player_query.iter_mut() {
                     // If players are at opposite edges, don't move
                     if at_edges[player_id.0 as usize] == 1 || at_edges[player_id.0 as usize] == 3 {
                         transform.translation.x = -config.window_size.x / 2.0 + 100.0;
@@ -1476,7 +1484,7 @@ fn skill_animation(
     config: Res<GameConfig>,
     mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<
-        (&mut Player, &PlayerID, &mut Transform, &mut Visibility),
+        (&mut Player, &PlayerID, &mut Sprite, &mut Transform, &mut Visibility),
         (Without<Camera2d>, Without<SkillEntity>),
     >,
     energy_query: Query<(&mut EnergyBar, &mut Mesh2d, &PlayerID), Without<SkillEntity>>,
@@ -1508,17 +1516,17 @@ fn skill_animation(
         // perform skill animation
         if fighting.0 != 0 {
             let mut opponent_position = Vec2::ZERO;
-            if let Some((_, _, transform, _)) = player_query
+            if let Some((_, _, _, transform, _)) = player_query
                 .iter_mut()
-                .find(|(_, id, _, _)| id.0 != fighting.0 - 1)
+                .find(|(_, id, _, _, _)| id.0 != fighting.0 - 1)
             {
                 opponent_position = Vec2::new(transform.translation.x, transform.translation.y);
             }
             let mut damage: u32 = 0;
-            if let Some((mut player, player_id, mut transform, mut player_visibility)) =
+            if let Some((mut player, player_id, mut sprite, mut transform, mut player_visibility)) =
                 player_query
                     .iter_mut()
-                    .find(|(_, id, _, _)| id.0 == fighting.0 - 1)
+                    .find(|(_, id, _, _, _)| id.0 == fighting.0 - 1)
             {
                 if player.animation.phase == 0 {
                     player.animation.count += 1;
@@ -1732,7 +1740,7 @@ fn skill_animation(
                             player.animation.count = 0;
                         }
                     } else if player.character_id == 2 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         for (_, skill_entity, mesh_handler, _) in hammer_query.iter() {
                             if skill_entity.id == 3 || skill_entity.id == 4 {
                                 if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
@@ -1831,7 +1839,7 @@ fn skill_animation(
                     }
                 } else if player.animation.phase == 5 {
                     if player.character_id == 0 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
                             player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
                             transform.translation.y += player.velocity.y;
@@ -1848,7 +1856,7 @@ fn skill_animation(
                             }
                         }
                     } else if player.character_id == 2 {
-                        player.update_animation();
+                        player.update_animation(&mut sprite);
                         for (_, skill_entity, _, mut hammer_transform) in hammer_query.iter_mut() {
                             if skill_entity.id == 3 {
                                 if player.pose.facing {
@@ -1944,9 +1952,9 @@ fn skill_animation(
                     }
                 }
                 if damage != 0 {
-                    if let Some((mut player, player_id, _, _)) = player_query
+                    if let Some((mut player, player_id, _, _, _)) = player_query
                         .iter_mut()
-                        .find(|(_, id, _, _)| id.0 != fighting.0 - 1)
+                        .find(|(_, id, _, _, _)| id.0 != fighting.0 - 1)
                     {
                         for (player_id_text, mut text, mut color, mut damage_display) in
                             damage_display_query.iter_mut()
@@ -2151,15 +2159,11 @@ fn rotate_neck(transform: &mut Transform, degree: f32) {
 fn update_pose(
     mut player_query: Query<
         (&mut Player, &mut Transform, &PlayerID),
-        (Without<BodyParts>, Without<Foot>),
+        Without<BodyParts>,
     >,
     mut parts_query: Query<
         (&BodyParts, &PlayerID, &mut Transform),
-        (Without<Player>, Without<Foot>),
-    >,
-    mut foot_query: Query<
-        (&Foot, &PlayerID, &mut Transform),
-        (Without<Player>, Without<BodyParts>),
+        Without<Player>,
     >,
 ) {
     for (mut player, mut player_transform, player_id) in player_query.iter_mut() {
@@ -2244,38 +2248,6 @@ fn update_pose(
                 (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
         }
         player.pose.old_offset = player.pose.offset;
-
-        // update foot position
-        for (foot, foot_id, mut transform) in foot_query.iter_mut() {
-            if player_id.0 == foot_id.0 {
-                if cfg!(not(target_arch = "wasm32")) {
-                    if foot.0 {
-                        transform.translation.x +=
-                            player.pose.foot_offset[0] - player.pose.old_foot_offset[0];
-                        transform.translation.y +=
-                            player.pose.foot_offset[1] - player.pose.old_foot_offset[1];
-                    } else {
-                        transform.translation.x +=
-                            player.pose.foot_offset[2] - player.pose.old_foot_offset[2];
-                        transform.translation.y +=
-                            player.pose.foot_offset[3] - player.pose.old_foot_offset[3];
-                    }
-                } else {
-                    if foot.0 {
-                        transform.translation.x +=
-                            (player.pose.foot_offset[0] - player.pose.old_foot_offset[0]) / 2.0;
-                        transform.translation.y +=
-                            (player.pose.foot_offset[1] - player.pose.old_foot_offset[1]) / 2.0;
-                    } else {
-                        transform.translation.x +=
-                            (player.pose.foot_offset[2] - player.pose.old_foot_offset[2]) / 2.0;
-                        transform.translation.y +=
-                            (player.pose.foot_offset[3] - player.pose.old_foot_offset[3]) / 2.0;
-                    }
-                }
-            }
-        }
-        player.pose.old_foot_offset = player.pose.foot_offset;
     }
 }
 
