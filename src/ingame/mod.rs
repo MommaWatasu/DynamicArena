@@ -5,6 +5,7 @@ use bevy::{
 };
 use bevy_rapier2d::prelude::*;
 use pose::WINNER_POSE;
+use crate::BGM;
 
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
@@ -118,8 +119,21 @@ fn setup(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut game_state: ResMut<GameState>,
     config: Res<GameConfig>,
+    audio_query: Query<Entity, With<BGM>>,
 ) {
     info!("setup");
+
+    if !audio_query.is_empty() {
+        for entity in audio_query.iter() {
+            commands.entity(entity).despawn();
+        }
+    }
+    commands.spawn((
+        AudioPlayer::new(asset_server.load(format!("{}Bushido_Electric.ogg", PATH_SOUND_PREFIX))),
+        PlaybackSettings::LOOP,
+        BGM,
+    ));
+
     #[cfg(feature="pause")]
     info!("pause feature enabled");
     #[cfg(feature="pause")]
