@@ -4,6 +4,13 @@ use std::ops::{Add, AddAssign, Div, Sub};
 pub const FRAMES_IDLE: usize = 57;
 pub const FRAMES_WALK: usize = 30;
 pub const FRAMES_JUMP: usize = 58;
+pub const FRAMES_KICK: usize = 46;
+pub const FRAMES_PUNCH: usize = 32;
+pub const FRAMES_BACK_KICK: usize = 49;
+pub const FRAMES_BEND_DOWN: usize = 57;
+pub const FRAMES_ROLL: usize = 36;
+pub const FRAMES_VICTORY: usize = 93;
+pub const FRAMES_DEFEATED: usize = 120;
 
 // The pose of a character
 // facing: true means right facing, false means left facing
@@ -693,37 +700,3 @@ pub const STUN_POSE: Pose = Pose {
     left_upper_leg: 70.0,
     left_lower_leg: -60.0,
 };
-
-pub const WINNER_POSE: Pose = Pose {
-    facing: true,
-    offset: [0.0, 0.0],
-    old_offset: [0.0, 0.0],
-    head: 0.0,
-    body: 0.0,
-    right_upper_arm: -20.0,
-    right_lower_arm: 50.0,
-    right_upper_leg: -40.0,
-    right_lower_leg: 40.0,
-    left_upper_arm: 140.0,
-    left_lower_arm: 30.0,
-    left_upper_leg: 60.0,
-    left_lower_leg: -60.0,
-};
-
-/*
-pub const LOSER_POSE: Pose = Pose {
-    facing: true,
-    offset: [0.0, -200.0],
-    old_offset: [0.0, 0.0],
-    head: 40.0,
-    body: 80.0,
-    right_upper_arm: -30.0,
-    right_lower_arm: 90.0,
-    right_upper_leg: 20.0,
-    right_lower_leg: -40.0,
-    left_upper_arm: -40.0,
-    left_lower_arm: 70.0,
-    left_upper_leg: 40.0,
-    left_lower_leg: -80.0,
-};
-*/

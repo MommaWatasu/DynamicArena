@@ -37,11 +37,58 @@ const PATH_BOLD_MONOSPACE_FONT: &str = "fonts/Roboto_Condensed/RobotoCondensed-B
 const PATH_IMAGE_PREFIX: &str = "images/";
 const PATH_SOUND_PREFIX: &str = "sounds/";
 
+pub struct CharacterTexture {
+    idle: Handle<Image>,
+    walk: Handle<Image>,
+    jump: Handle<Image>,
+    kick: Handle<Image>,
+    punch: Handle<Image>,
+    back_kick: Handle<Image>,
+    bend_down: Handle<Image>,
+    roll: Handle<Image>,
+    victory: Handle<Image>,
+    defeated: Handle<Image>,
+}
+
+impl CharacterTexture {
+    pub fn new(character_id: isize, asset_server: &Res<AssetServer>) -> Self {
+        Self {
+            idle: asset_server.load(format!("{}character{}/idle.png", PATH_IMAGE_PREFIX, character_id+1)),
+            walk: asset_server.load(format!("{}character{}/walk.png", PATH_IMAGE_PREFIX, character_id+1)),
+            jump: asset_server.load(format!("{}character{}/jump.png", PATH_IMAGE_PREFIX, character_id+1)),
+            kick: asset_server.load(format!("{}character{}/kick.png", PATH_IMAGE_PREFIX, character_id+1)),
+            punch: asset_server.load(format!("{}character{}/punch.png", PATH_IMAGE_PREFIX, character_id+1)),
+            back_kick: asset_server.load(format!("{}character{}/back_kick.png", PATH_IMAGE_PREFIX, character_id+1)),
+            bend_down: asset_server.load(format!("{}character{}/bend_down.png", PATH_IMAGE_PREFIX, character_id+1)),
+            roll: asset_server.load(format!("{}character{}/roll.png", PATH_IMAGE_PREFIX, character_id+1)),
+            victory: asset_server.load(format!("{}character{}/victory.png", PATH_IMAGE_PREFIX, character_id+1)),
+            defeated: asset_server.load(format!("{}character{}/defeated.png", PATH_IMAGE_PREFIX, character_id+1)),
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct CharacterTextures {
+    textures: [CharacterTexture; 3],
+}
+
+impl CharacterTextures {
+    pub fn new(asset_server: &Res<AssetServer>) -> Self {
+        Self {
+            textures: [
+                CharacterTexture::new(0, asset_server),
+                CharacterTexture::new(1, asset_server),
+                CharacterTexture::new(2, asset_server),
+            ],
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct SoundEffect;
 
 #[derive(Component)]
-pub struct BGM;
+pub struct BGM(bool);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum GameMode {
@@ -124,11 +171,13 @@ fn setup(
     mut commands: Commands,
     monitors: Query<&Monitor>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
     mut config: ResMut<GameConfig>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     info!("main: setup");
     // assume that there is only one monitor
+    info!("Detecting monitors...");
     let primary_monitor: bool = false;
     for monitor in monitors.iter() {
         if primary_monitor {
@@ -159,6 +208,7 @@ fn setup(
     let mut window = windows.single_mut();
     window.mode = WindowMode::BorderlessFullscreen(MonitorSelection::Primary);
     window.resolution = config.window_size.into();
+    info!("Complete");
 
     // camera
     commands.spawn((
@@ -170,6 +220,12 @@ fn setup(
         Transform::default(),
         Bloom::NATURAL,
     ));
+
+    // load textures
+    info!("Loading textures...");
+    commands.insert_resource(CharacterTextures::new(&asset_server));
+    info!("Complete");
+
     next_state.set(AppState::Mainmenu);
 }
 

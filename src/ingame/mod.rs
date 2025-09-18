@@ -4,8 +4,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
 use bevy_rapier2d::prelude::*;
-use pose::WINNER_POSE;
-use crate::BGM;
+use crate::{ingame::pose::{FRAMES_VICTORY, FRAMES_DEFEATED}, CharacterTextures, BGM};
 
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
@@ -123,15 +122,13 @@ fn setup(
 ) {
     info!("setup");
 
-    if !audio_query.is_empty() {
-        for entity in audio_query.iter() {
-            commands.entity(entity).despawn();
-        }
+    for entity in audio_query.iter() {
+        commands.entity(entity).despawn();
     }
     commands.spawn((
         AudioPlayer::new(asset_server.load(format!("{}Bushido_Electric.ogg", PATH_SOUND_PREFIX))),
         PlaybackSettings::LOOP,
-        BGM,
+        BGM(false),
     ));
 
     #[cfg(feature="pause")]
@@ -1229,11 +1226,12 @@ fn main_game_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut gamestate: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
+    character_textures: Res<CharacterTextures>,
     mut status_bar_query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
     mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
     mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
     mut player_query: Query<
-        (&PlayerID, &mut Player, &mut Transform),
+        (&PlayerID, &mut Player, &mut Sprite, &mut Transform),
         Without<BackGround>,
     >,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID), Without<FireBar>>,
@@ -1374,9 +1372,15 @@ fn main_game_system(
                     gamestate.phase = 7;
                     gamestate.count = 0;
                 } else {
-                    for (id, mut player, _) in player_query.iter_mut() {
+                    for (id, mut player, mut sprite, _) in player_query.iter_mut() {
                         if gamestate.winners[gamestate.round as usize - 1] == id.0 + 1 {
-                            player.set_animation(WINNER_POSE, 0, 10);
+                            sprite.image = character_textures.textures[player.character_id as usize].victory.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_VICTORY;
+                        } else {
+                            sprite.image = character_textures.textures[player.character_id as usize].defeated.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_DEFEATED;
                         }
                     }
                     gamestate.count = 1;
@@ -1435,7 +1439,9 @@ fn main_game_system(
                     // reset background
                     background_query.single_mut().translation.x = 0.0;
                     // reset player
-                    for (id, mut player, mut transform) in player_query.iter_mut() {
+                    for (id, mut player, mut sprite, mut transform) in player_query.iter_mut() {
+                        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.reset(id);
                         if cfg!(target_arch = "wasm32") {
                             transform.translation.x = if id.0 == 0 { -250.0 } else { 250.0 };

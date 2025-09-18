@@ -3,6 +3,7 @@ use super::{pose::*, rand, BackGround, Fighting, SkillEntity, SkillName};
 use crate::GameMode;
 use crate::{
     character_def::*,
+    CharacterTextures,
     ingame::{GameState, InGame, DamageDisplay},
     AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX, PATH_IMAGE_PREFIX
 };
@@ -306,9 +307,16 @@ impl Player {
             return;
         }
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
-            atlas.index += 1;
-            if atlas.index == self.animation_frame_max - 1 {
-                atlas.index = 0;
+            if self.state.check(PlayerState::ROLL_BACK) {
+                atlas.index -= 1;
+                if atlas.index == 0 {
+                    atlas.index = self.animation_frame_max - 1;
+                }
+            } else {
+                atlas.index += 1;
+                if atlas.index == self.animation_frame_max - 1 {
+                    atlas.index = 0;
+                }
             }
         }
         self.pose += self.animation.diff_pose;
@@ -639,7 +647,7 @@ fn keyboard_input(
     mut fighting: ResMut<Fighting>,
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
-    asset_server: Res<AssetServer>,
+    character_textures: Res<CharacterTextures>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
 ) {
     if config.gamepads[0] != Entity::from_raw(0) {
@@ -664,16 +672,22 @@ fn keyboard_input(
         if keys.pressed(KeyCode::KeyD) {
             if player.state.is_idle() {
                 // player is just walking
+                sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_WALK;
                 player.state |= PlayerState::WALKING;
-                player.set_animation(WALKING_POSE1, 0, 10);
+                player.set_animation(WALKING_POSE1, 0, 15);
             }
             // direction is right
             player.state |= PlayerState::DIRECTION;
         } else if keys.pressed(KeyCode::KeyA) {
             if player.state.is_idle() {
                 // player is just walking
+                sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_WALK;
                 player.state |= PlayerState::WALKING;
-                player.set_animation(WALKING_POSE1, 0, 10);
+                player.set_animation(WALKING_POSE1, 0, 15);
             }
             // direction is left
             player.state &= !PlayerState::DIRECTION;
@@ -682,6 +696,9 @@ fn keyboard_input(
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
                 if player.state.is_idle() {
+                    sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                    player.animation_frame_max = FRAMES_IDLE;
                     player.set_animation(IDLE_POSE1, 0, 10);
                 }
             }
@@ -690,6 +707,9 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is idle
                 // then player will bend down
+                sprite.image = character_textures.textures[player.character_id as usize].bend_down.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_BEND_DOWN;
                 player.state |= PlayerState::BEND_DOWN;
                 player.set_animation(BEND_DOWN_POSE1, 0, 5);
             } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING) {
@@ -697,11 +717,17 @@ fn keyboard_input(
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will roll forward
+                        sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_FORWARD;
                         player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
                     } else {
                         // player is walking left
                         // then player will roll back
+                        sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
+                        player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_BACK;
                         player.set_animation(ROLL_BACK_POSE1, 0, 10);
                     }
@@ -709,6 +735,9 @@ fn keyboard_input(
                     if !player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will roll forward
+                        sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_FORWARD;
                         player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
                     } else {
@@ -725,17 +754,20 @@ fn keyboard_input(
         } else if player.state.check(PlayerState::BEND_DOWN) {
             // player is bending down
             // then stop bending down
+            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+            player.animation_frame_max = FRAMES_IDLE;
             player.state &= !PlayerState::BEND_DOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
         }
+        // NOTE: this code block contains a lot of duplicate code
+        //       I should refactor it later
         if keys.just_pressed(KeyCode::Space) {
             if player.state.is_idle() {
                 // player is idle
                 // then player will jump up
-                sprite.image = asset_server.load(format!("{}character{}/jump.png", PATH_IMAGE_PREFIX, player.character_id+1));
-                if let Some(atlas) = sprite.texture_atlas.as_mut() {
-                    atlas.index = 0;
-                }
+                sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_JUMP;
                 player.state |= PlayerState::JUMP_UP;
                 player.set_animation(JUMP_UP_POSE1, 0, 10);
@@ -746,6 +778,9 @@ fn keyboard_input(
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will jump forward
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_FORWARD;
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
@@ -754,6 +789,9 @@ fn keyboard_input(
                     } else {
                         // player is walking left
                         // then player will jump backward
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_BACKWARD;
                         player.set_animation(JUMP_UP_POSE1, 0, 10);
                         // stop moving for preparing motion
@@ -764,6 +802,9 @@ fn keyboard_input(
                     if !player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
                         // then player will jump forward
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_FORWARD;
                         player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                         // stop moving for preparing motion
@@ -772,6 +813,9 @@ fn keyboard_input(
                     } else {
                         // player is walking left
                         // then player will jump backward
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_BACKWARD;
                         player.set_animation(JUMP_UP_POSE1, 0, 10);
                         // stop moving for preparing motion
@@ -785,6 +829,9 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is idle
                 // then player will kick
+                sprite.image = character_textures.textures[player.character_id as usize].kick.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_KICK;
                 player.state |= PlayerState::KICKING;
                 player.set_animation(KICK_POSE1, 0, 5);
                 player.energy += 2;
@@ -803,18 +850,24 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is idle
                 // then player will punch
+                sprite.image = character_textures.textures[player.character_id as usize].punch.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_PUNCH;
                 player.state |= PlayerState::PUNCHING;
-                player.set_animation(PUNCH_POSE, 0, 5);
+                player.set_animation(PUNCH_POSE, 0, 32);
                 player.energy += 2;
             }
         }
         if keys.just_pressed(KeyCode::KeyJ) {
             if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
                 // player is idle
-                // then player will front kick
+                // player will do ranged attack
+                sprite.image = character_textures.textures[player.character_id as usize].punch.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_PUNCH;
                 player.fire_charge = 0;
                 player.state |= PlayerState::RANGED_ATTACK;
-                player.set_animation(PUNCH_POSE, 0, 10);
+                player.set_animation(PUNCH_POSE, 0, 32);
                 player.energy += 2;
             }
         }
@@ -822,6 +875,9 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is idle
                 // then player will back kick
+                sprite.image = character_textures.textures[player.character_id as usize].back_kick.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_BACK_KICK;
                 player.state |= PlayerState::BACK_KICKING;
                 player.set_animation(BACK_KICK_POSE1, 0, 5);
                 player.energy += 2;
@@ -868,6 +924,7 @@ fn player_movement(
     mut gamestate: ResMut<GameState>,
     mut timer: ResMut<AnimationTimer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    character_textures: Res<CharacterTextures>,
     mut player_query: Query<
         (&mut Player, &PlayerID, &mut Sprite, &mut Transform, &mut Visibility),
         Without<BackGround>,
@@ -1180,6 +1237,9 @@ fn player_movement(
                 } else if player.animation.phase == 6 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
+                        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_IDLE;
                         player.pose.body = -20.0;
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                         player.set_animation(IDLE_POSE1, 0, 10);
@@ -1221,6 +1281,9 @@ fn player_movement(
                 } else if player.animation.phase == 6 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
+                        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_IDLE;
                         player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                         player.set_animation(IDLE_POSE1, 0, 10);
                     }
@@ -1230,11 +1293,14 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(KICK_POSE2, 1, 10);
+                            player.set_animation(KICK_POSE2, 1, 30);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
+                            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_IDLE;
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
@@ -1244,6 +1310,9 @@ fn player_movement(
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
+                            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_IDLE;
                             player.set_animation(IDLE_POSE1, 0, 30);
                             commands.spawn((
                                 Sprite {
@@ -1267,7 +1336,7 @@ fn player_movement(
                                 },
                                 Transform::from_translation(Vec3::new(
                                     transform.translation.x,
-                                    transform.translation.y + 100.0,
+                                    transform.translation.y,
                                     20.0,
                                 )),
                             ));
@@ -1278,11 +1347,14 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(BACK_KICK_POSE2, 1, 5);
+                            player.set_animation(BACK_KICK_POSE2, 1, 40);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
+                            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_IDLE;
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
@@ -1291,6 +1363,9 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
+                            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_IDLE;
                             player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
                             player.set_animation(IDLE_POSE1, 0, 30);
                         }
@@ -1327,11 +1402,6 @@ fn player_movement(
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.set_animation(WALKING_POSE1, 0, 15);
-                        }
-                    } else if player.animation.phase == 2 {
-                        player.update_animation(&mut sprite);
-                        if player.animation.count == 0 {
-                            player.set_animation(WALKING_POSE2, 1, 15);
                         }
                     }
                 }
@@ -2044,7 +2114,7 @@ fn update_soul_absorb_animation(
 
 // check if the player is grounding
 #[cfg(not(target_arch = "wasm32"))]
-fn check_ground(config: Res<GameConfig>, asset_server: Res<AssetServer>, mut player_query: Query<(&mut Player, &mut Sprite, &mut Transform)>) {
+fn check_ground(config: Res<GameConfig>, character_textures: Res<CharacterTextures>, mut player_query: Query<(&mut Player, &mut Sprite, &mut Transform)>) {
     for (mut player, mut sprite, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
         if player.animation.phase == 0 {
@@ -2062,10 +2132,7 @@ fn check_ground(config: Res<GameConfig>, asset_server: Res<AssetServer>, mut pla
                 | PlayerState::JUMP_FORWARD
                 | PlayerState::KICKING
                 | PlayerState::WALKING);
-            sprite.image = asset_server.load(format!(
-                "{}character{}/idle.png",
-                PATH_IMAGE_PREFIX, player.character_id+1
-            ));
+            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 50.0 / player.animation.count as f32;
@@ -2080,10 +2147,7 @@ fn check_ground(config: Res<GameConfig>, asset_server: Res<AssetServer>, mut pla
                 | PlayerState::JUMP_FORWARD
                 | PlayerState::KICKING
                 | PlayerState::WALKING);
-            sprite.image = asset_server.load(format!(
-                "{}character{}/idle.png",
-                PATH_IMAGE_PREFIX, player.character_id+1
-            ));
+            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 70.0 / player.animation.count as f32;
