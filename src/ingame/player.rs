@@ -214,7 +214,7 @@ struct AnimationTimer {
     timer: Timer,
 }
 
-pub struct PlayerAnimation {
+pub struct PlayerColliderAnimation {
     diff_pose: Pose,
     diff_y: f32,
     pub phase: u8,
@@ -225,7 +225,8 @@ pub struct PlayerAnimation {
 pub struct Player {
     pub character_id: isize,
     pub pose: Pose,
-    pub animation: PlayerAnimation,
+    pub animation: PlayerColliderAnimation,
+    pub animation_frame_max: usize,
     pub state: PlayerState,
     pub velocity: Vec2,
     pub health: u32,
@@ -239,12 +240,13 @@ impl Player {
         Self {
             character_id,
             pose: IDLE_POSE1,
-            animation: PlayerAnimation {
+            animation: PlayerColliderAnimation {
                 diff_pose: default(),
                 diff_y: 0.0,
                 phase: 1,
                 count: 10,
             },
+            animation_frame_max: FRAMES_IDLE,
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
@@ -257,12 +259,13 @@ impl Player {
         Self {
             character_id,
             pose: OPPOSITE_DEFAULT_POSE,
-            animation: PlayerAnimation {
+            animation: PlayerColliderAnimation {
                 diff_pose: default(),
                 diff_y: 0.0,
                 phase: 1,
                 count: 10,
             },
+            animation_frame_max: FRAMES_IDLE,
             state: PlayerState::default(),
             velocity: Vec2::ZERO,
             health: CHARACTER_PROFILES[character_id as usize].health,
@@ -277,7 +280,7 @@ impl Player {
         } else {
             self.pose = OPPOSITE_DEFAULT_POSE;
         }
-        self.animation = PlayerAnimation {
+        self.animation = PlayerColliderAnimation {
             diff_pose: default(),
             diff_y: 0.0,
             phase: 1,
@@ -291,7 +294,7 @@ impl Player {
     pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
         let real_count =
             (count as f32 / CHARACTER_PROFILES[self.character_id as usize].dexterity).round();
-        self.animation = PlayerAnimation {
+        self.animation = PlayerColliderAnimation {
             diff_pose: (pose - self.pose) / real_count,
             diff_y: 0.0,
             phase,
@@ -304,7 +307,7 @@ impl Player {
         }
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
             atlas.index += 1;
-            if atlas.index == FRAMES_IDLE - 1 {
+            if atlas.index == self.animation_frame_max - 1 {
                 atlas.index = 0;
             }
         }
@@ -636,14 +639,15 @@ fn keyboard_input(
     mut fighting: ResMut<Fighting>,
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
-    mut player_query: Query<(&mut Player, &PlayerID)>,
+    asset_server: Res<AssetServer>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
 ) {
     if config.gamepads[0] != Entity::from_raw(0) {
         // if gamepad is enabled, we don't handle keyboard input
         return;
     }
 
-    for (mut player, player_id) in player_query.iter_mut() {
+    for (mut player, player_id, mut sprite) in player_query.iter_mut() {
         // skip player 1(opponent) in order to control player 0
         // this is for debugging purpose
         #[cfg(debug_assertions)]
@@ -728,6 +732,11 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is idle
                 // then player will jump up
+                sprite.image = asset_server.load(format!("{}character{}/jump.png", PATH_IMAGE_PREFIX, player.character_id+1));
+                if let Some(atlas) = sprite.texture_atlas.as_mut() {
+                    atlas.index = 0;
+                }
+                player.animation_frame_max = FRAMES_JUMP;
                 player.state |= PlayerState::JUMP_UP;
                 player.set_animation(JUMP_UP_POSE1, 0, 10);
                 player.energy += 1;
@@ -960,7 +969,7 @@ fn player_movement(
                         } else {
                             player.velocity = Vec2::new(0.0, 8.0);
                         }
-                        player.set_animation(JUMP_UP_POSE2, 1, 5);
+                        player.set_animation(JUMP_UP_POSE2, 1, 48);
                     }
                 } else if player.animation.phase == 1 {
                     player.update_animation(&mut sprite);
@@ -2035,8 +2044,8 @@ fn update_soul_absorb_animation(
 
 // check if the player is grounding
 #[cfg(not(target_arch = "wasm32"))]
-fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &mut Transform)>) {
-    for (mut player, mut transform) in player_query.iter_mut() {
+fn check_ground(config: Res<GameConfig>, asset_server: Res<AssetServer>, mut player_query: Query<(&mut Player, &mut Sprite, &mut Transform)>) {
+    for (mut player, mut sprite, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
         if player.animation.phase == 0 {
             continue;
@@ -2053,6 +2062,10 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
                 | PlayerState::JUMP_FORWARD
                 | PlayerState::KICKING
                 | PlayerState::WALKING);
+            sprite.image = asset_server.load(format!(
+                "{}character{}/idle.png",
+                PATH_IMAGE_PREFIX, player.character_id+1
+            ));
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 50.0 / player.animation.count as f32;
@@ -2067,6 +2080,10 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
                 | PlayerState::JUMP_FORWARD
                 | PlayerState::KICKING
                 | PlayerState::WALKING);
+            sprite.image = asset_server.load(format!(
+                "{}character{}/idle.png",
+                PATH_IMAGE_PREFIX, player.character_id+1
+            ));
             player.state |= PlayerState::COOLDOWN;
             player.set_animation(IDLE_POSE1, 0, 10);
             player.animation.diff_y = 70.0 / player.animation.count as f32;
@@ -2754,12 +2771,12 @@ fn update_fire_bar(
     }
 }
 
-fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &Transform)>) {
+fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform)>) {
     let mut positions = [0.0; 2];
-    for (_, player_id, transform) in player_query.iter_mut() {
+    for (_, player_id, _, transform) in player_query.iter_mut() {
         positions[player_id.0 as usize] = transform.translation.x;
     }
-    for (mut player, player_id, _) in player_query.iter_mut() {
+    for (mut player, player_id, mut sprite, _) in player_query.iter_mut() {
         if !player
             .state
             .check(!(PlayerState::COOLDOWN | PlayerState::DIRECTION | PlayerState::WALKING))
@@ -2767,14 +2784,19 @@ fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &Transform)>) 
             if player_id.0 == 0 {
                 if positions[0] < positions[1] {
                     player.pose.facing = true;
+                    sprite.flip_x = false;
                 } else {
+                    println!("flip texture");
                     player.pose.facing = false;
+                    sprite.flip_x = true;
                 }
             } else {
                 if positions[1] < positions[0] {
                     player.pose.facing = true;
+                    sprite.flip_x = false;
                 } else {
                     player.pose.facing = false;
+                    sprite.flip_x = true;
                 }
             }
         }
