@@ -20,22 +20,31 @@ fn setup(
     #[cfg(not(target_arch = "wasm32"))] button_idx: Res<ButtonIndex>,
     #[cfg(not(target_arch = "wasm32"))] mut config: ResMut<GameConfig>,
     #[cfg(not(target_arch = "wasm32"))] gamepads: Query<(&Name, Entity), With<Gamepad>>,
-    audio_query: Query<Entity, With<BGM>>,
+    audio_query: Query<(Entity, &BGM)>,
 ) {
     info!("setup");
 
     // if audio query is empty, spawn bgm
-    if !audio_query.is_empty() {
-        for entity in audio_query.iter() {
-            commands.entity(entity).despawn();
+    if audio_query.is_empty() {
+        commands.spawn((
+            AudioPlayer::new(asset_server.load(format!("{}Lobby.ogg", PATH_SOUND_PREFIX))),
+            PlaybackSettings::LOOP,
+            GlobalTransform::default(),
+            BGM(true),
+        ));
+    } else {
+        for (entity, bgm) in audio_query.iter() {
+            if !bgm.0 {
+                commands.entity(entity).despawn();
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}Lobby.ogg", PATH_SOUND_PREFIX))),
+                    PlaybackSettings::LOOP,
+                    GlobalTransform::default(),
+                    BGM(true),
+                ));
+            }
         }
     }
-    commands.spawn((
-        AudioPlayer::new(asset_server.load(format!("{}Lobby.ogg", PATH_SOUND_PREFIX))),
-        PlaybackSettings::LOOP,
-        GlobalTransform::default(),
-        BGM,
-    ));
 
     // detect gamepads
     #[cfg(not(target_arch = "wasm32"))]
