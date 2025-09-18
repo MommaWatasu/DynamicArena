@@ -1,4 +1,5 @@
 use crate::{
+    CharacterTextures,
     character_def::*,
     ingame::{player::*, pose::*, rand, Fighting},
     AppState, GameConfig, GameMode,
@@ -566,7 +567,8 @@ pub fn agent_system(
     time: Res<Time>,
     game_config: Res<GameConfig>,
     mut agent: ResMut<Agent>,
-    mut player_query: Query<(&mut Player, &PlayerID, &Transform)>,
+    characters_textures: Res<CharacterTextures>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform)>,
 ) {
     // Skip if multiplayer
     if game_config.mode == GameMode::MultiPlayer {
@@ -576,7 +578,7 @@ pub fn agent_system(
     if agent.timer.finished() {
         agent.count += 1;
         let mut environment = Environment::default();
-        if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 0) {
+        if let Some((player, _, _, transform)) = player_query.iter().find(|(_, id, _, _)| id.0 == 0) {
             environment.player_health = player.health as f32
                 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.player_state = player.state;
@@ -584,7 +586,7 @@ pub fn agent_system(
             environment.player_energy = player.energy;
             environment.player_fire_charge = player.fire_charge;
         }
-        if let Some((player, _, transform)) = player_query.iter().find(|(_, id, _)| id.0 == 1) {
+        if let Some((player, _, _, transform)) = player_query.iter().find(|(_, id, _, _)| id.0 == 1) {
             environment.agent_health = player.health as f32
                 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
             environment.agent_facing = player.pose.facing;
@@ -608,7 +610,7 @@ pub fn agent_system(
             agent.select_policy(&environment);
         }
         let action = agent.select_action(&environment);
-        if let Some((mut player, player_id, _)) = player_query.iter_mut().find(|(_, id, _)| id.0 == 1) {
+        if let Some((mut player, player_id, mut sprite, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == 1) {
             if action != Action::MoveForward && action != Action::MoveBackward {
                 // agent is idle
                 player.state &= !PlayerState::WALKING;
@@ -621,8 +623,11 @@ pub fn agent_system(
                 Action::MoveForward => {
                     if player.state.is_idle() {
                         // player is just walking
+                        sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_WALK;
                         player.state |= PlayerState::WALKING;
-                        player.set_animation(WALKING_POSE1, 0, 10);
+                        player.set_animation(WALKING_POSE1, 0, 15);
                     }
                     if player.pose.facing {
                         // direction is right
@@ -635,8 +640,9 @@ pub fn agent_system(
                 Action::MoveBackward => {
                     if player.state.is_idle() {
                         // player is just walking
+                        sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
                         player.state |= PlayerState::WALKING;
-                        player.set_animation(WALKING_POSE1, 0, 10);
+                        player.set_animation(WALKING_POSE1, 0, 15);
                     }
                     if player.pose.facing {
                         // direction is right
@@ -651,6 +657,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // player is idle
                         // then player will jump up
+                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_UP;
                         player.set_animation(JUMP_UP_POSE1, 0, 10);
                         player.velocity = Vec2::new(0.0, 12.0);
@@ -664,6 +673,9 @@ pub fn agent_system(
                         if player.state.check(PlayerState::DIRECTION) {
                             // player is walking right
                             // then player will jump forward
+                            sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_JUMP;
                             player.state |= PlayerState::JUMP_FORWARD;
                             player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
                             let x_vel =
@@ -672,6 +684,9 @@ pub fn agent_system(
                         } else {
                             // player is walking left
                             // then player will jump backward
+                            sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_JUMP;
                             player.state |= PlayerState::JUMP_BACKWARD;
                             player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
                             let x_vel =
@@ -685,6 +700,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // agent is walking right
                         // then player will jump forward
+                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         if player.pose.facing {
                             player.state |= PlayerState::DIRECTION;
                         } else {
@@ -701,6 +719,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // agent is walking left
                         // then player will jump backward
+                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         if !player.pose.facing {
                             player.state &= !PlayerState::DIRECTION;
                         } else {
@@ -717,6 +738,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // agent is walking right
                         // then player will jump kick
+                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         if player.pose.facing {
                             player.state |= PlayerState::DIRECTION;
                         } else {
@@ -733,6 +757,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // player is idle
                         // then player will bend
+                        sprite.image = characters_textures.textures[player.character_id as usize].bend_down.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_BEND_DOWN;
                         player.state |= PlayerState::BEND_DOWN;
                         player.set_animation(BEND_DOWN_POSE1, 0, 5);
                     }
@@ -741,6 +768,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // player is idle
                         // then player will kick
+                        sprite.image = characters_textures.textures[player.character_id as usize].kick.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_KICK;
                         player.state |= PlayerState::KICKING;
                         player.set_animation(KICK_POSE1, 0, 10);
                         player.energy += 2;
@@ -759,6 +789,9 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // player is idle
                         // then player will back kick
+                        sprite.image = characters_textures.textures[player.character_id as usize].back_kick.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_BACK_KICK;
                         player.state |= PlayerState::BACK_KICKING;
                         player.set_animation(BACK_KICK_POSE1, 0, 10);
                         player.energy += 2;
@@ -768,9 +801,12 @@ pub fn agent_system(
                     if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
                         // player is idle
                         // then player will knee kick
+                        sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_PUNCH;
                         player.fire_charge = 0;
                         player.state |= PlayerState::RANGED_ATTACK;
-                        player.set_animation(PUNCH_POSE, 0, 10);
+                        player.set_animation(PUNCH_POSE, 0, 32);
                         player.energy += 2;
                     }
                 }
@@ -778,8 +814,11 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // player is idle
                         // then player will punch
+                        sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_PUNCH;
                         player.state |= PlayerState::PUNCHING;
-                        player.set_animation(PUNCH_POSE, 0, 10);
+                        player.set_animation(PUNCH_POSE, 0, 32);
                         player.energy += 2;
                     }
                 }
@@ -803,7 +842,10 @@ pub fn agent_system(
                         // then player will idle
                         player.state &= !PlayerState::WALKING;
                         if player.state.is_idle() {
-                            player.set_animation(IDLE_POSE1, 0, 10);
+                            sprite.image = characters_textures.textures[player.character_id as usize].idle.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_IDLE;
+                            player.set_animation(IDLE_POSE1, 0, 30);
                         }
                     }
                 }
