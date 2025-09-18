@@ -18,6 +18,8 @@ use std::{
 #[cfg(not(target_arch = "wasm32"))]
 const UPPER_ARM_LENGTH: f32 = 20.0;
 #[cfg(not(target_arch = "wasm32"))]
+const UPPER_LEG_LENGTH: f32 = 40.0;
+#[cfg(not(target_arch = "wasm32"))]
 const LIMB_LENGTH: f32 = 30.0;
 #[cfg(not(target_arch = "wasm32"))]
 const NECK_LENGTH: f32 = 40.0;
@@ -25,6 +27,8 @@ const NECK_LENGTH: f32 = 40.0;
 const LIMB_RADIUS: f32 = 10.0;
 #[cfg(not(target_arch = "wasm32"))]
 const BODY_THICKNESS: f32 = 10.0;
+#[cfg(not(target_arch = "wasm32"))]
+const BODY_LENGTH: f32 = 65.0;
 #[cfg(not(target_arch = "wasm32"))]
 const HEAD_OFFSET: f32 = 80.0;
 #[cfg(not(target_arch = "wasm32"))]
@@ -34,13 +38,15 @@ const UPPER_ARM_OFFSET: f32 = 0.0;
 #[cfg(not(target_arch = "wasm32"))]
 const LOWER_ARM_OFFSET: f32 = -50.0;
 #[cfg(not(target_arch = "wasm32"))]
-const UPPER_LEG_OFFSET: f32 = -100.0;
+const UPPER_LEG_OFFSET: f32 = -90.0;
 #[cfg(not(target_arch = "wasm32"))]
-const LOWER_LEG_OFFSET: f32 = -60.0;
+const LOWER_LEG_OFFSET: f32 = -70.0;
 
 // definition for web display
 #[cfg(target_arch = "wasm32")]
 const UPPER_ARM_LENGTH: f32 = 10.0;
+#[cfg(target_arch = "wasm32")]
+const LOWER_ARM_LENGTH: f32 = 20.0;
 #[cfg(target_arch = "wasm32")]
 const LIMB_LENGTH: f32 = 15.0;
 #[cfg(target_arch = "wasm32")]
@@ -465,11 +471,11 @@ pub fn spawn_player(
         .with_children(|builder| {
             builder
                 .spawn((
-                    Transform::from_translation(Vec3::new(0.0, BODY_OFFSET, 0.0)),
+                    Transform::from_translation(Vec3::new(10.0, BODY_OFFSET, 0.0)),
                     BodyParts::BODY,
                     PlayerID(id),
                     #[cfg(not(target_arch = "wasm32"))]
-                    Collider::cuboid(BODY_THICKNESS * 2.0, 65.0),
+                    Collider::cuboid(BODY_THICKNESS * 2.0, BODY_LENGTH),
                     #[cfg(target_arch = "wasm32")]
                     Collider::cuboid(BODY_THICKNESS, 32.5),
                     RigidBody::KinematicPositionBased,
@@ -560,9 +566,9 @@ pub fn spawn_player(
                             PlayerID(id),
                             // player 0 is right facing, and player 1 is left facing
                             // so we need to change which leg is on top
-                            Transform::from_translation(Vec3::new(20.0, UPPER_LEG_OFFSET, 3.0)),
+                            Transform::from_translation(Vec3::new(10.0, UPPER_LEG_OFFSET, 3.0)),
                             RigidBody::KinematicPositionBased,
-                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            Collider::capsule_y(UPPER_LEG_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
                             ActiveCollisionTypes::default()
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
@@ -591,9 +597,9 @@ pub fn spawn_player(
                         .spawn((
                             BodyParts::new(false, false, false, false, true),
                             PlayerID(id),
-                            Transform::from_translation(Vec3::new(-20.0, UPPER_LEG_OFFSET, 1.0)),
+                            Transform::from_translation(Vec3::new(-10.0, UPPER_LEG_OFFSET, 1.0)),
                             RigidBody::KinematicPositionBased,
-                            Collider::capsule_y(LIMB_LENGTH, LIMB_RADIUS),
+                            Collider::capsule_y(UPPER_LEG_LENGTH, LIMB_RADIUS),
                             ActiveEvents::COLLISION_EVENTS,
                             ActiveCollisionTypes::default()
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
@@ -2208,11 +2214,11 @@ fn check_ground(
 /// 1. Converts degree to radians and sets rotation
 /// 2. Calculates X offset using sin of angle * limb length  
 /// 3. Calculates Y position using cosine and adds vertical offset
-fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree: f32) {
+fn rotate_parts(transform: &mut Transform, x_offset: f32, y_offset: f32, degree: f32, length: f32) {
     let rad = degree.to_radians();
     transform.rotation = Quat::from_rotation_z(rad);
-    transform.translation.x = x_offset + LIMB_LENGTH * rad.sin();
-    transform.translation.y = y_offset + LIMB_LENGTH * (1.0 - rad.cos());
+    transform.translation.x = x_offset + length * rad.sin();
+    transform.translation.y = y_offset + length * (1.0 - rad.cos());
 }
 
 /// Rotates and positions the neck based on given parameters.
@@ -2256,14 +2262,15 @@ fn update_pose(
                     0b10000 => rotate_neck(&mut transform, flip * player.pose.head),
                     // Body
                     0b01000 => {
-                        rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body)
+                        rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body, BODY_LENGTH);
                     }
                     // Right Upper Arm
                     0b00111 => rotate_parts(
                         &mut transform,
-                        -2.0 * flip * BODY_THICKNESS,
+                        -flip * BODY_THICKNESS,
                         UPPER_ARM_OFFSET,
                         flip * player.pose.right_upper_arm,
+                        UPPER_ARM_LENGTH
                     ),
                     // Right Lower Arm
                     0b00110 => rotate_parts(
@@ -2271,6 +2278,7 @@ fn update_pose(
                         0.0,
                         LOWER_ARM_OFFSET,
                         flip * player.pose.right_lower_arm,
+                        LIMB_LENGTH
                     ),
                     // Right Upper Leg
                     0b00011 => rotate_parts(
@@ -2278,6 +2286,7 @@ fn update_pose(
                         -flip * BODY_THICKNESS,
                         UPPER_LEG_OFFSET,
                         flip * player.pose.right_upper_leg,
+                        UPPER_LEG_LENGTH
                     ),
                     // Right Lower Leg
                     0b00010 => rotate_parts(
@@ -2285,6 +2294,7 @@ fn update_pose(
                         0.0,
                         LOWER_LEG_OFFSET,
                         flip * player.pose.right_lower_leg,
+                        LIMB_LENGTH
                     ),
                     // Left Upper Arm
                     0b00101 => rotate_parts(
@@ -2292,6 +2302,7 @@ fn update_pose(
                         2.0 * flip * BODY_THICKNESS,
                         UPPER_ARM_OFFSET,
                         flip * player.pose.left_upper_arm,
+                        UPPER_ARM_LENGTH
                     ),
                     // Left Lower Arm
                     0b00100 => rotate_parts(
@@ -2299,6 +2310,7 @@ fn update_pose(
                         0.0,
                         LOWER_ARM_OFFSET,
                         flip * player.pose.left_lower_arm,
+                        LIMB_LENGTH
                     ),
                     // Left Upper Leg
                     0b00001 => rotate_parts(
@@ -2306,6 +2318,7 @@ fn update_pose(
                         flip * BODY_THICKNESS,
                         UPPER_LEG_OFFSET,
                         flip * player.pose.left_upper_leg,
+                        UPPER_LEG_LENGTH
                     ),
                     // Left Lower Leg
                     0b00000 => rotate_parts(
@@ -2313,6 +2326,7 @@ fn update_pose(
                         0.0,
                         LOWER_LEG_OFFSET,
                         flip * player.pose.left_lower_leg,
+                        LIMB_LENGTH
                     ),
                     _ => {}
                 }

@@ -125,7 +125,7 @@ pub const OPPOSITE_DEFAULT_POSE: Pose = Pose {
     left_upper_arm: 30.0,
     left_lower_arm: 90.0,
     left_upper_leg: 60.0,
-    left_lower_leg: -60.0,
+    left_lower_leg: -50.0,
 };
 
 pub const IDLE_POSE1: Pose = Pose {
@@ -141,7 +141,7 @@ pub const IDLE_POSE1: Pose = Pose {
     left_upper_arm: 30.0,
     left_lower_arm: 90.0,
     left_upper_leg: 60.0,
-    left_lower_leg: -60.0,
+    left_lower_leg: -50.0,
 };
 
 pub const IDLE_POSE2: Pose = Pose {
@@ -157,7 +157,7 @@ pub const IDLE_POSE2: Pose = Pose {
     left_upper_arm: 20.0,
     left_lower_arm: 80.0,
     left_upper_leg: 60.0,
-    left_lower_leg: -60.0,
+    left_lower_leg: -50.0,
 };
 
 pub const WALKING_POSE1: Pose = Pose {
