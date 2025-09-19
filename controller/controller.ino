@@ -1,118 +1,154 @@
-#include <MadgwickAHRS.h>
 #include <BleGamepad.h>
-#include <Ticker.h>
 
-#define GPIO_PIN_BUTTON 27
-#define GPIO_PIN_JOYSTICK_PUSH 34
-#define GPIO_PIN_JOYSTICK_X 32
-#define GPIO_PIN_JOYSTICK_Y 25
+// ピン定義 - 実際のピン番号に合わせて変更してください
+#define JOYSTICK_UP_PIN     14   // ジョイスティック上
+#define JOYSTICK_DOWN_PIN   0   // ジョイスティック下  
+#define JOYSTICK_LEFT_PIN   26  // ジョイスティック左
+#define JOYSTICK_RIGHT_PIN  25  // ジョイスティック右
 
-#define DELTA_TIME 10
-#define WDT_TIMEOUT 10
+#define BUTTON_1_PIN        33  // ボタン1
+#define BUTTON_2_PIN        32  // ボタン2
+#define BUTTON_3_PIN        27  // ボタン3
+#define BUTTON_4_PIN        2  // ボタン4
 
-//Madgwick MadgwickFilter;
-Ticker InputTicker;
-TimerHandle_t timer_button = NULL;
-BleGamepad bleGamepad("DynamicArenaController", "MommaWatasu", 100);
-//float accel_zero[2];
+// BLEGamepadオブジェクト作成
+BleGamepad bleGamepad("ESP32ArcadeController", "MommaWatasu", 100);
 
-// Button Initializer
-void initialize_buttons() {
-  pinMode(GPIO_PIN_BUTTON, INPUT_PULLUP);
-  pinMode(GPIO_PIN_JOYSTICK_PUSH, INPUT);
-  pinMode(GPIO_PIN_JOYSTICK_X, INPUT);
-  pinMode(GPIO_PIN_JOYSTICK_Y, INPUT);
-}
+// 前回の状態を保持する変数
+bool prevJoystickUp = false;
+bool prevJoystickDown = false;
+bool prevJoystickLeft = false;
+bool prevJoystickRight = false;
 
-// check all button states
-void check_buttons() {
-  if (digitalRead(GPIO_PIN_BUTTON) == LOW) {
-    bleGamepad.press(BUTTON_1);
-  } else {
-    bleGamepad.release(BUTTON_1);
-  }
-}
+bool prevButton1 = false;
+bool prevButton2 = false;
+bool prevButton3 = false;
+bool prevButton4 = false;
 
-void check_joystick() {
-  int joystick_x = analogRead(GPIO_PIN_JOYSTICK_X);
-  int joystick_y = analogRead(GPIO_PIN_JOYSTICK_Y);
-  if (joystick_x < 1000) {
-      if (joystick_y < 1000) {
-        bleGamepad.setHat(DPAD_DOWN_LEFT);
-      } else if (joystick_y > 3000) {
-        bleGamepad.setHat(DPAD_UP_LEFT);
-      } else {
-        bleGamepad.setHat(DPAD_LEFT);
-      }
-  } else if (joystick_x > 3000) {
-    if (joystick_y < 1000) {
-      bleGamepad.setHat(DPAD_DOWN_RIGHT);
-    } else if (joystick_y > 3000) {
-      bleGamepad.setHat(DPAD_UP_RIGHT);
-    } else {
-      bleGamepad.setHat(DPAD_RIGHT);
-    }
-  } else {
-    if (joystick_y < 1000) {
-      bleGamepad.setHat(DPAD_DOWN);
-    } else if (joystick_y > 3000) {
-      bleGamepad.setHat(DPAD_UP);
-    } else {
-      bleGamepad.setHat(DPAD_CENTERED);
-    }
-  }
-}
-
-void setup(){
-  // Initialize Connections
+void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    delay(10);
-  }
-
-  // Initialize Buttons
-  Serial.println("Initializing GPIO INPUT...");
-  initialize_buttons();
-  Serial.println("Complete");
-
-  // Initialize MadgwickFilter
-  /*
-  Serial.println("Initializing MadgwickFilter...");
-  MadgwickFilter.begin(100);
-  MadgwickFilter.setGain(0.8);
-  Serial.println("Complete");
-  */
-
-  // Initialize BLEGamepad
-  Serial.println("Initializing BLEGamepad...");
+  Serial.println("ESP32 Arcade Controller Starting...");
+  
+  // ピンモードを入力プルアップに設定（ボタンはGNDに接続）
+  pinMode(JOYSTICK_UP_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_DOWN_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_LEFT_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_RIGHT_PIN, INPUT_PULLUP);
+  
+  pinMode(BUTTON_1_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_2_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_3_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_4_PIN, INPUT_PULLUP);
+  
+  // BLE Gamepadを開始
   bleGamepad.begin();
-  Serial.println("Complete");
-
-  // Start Timer Interruption
-  Serial.println("Start Timer Interruption");
-  InputTicker.attach_ms(DELTA_TIME, pollControllerInput);
+  Serial.println("BLE Gamepad initialized. Waiting for connection...");
 }
 
-void pollControllerInput(){
-  /*
-  MadgwickFilter.updateIMU(gx, gy, gz, ax, ay, az);
-  float roll = MadgwickFilter.getRoll();
-  float pitch = MadgwickFilter.getPitch();
-  float yaw  = MadgwickFilter.getYaw();
-  */
-  /*
-  Serial.print("roll:");Serial.print(roll); Serial.print(",");
-  Serial.print("pitch:");Serial.print(pitch); Serial.print(",");
-  Serial.print("yaw:");Serial.print(yaw);
-  Serial.print("\n");
-  */
-
+void loop() {
   if (bleGamepad.isConnected()) {
-    // set button state
-    check_buttons();
-    check_joystick();
-    bleGamepad.sendReport();
+    Serial.
+    // ジョイスティック（DPad）の状態読み取り
+    bool joystickUp = !digitalRead(JOYSTICK_UP_PIN);      // LOW = 押された状態
+    bool joystickDown = !digitalRead(JOYSTICK_DOWN_PIN);
+    bool joystickLeft = !digitalRead(JOYSTICK_LEFT_PIN);
+    bool joystickRight = !digitalRead(JOYSTICK_RIGHT_PIN);
+    
+    // ボタンの状態読み取り
+    bool button1 = !digitalRead(BUTTON_1_PIN);
+    bool button2 = !digitalRead(BUTTON_2_PIN);
+    bool button3 = !digitalRead(BUTTON_3_PIN);
+    bool button4 = !digitalRead(BUTTON_4_PIN);
+    
+    // DPadの状態更新（変化があった場合のみ）
+    if (joystickUp != prevJoystickUp || joystickDown != prevJoystickDown || 
+        joystickLeft != prevJoystickLeft || joystickRight != prevJoystickRight) {
+      
+      // DPadの値を計算（8方向 + ニュートラル）
+      uint8_t dpadValue = DPAD_CENTERED;
+      
+      if (joystickUp && joystickRight) {
+        dpadValue = DPAD_UP_RIGHT;
+      } else if (joystickUp && joystickLeft) {
+        dpadValue = DPAD_UP_LEFT;
+      } else if (joystickDown && joystickRight) {
+        dpadValue = DPAD_DOWN_RIGHT;
+      } else if (joystickDown && joystickLeft) {
+        dpadValue = DPAD_DOWN_LEFT;
+      } else if (joystickUp) {
+        dpadValue = DPAD_UP;
+      } else if (joystickDown) {
+        dpadValue = DPAD_DOWN;
+      } else if (joystickLeft) {
+        dpadValue = DPAD_LEFT;
+      } else if (joystickRight) {
+        dpadValue = DPAD_RIGHT;
+      }
+      
+      bleGamepad.setHat1(dpadValue);
+      
+      // デバッグ情報出力
+      Serial.print("DPad: ");
+      Serial.println(dpadValue);
+      
+      // 前回の状態を更新
+      prevJoystickUp = joystickUp;
+      prevJoystickDown = joystickDown;
+      prevJoystickLeft = joystickLeft;
+      prevJoystickRight = joystickRight;
+    }
+    
+    // ボタン1の状態更新
+    if (button1 != prevButton1) {
+      if (button1) {
+        bleGamepad.press(BUTTON_1);
+        Serial.println("Button 1 pressed");
+      } else {
+        bleGamepad.release(BUTTON_1);
+        Serial.println("Button 1 released");
+      }
+      prevButton1 = button1;
+    }
+    
+    // ボタン2の状態更新
+    if (button2 != prevButton2) {
+      if (button2) {
+        bleGamepad.press(BUTTON_2);
+        Serial.println("Button 2 pressed");
+      } else {
+        bleGamepad.release(BUTTON_2);
+        Serial.println("Button 2 released");
+      }
+      prevButton2 = button2;
+    }
+    
+    // ボタン3の状態更新
+    if (button3 != prevButton3) {
+      if (button3) {
+        bleGamepad.press(BUTTON_3);
+        Serial.println("Button 3 pressed");
+      } else {
+        bleGamepad.release(BUTTON_3);
+        Serial.println("Button 3 released");
+      }
+      prevButton3 = button3;
+    }
+    
+    // ボタン4の状態更新
+    if (button4 != prevButton4) {
+      if (button4) {
+        bleGamepad.press(BUTTON_4);
+        Serial.println("Button 4 pressed");
+      } else {
+        bleGamepad.release(BUTTON_4);
+        Serial.println("Button 4 released");
+      }
+      prevButton4 = button4;
+    }
+  } else {
+    Serial.println("Waiting for BLE connection...");
   }
+  
+  // チャタリング防止のための短い遅延
+  delay(10);
 }
-
-void loop() {}
