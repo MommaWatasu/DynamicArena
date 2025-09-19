@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    AppState, GameConfig, GameMode, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT,
+    AppState, GameConfig, GameMode, SoundEffect, PATH_SOUND_PREFIX, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_JP_FONT,
     PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 
@@ -312,23 +312,44 @@ fn controller_input(
 }
 
 fn check_buttons(
+    mut commands: Commands,
     mut next_state: ResMut<NextState<AppState>>,
+    asset_server: Res<AssetServer>,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     text_query: Query<(&Text, &TextColor)>,
+    sound_query: Query<Entity, With<SoundEffect>>,
 ) {
     for (interaction, children) in &mut interaction_query.iter() {
         match *interaction {
             Interaction::Pressed => {
                 if children.len() > 0 {
                     let text = text_query.get(children[0]).unwrap();
+                    // reset audio player(unused sound effect entity)
+                    for sound in sound_query.iter() {
+                        commands.entity(sound).despawn_recursive();
+                    }
                     match text.0.as_str() {
                         "<Back" => {
+                            commands.spawn((
+                                AudioPlayer::new(asset_server.load(format!(
+                                    "{}button_click.ogg",
+                                    PATH_SOUND_PREFIX,
+                                ))),
+                                SoundEffect,
+                            ));
                             next_state.set(AppState::Mainmenu);
                             break;
                         }
                         "Next>" => {
                             // NOTE: For now, we will skip the controller check
                             //if text.1.0 == Color::BLACK {
+                            commands.spawn((
+                                AudioPlayer::new(asset_server.load(format!(
+                                    "{}button_click.ogg",
+                                    PATH_SOUND_PREFIX,
+                                ))),
+                                SoundEffect,
+                            ));
                             next_state.set(AppState::ChooseCharacter);
                             //}
                             break;

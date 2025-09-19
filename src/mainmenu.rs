@@ -3,8 +3,7 @@ use bevy::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::GameConfig;
 use crate::{
-    AppState, DEFAULT_FONT_SIZE, GAMETITLE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
-    PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX, TITLE_FONT_SIZE,
+    AppState, SoundEffect, BGM, DEFAULT_FONT_SIZE, GAMETITLE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT, PATH_IMAGE_PREFIX, PATH_SOUND_PREFIX, TITLE_FONT_SIZE
 };
 
 #[derive(Component)]
@@ -21,17 +20,30 @@ fn setup(
     #[cfg(not(target_arch = "wasm32"))] button_idx: Res<ButtonIndex>,
     #[cfg(not(target_arch = "wasm32"))] mut config: ResMut<GameConfig>,
     #[cfg(not(target_arch = "wasm32"))] gamepads: Query<(&Name, Entity), With<Gamepad>>,
-    audio: Query<&AudioPlayer>,
+    audio_query: Query<(Entity, &BGM)>,
 ) {
     info!("setup");
 
     // if audio query is empty, spawn bgm
-    if audio.is_empty() {
+    if audio_query.is_empty() {
         commands.spawn((
-            AudioPlayer::new(asset_server.load(format!("{}/bgm.ogg", PATH_SOUND_PREFIX))),
+            AudioPlayer::new(asset_server.load(format!("{}Lobby.ogg", PATH_SOUND_PREFIX))),
             PlaybackSettings::LOOP,
             GlobalTransform::default(),
+            BGM(true),
         ));
+    } else {
+        for (entity, bgm) in audio_query.iter() {
+            if !bgm.0 {
+                commands.entity(entity).despawn();
+                commands.spawn((
+                    AudioPlayer::new(asset_server.load(format!("{}Lobby.ogg", PATH_SOUND_PREFIX))),
+                    PlaybackSettings::LOOP,
+                    GlobalTransform::default(),
+                    BGM(true),
+                ));
+            }
+        }
     }
 
     // detect gamepads
@@ -266,24 +278,45 @@ fn controller_input(
 }
 
 fn update(
+    mut commands: Commands,
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
     mut next_state: ResMut<NextState<AppState>>,
     mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
+    asset_server: Res<AssetServer>,
     text_query: Query<&Text>,
+    sound_query: Query<Entity, With<SoundEffect>>,
 ) {
     for (interaction, children) in &mut interaction_query.iter() {
         match *interaction {
             Interaction::Pressed => {
                 if children.len() > 0 {
                     let text = text_query.get(children[0]).unwrap();
+                    // reset audio player(unused sound effect entity)
+                    for entity in sound_query.iter() {
+                        commands.entity(entity).despawn_recursive();
+                    }
                     match text.0.as_str() {
                         "Start" => {
+                            commands.spawn((
+                                AudioPlayer::new(asset_server.load(format!(
+                                    "{}button_click.ogg",
+                                    PATH_SOUND_PREFIX,
+                                ))),
+                                SoundEffect,
+                            ));
                             #[cfg(not(target_arch = "wasm32"))]
                             next_state.set(AppState::ConnectController);
                             #[cfg(target_arch = "wasm32")]
                             next_state.set(AppState::ChooseCharacter);
                         }
                         "Settings" => {
+                            commands.spawn((
+                                AudioPlayer::new(asset_server.load(format!(
+                                    "{}button_click.ogg",
+                                    PATH_SOUND_PREFIX,
+                                ))),
+                                SoundEffect,
+                            ));
                             next_state.set(AppState::Settings);
                         }
                         "Exit" => {

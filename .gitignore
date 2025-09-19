@@ -30,3 +30,4 @@ blender_obj
 # ignore blender backups
 *.blend1
 *.blend11
+*.fbx

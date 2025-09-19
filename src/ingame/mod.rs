@@ -4,7 +4,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
 use bevy_rapier2d::prelude::*;
-use pose::WINNER_POSE;
+use crate::{ingame::pose::{FRAMES_VICTORY, FRAMES_DEFEATED}, CharacterTextures, BGM};
 
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
@@ -115,10 +115,22 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut game_state: ResMut<GameState>,
     config: Res<GameConfig>,
+    audio_query: Query<Entity, With<BGM>>,
 ) {
     info!("setup");
+
+    for entity in audio_query.iter() {
+        commands.entity(entity).despawn();
+    }
+    commands.spawn((
+        AudioPlayer::new(asset_server.load(format!("{}Bushido_Electric.ogg", PATH_SOUND_PREFIX))),
+        PlaybackSettings::LOOP,
+        BGM(false),
+    ));
+
     #[cfg(feature="pause")]
     info!("pause feature enabled");
     #[cfg(feature="pause")]
@@ -1090,16 +1102,16 @@ fn setup(
             0,
             config.characters_id[0],
             &mut commands,
-            &mut meshes,
-            &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             135.0 - config.window_size.y / 2.0,
         );
         spawn_player(
             1,
             config.characters_id[1],
             &mut commands,
-            &mut meshes,
-            &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             135.0 - config.window_size.y / 2.0,
         );
     } else {
@@ -1107,16 +1119,16 @@ fn setup(
             0,
             config.characters_id[0],
             &mut commands,
-            &mut meshes,
-            &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             270.0 - config.window_size.y / 2.0,
         );
         spawn_player(
             1,
             config.characters_id[1],
             &mut commands,
-            &mut meshes,
-            &mut materials,
+            &mut texture_atlas_layouts,
+            &asset_server,
             270.0 - config.window_size.y / 2.0,
         );
     }
@@ -1214,14 +1226,14 @@ fn main_game_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut gamestate: ResMut<GameState>,
     mut next_state: ResMut<NextState<AppState>>,
+    character_textures: Res<CharacterTextures>,
     mut status_bar_query: Query<(&mut BackgroundColor, &mut Text, &mut TextColor), With<StatusBar>>,
     mut curtain_query: Query<&mut BackgroundColor, (With<Curtain>, Without<StatusBar>)>,
-    mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>, Without<Foot>)>,
+    mut background_query: Query<&mut Transform, (With<BackGround>, Without<Player>)>,
     mut player_query: Query<
-        (&PlayerID, &mut Player, &mut Transform),
-        (Without<BackGround>, Without<Foot>),
+        (&PlayerID, &mut Player, &mut Sprite, &mut Transform),
+        Without<BackGround>,
     >,
-    mut foot_query: Query<&mut Transform, (With<Foot>, Without<Player>, Without<BackGround>)>,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID), Without<FireBar>>,
     mut fire_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID), Without<HealthBar>>,
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
@@ -1268,7 +1280,7 @@ fn main_game_system(
                 ));
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!(
-                        "{}/round{}.ogg",
+                        "{}round{}.ogg",
                         PATH_SOUND_PREFIX, gamestate.round
                     ))),
                     SoundEffect,
@@ -1279,7 +1291,7 @@ fn main_game_system(
                 text.0 = format!("ROUND {}", gamestate.round);
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!(
-                        "{}/round{}.ogg",
+                        "{}round{}.ogg",
                         PATH_SOUND_PREFIX, gamestate.round
                     ))),
                     SoundEffect,
@@ -1295,7 +1307,7 @@ fn main_game_system(
                 text.0 = "READY?".to_string();
                 // TODO: I have to think about how to handle spawned Audio Player entity
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/ready.ogg", PATH_SOUND_PREFIX))),
+                    AudioPlayer::new(asset_server.load(format!("{}ready.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
                 ));
                 gamestate.phase = 2;
@@ -1307,7 +1319,7 @@ fn main_game_system(
                 let (_, mut text, _) = status_bar_query.single_mut();
                 text.0 = "FIGHT!".to_string();
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/fight.ogg", PATH_SOUND_PREFIX))),
+                    AudioPlayer::new(asset_server.load(format!("{}fight.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
                 ));
                 gamestate.phase = 3;
@@ -1341,14 +1353,14 @@ fn main_game_system(
                 if gamestate.win_types[gamestate.round as usize - 1] {
                     commands.spawn((
                         AudioPlayer::new(
-                            asset_server.load(format!("{}/KO.ogg", PATH_SOUND_PREFIX)),
+                            asset_server.load(format!("{}KO.ogg", PATH_SOUND_PREFIX)),
                         ),
                         SoundEffect,
                     ));
                 } else {
                     commands.spawn((
                         AudioPlayer::new(
-                            asset_server.load(format!("{}/timeup.ogg", PATH_SOUND_PREFIX)),
+                            asset_server.load(format!("{}timeup.ogg", PATH_SOUND_PREFIX)),
                         ),
                         SoundEffect,
                     ));
@@ -1360,9 +1372,15 @@ fn main_game_system(
                     gamestate.phase = 7;
                     gamestate.count = 0;
                 } else {
-                    for (id, mut player, _) in player_query.iter_mut() {
+                    for (id, mut player, mut sprite, _) in player_query.iter_mut() {
                         if gamestate.winners[gamestate.round as usize - 1] == id.0 + 1 {
-                            player.set_animation(WINNER_POSE, 0, 10);
+                            sprite.image = character_textures.textures[player.character_id as usize].victory.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_VICTORY;
+                        } else {
+                            sprite.image = character_textures.textures[player.character_id as usize].defeated.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_DEFEATED;
                         }
                     }
                     gamestate.count = 1;
@@ -1380,7 +1398,7 @@ fn main_game_system(
             if winner_id == 0 {
                 text.0 = "DRAW".to_string();
                 commands.spawn((
-                    AudioPlayer::new(asset_server.load(format!("{}/draw.ogg", PATH_SOUND_PREFIX))),
+                    AudioPlayer::new(asset_server.load(format!("{}draw.ogg", PATH_SOUND_PREFIX))),
                     SoundEffect,
                 ));
             } else {
@@ -1388,7 +1406,7 @@ fn main_game_system(
                 commands.spawn((
                     AudioPlayer::new(
                         asset_server
-                            .load(format!("{}/player{}_win.ogg", PATH_SOUND_PREFIX, winner_id)),
+                            .load(format!("{}player{}_win.ogg", PATH_SOUND_PREFIX, winner_id)),
                     ),
                     SoundEffect,
                 ));
@@ -1421,7 +1439,9 @@ fn main_game_system(
                     // reset background
                     background_query.single_mut().translation.x = 0.0;
                     // reset player
-                    for (id, mut player, mut transform) in player_query.iter_mut() {
+                    for (id, mut player, mut sprite, mut transform) in player_query.iter_mut() {
+                        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.reset(id);
                         if cfg!(target_arch = "wasm32") {
                             transform.translation.x = if id.0 == 0 { -250.0 } else { 250.0 };
@@ -1429,14 +1449,6 @@ fn main_game_system(
                         } else {
                             transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
                             transform.translation.y = 270.0 - config.window_size.y / 2.0;
-                        }
-                    }
-                    for mut foot_transform in foot_query.iter_mut() {
-                        foot_transform.translation.x = 0.0;
-                        if cfg!(target_arch = "wasm32") {
-                            foot_transform.translation.y = -20.0;
-                        } else {
-                            foot_transform.translation.y = -40.0;
                         }
                     }
 
