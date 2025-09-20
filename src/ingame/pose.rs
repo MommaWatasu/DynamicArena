@@ -116,8 +116,8 @@ pub const OPPOSITE_DEFAULT_POSE: Pose = Pose {
     facing: false,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
-    head: 0.0,
-    body: 0.0,
+    head: 30.0,
+    body: -5.0,
     right_upper_arm: 0.0,
     right_lower_arm: 120.0,
     right_upper_leg: -40.0,
@@ -130,9 +130,9 @@ pub const OPPOSITE_DEFAULT_POSE: Pose = Pose {
 
 pub const IDLE_POSE1: Pose = Pose {
     facing: true,
-    offset: [0.0, 0.0],
+    offset: [10.0, 0.0],
     old_offset: [0.0, 0.0],
-    head: 0.0,
+    head: 40.0,
     body: -5.0,
     right_upper_arm: 0.0,
     right_lower_arm: 120.0,
@@ -146,9 +146,9 @@ pub const IDLE_POSE1: Pose = Pose {
 
 pub const IDLE_POSE2: Pose = Pose {
     facing: true,
-    offset: [0.0, 0.0],
+    offset: [10.0, 0.0],
     old_offset: [0.0, 0.0],
-    head: 0.0,
+    head: 40.0,
     body: -5.0,
     right_upper_arm: -10.0,
     right_lower_arm: 110.0,
@@ -242,7 +242,7 @@ pub const ROLL_FORWARD_POSE1: Pose = Pose {
 
 pub const ROLL_FORWARD_POSE2: Pose = Pose {
     facing: true,
-    offset: [0.0, -100.0],
+    offset: [0.0, -200.0],
     old_offset: [0.0, 0.0],
     head: 30.0,
     body: -80.0,
@@ -258,7 +258,7 @@ pub const ROLL_FORWARD_POSE2: Pose = Pose {
 
 pub const ROLL_FORWARD_POSE3: Pose = Pose {
     facing: true,
-    offset: [0.0, -150.0],
+    offset: [0.0, -250.0],
     old_offset: [0.0, 0.0],
     head: 40.0,
     body: -150.0,
@@ -274,7 +274,7 @@ pub const ROLL_FORWARD_POSE3: Pose = Pose {
 
 pub const ROLL_FORWARD_POSE4: Pose = Pose {
     facing: true,
-    offset: [0.0, -175.0],
+    offset: [0.0, -200.0],
     old_offset: [0.0, 0.0],
     head: 50.0,
     body: -210.0,
@@ -578,14 +578,14 @@ pub const KICK_POSE2: Pose = Pose {
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
     head: 20.0,
-    body: 40.0,
-    right_upper_arm: -100.0,
-    right_lower_arm: 150.0,
-    right_upper_leg: 80.0,
+    body: 0.0,
+    right_upper_arm: -80.0,
+    right_lower_arm: 50.0,
+    right_upper_leg: 85.0,
     right_lower_leg: 0.0,
-    left_upper_arm: 10.0,
-    left_lower_arm: 150.0,
-    left_upper_leg: -30.0,
+    left_upper_arm: 80.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: 10.0,
     left_lower_leg: -10.0,
 };
 

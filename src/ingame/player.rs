@@ -313,7 +313,9 @@ impl Player {
             return;
         }
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
-            if self.state.check(PlayerState::ROLL_BACK) {
+            if self.state.check(PlayerState::ROLL_BACK)
+                || (self.state.check(PlayerState::WALKING | PlayerState::DIRECTION) && !self.pose.facing)
+                || (self.state.check(PlayerState::WALKING) && !self.state.check(PlayerState::DIRECTION) && self.pose.facing) {
                 atlas.index -= 1;
                 if atlas.index == 0 {
                     atlas.index = self.animation_frame_max - 1;
@@ -679,7 +681,11 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is just walking
                 sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
-                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                if player.pose.facing {
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                } else {
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                }
                 player.animation_frame_max = FRAMES_WALK;
                 player.state |= PlayerState::WALKING;
                 player.set_animation(WALKING_POSE1, 0, 15);
@@ -690,7 +696,11 @@ fn keyboard_input(
             if player.state.is_idle() {
                 // player is just walking
                 sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
-                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                if !player.pose.facing {
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                } else {
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                }
                 player.animation_frame_max = FRAMES_WALK;
                 player.state |= PlayerState::WALKING;
                 player.set_animation(WALKING_POSE1, 0, 15);
@@ -839,7 +849,7 @@ fn keyboard_input(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_KICK;
                 player.state |= PlayerState::KICKING;
-                player.set_animation(KICK_POSE1, 0, 5);
+                player.set_animation(KICK_POSE2, 0, 21);
                 player.energy += 2;
             } else if player
                 .state
@@ -1299,7 +1309,8 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(KICK_POSE2, 1, 30);
+                            player.state |= PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
+                            player.set_animation(IDLE_POSE1, 0, 25);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation(&mut sprite);
@@ -1307,8 +1318,8 @@ fn player_movement(
                             sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_IDLE;
-                            player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
-                            player.set_animation(IDLE_POSE1, 0, 30);
+                            player.state = PlayerState::IDLE;
+                            player.set_animation(IDLE_POSE2, 1, 25);
                         }
                     }
                 } else if player.state.check(PlayerState::RANGED_ATTACK) {
@@ -2245,7 +2256,7 @@ fn rotate_neck(transform: &mut Transform, degree: f32) {
 /// Updates the pose of the player character based on their current state.
 fn update_pose(
     mut player_query: Query<
-        (&mut Player, &mut Transform, &PlayerID),
+        (&mut Player, &PlayerID),
         Without<BodyParts>,
     >,
     mut parts_query: Query<
@@ -2253,7 +2264,7 @@ fn update_pose(
         Without<Player>,
     >,
 ) {
-    for (mut player, mut player_transform, player_id) in player_query.iter_mut() {
+    for (player, player_id) in player_query.iter_mut() {
         let flip = if player.pose.facing { 1.0 } else { -1.0 };
         for (parts, parts_id, mut transform) in parts_query.iter_mut() {
             if player_id.0 == parts_id.0 {
@@ -2263,6 +2274,13 @@ fn update_pose(
                     // Body
                     0b01000 => {
                         rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body, BODY_LENGTH);
+                        if cfg!(not(target_arch = "wasm32")) {
+                            transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
+                            transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
+                        } else {
+                            transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0;
+                            transform.translation.y += (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
+                        }
                     }
                     // Right Upper Arm
                     0b00111 => rotate_parts(
@@ -2332,17 +2350,6 @@ fn update_pose(
                 }
             }
         }
-        // update player position offset
-        if cfg!(not(target_arch = "wasm32")) {
-            player_transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
-            player_transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
-        } else {
-            player_transform.translation.x +=
-                (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0;
-            player_transform.translation.y +=
-                (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
-        }
-        player.pose.old_offset = player.pose.offset;
     }
 }
 
