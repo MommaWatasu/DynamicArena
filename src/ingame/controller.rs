@@ -100,7 +100,7 @@ fn controller_system(
                     // player is idle
                     // then player will jump up
                     player.state |= PlayerState::JUMP_UP;
-                    player.set_animation(JUMP_UP_POSE1, 0, 10);
+                    player.set_animation(JUMP_POSE1, 0, 10);
                     player.energy += 1;
                 } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING)
                 {
@@ -109,7 +109,7 @@ fn controller_system(
                             // player is walking right
                             // then player will jump forward
                             player.state |= PlayerState::JUMP_FORWARD;
-                            player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                            player.set_animation(JUMP_POSE1, 0, 10);
                             // stop moving for preparing motion
                             player.velocity = Vec2::ZERO;
                             player.energy += 1;
@@ -117,7 +117,7 @@ fn controller_system(
                             // player is walking left
                             // then player will jump backward
                             player.state |= PlayerState::JUMP_BACKWARD;
-                            player.set_animation(JUMP_UP_POSE1, 0, 10);
+                            player.set_animation(JUMP_POSE1, 0, 10);
                             // stop moving for preparing motion
                             player.velocity = Vec2::ZERO;
                             player.energy += 1;
@@ -127,7 +127,7 @@ fn controller_system(
                             // player is walking right
                             // then player will jump forward
                             player.state |= PlayerState::JUMP_FORWARD;
-                            player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                            player.set_animation(JUMP_POSE1, 0, 10);
                             // stop moving for preparing motion
                             player.velocity = Vec2::ZERO;
                             player.energy += 1;
@@ -135,7 +135,7 @@ fn controller_system(
                             // player is walking left
                             // then player will jump backward
                             player.state |= PlayerState::JUMP_BACKWARD;
-                            player.set_animation(JUMP_UP_POSE1, 0, 10);
+                            player.set_animation(JUMP_POSE1, 0, 10);
                             // stop moving for preparing motion
                             player.velocity = Vec2::ZERO;
                             player.energy += 1;

@@ -701,7 +701,7 @@ pub fn agent_system(
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.set_animation(JUMP_POSE1, 0, 10);
                         player.velocity = Vec2::new(0.0, 12.0);
                         player.energy += 1;
                     } else if !player.state.check(
@@ -717,7 +717,7 @@ pub fn agent_system(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_JUMP;
                             player.state |= PlayerState::JUMP_FORWARD;
-                            player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                            player.set_animation(JUMP_POSE1, 0, 10);
                             let x_vel =
                                 CHARACTER_PROFILES[player.character_id as usize].agility;
                             player.velocity = Vec2::new(x_vel, 12.0);
@@ -728,7 +728,7 @@ pub fn agent_system(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_JUMP;
                             player.state |= PlayerState::JUMP_BACKWARD;
-                            player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
+                            player.set_animation(JUMP_POSE1, 0, 10);
                             let x_vel =
                                 CHARACTER_PROFILES[player.character_id as usize].agility;
                             player.velocity = Vec2::new(-x_vel, 12.0);
@@ -749,7 +749,7 @@ pub fn agent_system(
                             player.state &= !PlayerState::DIRECTION;
                         }
                         player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        player.set_animation(JUMP_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 1;
@@ -768,7 +768,7 @@ pub fn agent_system(
                             player.state |= PlayerState::DIRECTION;
                         }
                         player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_BACKWARD_POSE1, 0, 10);
+                        player.set_animation(JUMP_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 1;
@@ -787,7 +787,7 @@ pub fn agent_system(
                             player.state &= !PlayerState::DIRECTION;
                         }
                         player.state |= PlayerState::JUMP_FORWARD | PlayerState::KICKING;
-                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        player.set_animation(JUMP_POSE1, 0, 10);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 2;

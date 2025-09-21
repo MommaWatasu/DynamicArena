@@ -206,7 +206,7 @@ impl PlayerState {
         self.0 & !(Self::COOLDOWN.0 | Self::DIRECTION.0 | Self::ATTACK_DISABLED.0) == 0
     }
     pub fn is_just_walk(&self) -> bool {
-        self.0 & !(Self::COOLDOWN.0 | Self::DIRECTION.0 | Self::ATTACK_DISABLED.0 | Self::WALKING.0) == 0
+        self.0 & !(Self::COOLDOWN.0 | Self::DIRECTION.0 | Self::ATTACK_DISABLED.0 | Self::WALKING.0) == 0 && self.check(Self::WALKING)
     }
     pub fn check(&self, state: Self) -> bool {
         self.0 & state.0 != 0
@@ -726,7 +726,7 @@ fn keyboard_input(
                 player.animation_frame_max = FRAMES_BEND_DOWN;
                 player.state |= PlayerState::BEND_DOWN;
                 player.set_animation(BEND_DOWN_POSE1, 0, 27);
-            } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING) {
+            } else if player.state.is_just_walk() {
                 if player.pose.facing {
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
@@ -787,10 +787,9 @@ fn keyboard_input(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_JUMP;
                 player.state |= PlayerState::JUMP_UP;
-                player.set_animation(JUMP_UP_POSE1, 0, 10);
+                player.set_animation(JUMP_POSE1, 0, 11);
                 player.energy += 1;
-            } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING)
-            {
+            } else if player.state.is_just_walk() {
                 if player.pose.facing {
                     if player.state.check(PlayerState::DIRECTION) {
                         // player is walking right
@@ -798,8 +797,8 @@ fn keyboard_input(
                         sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_JUMP;
-                        player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        player.state = PlayerState::JUMP_FORWARD;
+                        player.set_animation(JUMP_POSE1, 0, 11);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 1;
@@ -809,8 +808,8 @@ fn keyboard_input(
                         sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_JUMP;
-                        player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.state = PlayerState::JUMP_BACKWARD;
+                        player.set_animation(JUMP_POSE1, 0, 11);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 1;
@@ -822,8 +821,8 @@ fn keyboard_input(
                         sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_JUMP;
-                        player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_FORWARD_POSE1, 0, 10);
+                        player.state = PlayerState::JUMP_FORWARD;
+                        player.set_animation(JUMP_POSE1, 0, 11);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 1;
@@ -833,8 +832,8 @@ fn keyboard_input(
                         sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_JUMP;
-                        player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_UP_POSE1, 0, 10);
+                        player.state = PlayerState::JUMP_BACKWARD;
+                        player.set_animation(JUMP_POSE1, 0, 11);
                         // stop moving for preparing motion
                         player.velocity = Vec2::ZERO;
                         player.energy += 1;
@@ -1027,35 +1026,40 @@ fn player_movement(
                     }
                 }
             }
-            if player.state.check(PlayerState::JUMP_UP) {
+            if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD) {
                 // player is jumping
 
                 // prepare for jump
-                if player.animation.phase != 0 {
-                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
+                if player.animation.phase != 0 && player.animation.phase != 4 {
+                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 3.0 / FPS);
                 }
 
                 if player.animation.phase == 0 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        if cfg!(not(target_arch = "wasm32")) {
-                            player.velocity = Vec2::new(0.0, 12.0);
+                        let x_vel = if player.state.check(PlayerState::JUMP_UP) {
+                            0.0
+                        } else if player.state.check(PlayerState::DIRECTION) {
+                            CHARACTER_PROFILES[player.character_id as usize].agility * 3.0
                         } else {
-                            player.velocity = Vec2::new(0.0, 8.0);
+                            -CHARACTER_PROFILES[player.character_id as usize].agility * 3.0
+                        };
+                        if cfg!(not(target_arch = "wasm32")) {
+                            player.velocity = Vec2::new(x_vel, 12.0);
+                        } else {
+                            player.velocity = Vec2::new(x_vel, 8.0);
                         }
-                        player.set_animation(JUMP_UP_POSE2, 1, 48);
+                        player.set_animation(JUMP_POSE2, 1, 14);
                     }
                 } else if player.animation.phase == 1 {
+                    if player.state.check(PlayerState::KICKING) {
+                        let mut jumping_kick_pose = JUMPING_KICK_POSE;
+                        jumping_kick_pose.body = 0.0;
+                        player.set_animation(jumping_kick_pose, 2, 5);
+                    }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        if player.state.check(PlayerState::KICKING) {
-                            let mut jumping_kick_pose = JUMPING_KICK_POSE;
-                            jumping_kick_pose.body = 0.0;
-                            player.set_animation(jumping_kick_pose, 2, 5);
-                        } else {
-                            player.animation.phase = 2;
-                            player.animation.count = 0;
-                        }
+                        player.animation.phase = 2;
                     }
                 } else if player.animation.phase == 2 {
                     if player.state.check(PlayerState::KICKING) {
@@ -1063,146 +1067,32 @@ fn player_movement(
                         jumping_kick_pose.body = 0.0;
                         player.set_animation(jumping_kick_pose, 2, 5);
                     }
-                    player.update_animation(&mut sprite);
-                }
-            } else if player.state.check(PlayerState::JUMP_FORWARD) {
-                // player is jumping forward
-
-                // prepare for jump
-                if player.animation.phase != 0 {
-                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
-                }
-
-                if player.animation.phase == 0 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        let x_vel = if player.state.check(PlayerState::DIRECTION) {
-                            CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
-                        } else {
-                            -CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
-                        };
-                        if cfg!(not(target_arch = "wasm32")) {
-                            player.velocity = Vec2::new(x_vel, 12.0);
-                            if player.state.check(PlayerState::KICKING) {
-                                player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
-                            } else {
-                                player.set_animation(JUMP_FORWARD_POSE2, 1, 15);
-                            }
-                        } else {
-                            player.velocity = Vec2::new(x_vel, 8.0);
-                            if player.state.check(PlayerState::KICKING) {
-                                player.set_animation(JUMP_FORWARD_POSE2, 1, 6);
-                            } else {
-                                player.set_animation(JUMP_FORWARD_POSE2, 1, 10);
-                            }
+                    if player.velocity.y > 0.0 {
+                        player.animation.count += 1;
+                    } else {
+                        player.animation.count -= 1;
+                        if player.animation.count == 1 {
+                            player.animation.count = 0;
                         }
                     }
-                } else if player.animation.phase == 1 {
-                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        if player.state.check(PlayerState::KICKING) {
-                            player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
-                        } else {
-                            player.set_animation(JUMP_FORWARD_POSE3, 2, 15);
-                        }
-                        #[cfg(target_arch = "wasm32")]
-                        if player.state.check(PlayerState::KICKING) {
-                            player.set_animation(JUMP_FORWARD_POSE3, 2, 6);
-                        } else {
-                            player.set_animation(JUMP_FORWARD_POSE3, 2, 10);
-                        }
-                    }
-                } else if player.animation.phase == 2 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        if player.state.check(PlayerState::KICKING) {
-                            player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
-                        } else {
-                            player.set_animation(JUMP_FORWARD_POSE4, 3, 30);
-                        }
-                        #[cfg(target_arch = "wasm32")]
-                        if player.state.check(PlayerState::KICKING) {
-                            player.set_animation(JUMP_FORWARD_POSE4, 3, 13);
-                        } else {
-                            player.set_animation(JUMP_FORWARD_POSE4, 3, 20);
-                        }
+                        player.set_animation(JUMP_POSE3, 3, 17);
                     }
                 } else if player.animation.phase == 3 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        if player.state.check(PlayerState::KICKING) {
-                            player.set_animation(JUMPING_KICK_POSE, 4, 10);
-                        } else {
-                            player.set_animation(JUMP_FORWARD_POSE5, 4, 15);
-                        }
-                        #[cfg(target_arch = "wasm32")]
-                        if player.state.check(PlayerState::KICKING) {
-                            player.set_animation(JUMPING_KICK_POSE, 4, 6);
-                        } else {
-                            player.set_animation(JUMP_FORWARD_POSE5, 4, 10);
-                        }
+                    if player.state.check(PlayerState::KICKING) {
+                        let mut jumping_kick_pose = JUMPING_KICK_POSE;
+                        jumping_kick_pose.body = 0.0;
+                        player.set_animation(jumping_kick_pose, 3, 5);
                     }
+                    player.update_animation(&mut sprite);
                 } else if player.animation.phase == 4 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.pose.body = 0.0;
-                    }
-                }
-            } else if player.state.check(PlayerState::JUMP_BACKWARD) {
-                // player is jumping backward
-
-                // prepare for jump
-                if player.animation.phase != 0 {
-                    player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 2.0 / FPS);
-                }
-
-                if player.animation.phase == 0 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        let x_vel = if player.state.check(PlayerState::DIRECTION) {
-                            CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
-                        } else {
-                            -CHARACTER_PROFILES[player.character_id as usize].agility * 2.0
-                        };
-                        if cfg!(not(target_arch = "wasm32")) {
-                            player.velocity = Vec2::new(x_vel, 12.0);
-                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 15);
-                        } else {
-                            player.velocity = Vec2::new(x_vel, 8.0);
-                            player.set_animation(JUMP_BACKWARD_POSE2, 1, 10);
-                        }
-                    }
-                } else if player.animation.phase == 1 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        player.set_animation(JUMP_BACKWARD_POSE3, 2, 15);
-                        #[cfg(target_arch = "wasm32")]
-                        player.set_animation(JUMP_BACKWARD_POSE3, 2, 10);
-                    }
-                } else if player.animation.phase == 2 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        player.set_animation(JUMP_BACKWARD_POSE4, 3, 30);
-                        #[cfg(target_arch = "wasm32")]
-                        player.set_animation(JUMP_BACKWARD_POSE4, 3, 20);
-                    }
-                } else if player.animation.phase == 3 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        #[cfg(not(target_arch = "wasm32"))]
-                        player.set_animation(JUMP_BACKWARD_POSE5, 4, 15);
-                        #[cfg(target_arch = "wasm32")]
-                        player.set_animation(JUMP_BACKWARD_POSE5, 4, 10);
-                    }
-                } else if player.animation.phase == 4 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        player.pose.body = 0.0;
+                        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_IDLE;
+                        player.state = PlayerState::IDLE;
+                        player.set_animation(IDLE_POSE2, 1, 25);
                     }
                 }
             } else if player.state.check(PlayerState::BEND_DOWN) {
@@ -2155,44 +2045,19 @@ fn update_soul_absorb_animation(
 
 // check if the player is grounding
 #[cfg(not(target_arch = "wasm32"))]
-fn check_ground(config: Res<GameConfig>, character_textures: Res<CharacterTextures>, mut player_query: Query<(&mut Player, &mut Sprite, &mut Transform)>) {
-    for (mut player, mut sprite, mut transform) in player_query.iter_mut() {
+fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &mut Transform)>) {
+    for (mut player, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
         if player.animation.phase == 0 {
             continue;
         }
         // change offset based on the type of jump
-        if player
-            .state
-            .check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
-            && transform.translation.y + 50.0 < 270.0 - config.window_size.y / 2.0
-            && player.animation.phase == 4
+        if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD)
+            && transform.translation.y < 270.0 - config.window_size.y / 2.0
+            && player.animation.phase == 3
         {
-            player.state &= !(PlayerState::JUMP_UP
-                | PlayerState::JUMP_BACKWARD
-                | PlayerState::JUMP_FORWARD
-                | PlayerState::KICKING
-                | PlayerState::WALKING);
-            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
-            player.state |= PlayerState::COOLDOWN;
-            player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 50.0 / player.animation.count as f32;
-            transform.translation.y = 220.0 - config.window_size.y / 2.0;
-            player.velocity = Vec2::ZERO;
-        } else if player.state.check(PlayerState::JUMP_UP)
-            && transform.translation.y + 70.0 < 270.0 - config.window_size.y / 2.0
-            && player.animation.phase == 2
-        {
-            player.state &= !(PlayerState::JUMP_UP
-                | PlayerState::JUMP_BACKWARD
-                | PlayerState::JUMP_FORWARD
-                | PlayerState::KICKING
-                | PlayerState::WALKING);
-            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
-            player.state |= PlayerState::COOLDOWN;
-            player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 70.0 / player.animation.count as f32;
-            transform.translation.y = 200.0 - config.window_size.y / 2.0;
+            player.set_animation(IDLE_POSE1, 4, 10);
+            transform.translation.y = 270.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
     }
