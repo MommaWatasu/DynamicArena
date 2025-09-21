@@ -57,6 +57,8 @@ impl PolicyScore {
 enum Action {
     MoveForward,
     MoveBackward,
+    RollForward,
+    RollBackward,
     JumpUP,
     JumpForward,
     JumpBackward,
@@ -641,6 +643,8 @@ pub fn agent_system(
                     if player.state.is_idle() {
                         // player is just walking
                         sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                        player.animation_frame_max = FRAMES_WALK;
                         player.state |= PlayerState::WALKING;
                         player.set_animation(WALKING_POSE1, 0, 15);
                     }
@@ -650,6 +654,42 @@ pub fn agent_system(
                     } else {
                         // direction is left
                         player.state |= PlayerState::DIRECTION;
+                    }
+                }
+                Action::RollForward => {
+                    if player.state.is_idle() {
+                        // player is rolling forward
+                        sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_ROLL;
+                        player.state |= PlayerState::ROLL_FORWARD;
+                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                        if player.pose.facing {
+                            player.state |= PlayerState::DIRECTION;
+                        } else {
+                            player.state &= !PlayerState::DIRECTION;
+                        }
+                        let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
+                            * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                        player.velocity = Vec2::new(x_vel, 0.0);
+                    }
+                }
+                Action::RollBackward => {
+                    if player.state.is_idle() {
+                        // player is rolling backward
+                        sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
+                        player.animation_frame_max = FRAMES_ROLL;
+                        player.state |= PlayerState::ROLL_BACK;
+                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                        if player.pose.facing {
+                            player.state &= !PlayerState::DIRECTION;
+                        } else {
+                            player.state |= PlayerState::DIRECTION;
+                        }
+                        let x_vel = if player.state.is_forward() { -1.0 } else { 1.0 }
+                            * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                        player.velocity = Vec2::new(x_vel, 0.0);
                     }
                 }
                 Action::JumpUP => {

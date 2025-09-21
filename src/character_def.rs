@@ -3,6 +3,7 @@ use bevy::prelude::*;
 pub const ENERGY_MAX: u8 = 100;
 pub const FIRE_CHARGE_MAX: u16 = 300;
 
+// TODO: update radar chart(remove dexterity and add the power of skill)
 pub struct CharacterProfile {
     pub name: &'static str,
     pub description: &'static str,
@@ -10,7 +11,6 @@ pub struct CharacterProfile {
     pub skill_description: &'static str,
     pub health: u32,
     pub agility: f32,
-    pub dexterity: f32,
     pub power: f32,
     pub defense: f32,
 }
@@ -33,7 +33,6 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 4.0,
         #[cfg(target_arch = "wasm32")]
         agility: 2.0,
-        dexterity: 1.2,
         power: 150.0,
         defense: 80.0
     },
@@ -47,7 +46,6 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 3.0,
         #[cfg(target_arch = "wasm32")]
         agility: 1.5,
-        dexterity: 1.1,
         power: 100.0,
         defense: 100.0
     },
@@ -61,7 +59,6 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         agility: 2.8,
         #[cfg(target_arch = "wasm32")]
         agility: 1.0,
-        dexterity: 1.0,
         power: 130.0,
         defense: 150.0
     },
