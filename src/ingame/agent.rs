@@ -72,6 +72,58 @@ enum Action {
     None,
 }
 
+// Track the current action state to maintain continuity
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+struct ActionState {
+    current_action: Action,
+    frames_since_start: u8,
+    planned_duration: u8,
+    priority: ActionPriority,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
+enum ActionPriority {
+    Low,      // Can be interrupted easily (movement, bend)
+    Medium,   // Should complete but can be interrupted for high priority (attacks)
+    High,     // Must complete (skills, special moves)
+    Critical, // Cannot be interrupted (recovery states)
+}
+
+impl ActionState {
+    fn new(action: Action) -> Self {
+        let (planned_duration, priority) = match action {
+            Action::MoveForward | Action::MoveBackward => (15, ActionPriority::Low),
+            Action::Bend => (10, ActionPriority::Low),
+            Action::RollForward | Action::RollBackward => (20, ActionPriority::Medium),
+            Action::JumpUP | Action::JumpForward | Action::JumpBackward => (25, ActionPriority::Medium),
+            Action::JumpKick => (5, ActionPriority::Medium), // Short duration as it's added to existing jump
+            Action::Kick | Action::BackKick | Action::Punch => (20, ActionPriority::Medium),
+            Action::RangedAttack => (25, ActionPriority::Medium),
+            Action::Skill => (60, ActionPriority::High),
+            Action::None => (0, ActionPriority::Low),
+        };
+        
+        Self {
+            current_action: action,
+            frames_since_start: 0,
+            planned_duration,
+            priority,
+        }
+    }
+    
+    fn should_continue(&self) -> bool {
+        self.frames_since_start < self.planned_duration
+    }
+    
+    fn can_be_interrupted_by(&self, new_priority: ActionPriority) -> bool {
+        new_priority > self.priority || !self.should_continue()
+    }
+    
+    fn tick(&mut self) {
+        self.frames_since_start += 1;
+    }
+}
+
 #[derive(Default)]
 struct Environment {
     agent_state: PlayerState,
@@ -96,6 +148,9 @@ pub struct Agent {
     count: u8,
     level: Level,
     policy: Policy,
+    action_state: ActionState,
+    last_player_health: f32,
+    engagement_timer: u8,  // Timer to start engagement even without being attacked
 }
 
 impl Agent {
@@ -106,143 +161,213 @@ impl Agent {
             count: 0,
             level,
             policy: Policy::Neutral,
+            action_state: ActionState::new(Action::None),
+            last_player_health: 1.0,
+            engagement_timer: 0,
         }
     }
     /// Select the appropriate combat policy based on environment and difficulty level
     fn select_policy(&mut self, environment: &Environment) {
+        // Update engagement timer for proactive behavior
+        self.engagement_timer += 1;
+        
+        // Check if player health decreased (we attacked them or they took damage)
+        let player_took_damage = environment.player_health < self.last_player_health;
+        self.last_player_health = environment.player_health;
+        
+        // Determine if we should engage proactively
+        let should_engage_proactively = self.should_engage_proactively(environment, player_took_damage);
+        
         match self.level {
             // Easy: Simplified strategy with basic patterns
             Level::Easy => {
-                let policy_score = self.calculate_policy_score(environment);
-                
-                if environment.agent_health < 0.5 {
-                    // Low health - be more cautious
-                    if !environment.agent_state.is_idle() {
-                        self.policy = Policy::Neutral;
-                    } else if environment.distance < 150.0 {
-                        let rand = rand();
-                        if rand < 0.8 {  // Increased defensive tendency
-                            self.policy = Policy::Defensive;
+                if should_engage_proactively || environment.agent_health < environment.player_health {
+                    let policy_score = self.calculate_policy_score(environment);
+                    
+                    if environment.agent_health < 0.5 {
+                        // Low health - be more cautious but still engage
+                        if environment.distance < 200.0 {
+                            let rand = rand();
+                            if rand < 0.6 {  // More defensive when low health
+                                self.policy = Policy::Defensive;
+                            } else {
+                                self.policy = Policy::Offensive;
+                            }
+                        } else if environment.distance > 400.0 {
+                            self.policy = if policy_score.offensive > 0.3 { Policy::Offensive } else { Policy::Neutral };
                         } else {
-                            self.policy = Policy::Offensive;
+                            // Medium distance - consider player state
+                            if environment.is_player_vulnerable {
+                                self.policy = Policy::Offensive;
+                            } else {
+                                self.policy = Policy::Neutral;
+                            }
                         }
-                    } else if environment.distance > 500.0 {
-                        self.policy = if policy_score.offensive > 0.3 { Policy::Offensive } else { Policy::Neutral };
                     } else {
-                        // Medium distance - consider player state
-                        if environment.is_player_vulnerable {
-                            self.policy = Policy::Offensive;
+                        // Good health - more aggressive engagement
+                        if environment.distance < 200.0 {
+                            self.policy = if environment.is_player_vulnerable { Policy::Offensive } else { 
+                                if rand() < 0.7 { Policy::Offensive } else { Policy::Defensive }
+                            };
+                        } else if environment.distance > 500.0 {
+                            self.policy = if policy_score.offensive > 0.4 { Policy::Offensive } else { Policy::Neutral };
                         } else {
-                            self.policy = Policy::Defensive;
+                            // Proactive engagement at medium range
+                            self.policy = if environment.player_energy > 80 { Policy::Defensive } else { Policy::Offensive };
                         }
                     }
+                } else if !environment.agent_state.is_idle() {
+                    // Continue current action if already engaged
+                    self.policy = Policy::Neutral;
                 } else {
-                    // Good health - more aggressive
-                    if environment.distance < 150.0 {
-                        self.policy = if environment.is_player_vulnerable { Policy::Offensive } else { 
-                            if rand() < 0.7 { Policy::Offensive } else { Policy::Defensive }
-                        };
-                    } else if environment.distance > 500.0 {
-                        self.policy = if policy_score.offensive > 0.4 { Policy::Offensive } else { Policy::Neutral };
-                    } else {
-                        self.policy = if environment.player_energy > 80 { Policy::Defensive } else { Policy::Offensive };
-                    }
+                    // Stay neutral but ready to react
+                    self.policy = Policy::Neutral;
                 }
             }
             // Normal: Enhanced strategy with better situational awareness
             Level::Normal => {
-                let policy_score = self.calculate_policy_score(environment);
-                
-                // Critical health threshold
-                if environment.agent_health < 0.3 {
-                    self.policy = self.select_desperate_policy(environment);
-                } else if environment.agent_health < 0.6 {
-                    // Medium health - balanced approach
-                    if environment.is_player_vulnerable {
-                        self.policy = Policy::Offensive;
-                    } else if environment.distance < 200.0 && environment.player_energy < 30 {
-                        // Player is tired at close range - be aggressive
-                        self.policy = Policy::Offensive;
-                    } else if environment.distance < 300.0 {
-                        let combined_score = policy_score.offensive - policy_score.defensive;
-                        if combined_score > 0.2 {
+                if should_engage_proactively || environment.health_advantage >= -0.1 {
+                    let policy_score = self.calculate_policy_score(environment);
+                    
+                    // Critical health threshold
+                    if environment.agent_health < 0.3 {
+                        self.policy = self.select_desperate_policy(environment);
+                    } else if environment.agent_health < 0.6 {
+                        // Medium health - balanced but proactive approach
+                        if environment.is_player_vulnerable {
                             self.policy = Policy::Offensive;
-                        } else if combined_score < -0.2 {
-                            self.policy = Policy::Defensive;
+                        } else if environment.distance < 250.0 && environment.player_energy < 50 {
+                            // Player is tired at close range - be aggressive
+                            self.policy = Policy::Offensive;
+                        } else if environment.distance < 350.0 {
+                            let combined_score = policy_score.offensive - policy_score.defensive;
+                            if combined_score > 0.1 {
+                                self.policy = Policy::Offensive;
+                            } else if combined_score < -0.1 {
+                                self.policy = Policy::Defensive;
+                            } else {
+                                self.policy = Policy::Neutral;
+                            }
                         } else {
-                            self.policy = Policy::Neutral;
+                            // Long range strategy - engage if we have ranged advantage
+                            if environment.agent_fire_charge > environment.player_fire_charge + 20 {
+                                self.policy = Policy::Offensive;
+                            } else {
+                                self.policy = Policy::Neutral;
+                            }
                         }
                     } else {
-                        // Long range strategy
-                        if environment.agent_fire_charge > environment.player_fire_charge + 30 {
+                        // Good health - confident and proactive
+                        if environment.distance > 600.0 {
+                            // Too far - close distance
                             self.policy = Policy::Offensive;
+                        } else if environment.distance < 100.0 {
+                            // Very close - use situation to our advantage
+                            self.policy = if environment.player_energy < 30 { Policy::Offensive } else { Policy::Defensive };
                         } else {
-                            self.policy = Policy::Neutral;
+                            // Optimal engagement range
+                            let best_policy = policy_score.get_best_policy();
+                            self.policy = best_policy;
                         }
                     }
                 } else {
-                    // Good health - more confident
-                    if environment.health_advantage > 0.2 {
-                        // Health advantage - maintain pressure
-                        self.policy = if environment.distance > 400.0 { Policy::Neutral } else { Policy::Offensive };
+                    // Health disadvantage - be more cautious but still engage when advantageous
+                    if environment.is_player_vulnerable {
+                        self.policy = Policy::Offensive;
+                    } else if environment.distance < 150.0 {
+                        self.policy = Policy::Defensive;
                     } else {
-                        // Use comprehensive scoring
-                        let best_policy = policy_score.get_best_policy();
-                        self.policy = best_policy;
+                        self.policy = Policy::Neutral;
                     }
                 }
             }
             Level::Hard => {
-                // Advanced strategy for Hard mode
-                // Priority: Resource advantage, precise timing, prediction
+                // Always engaging and calculating - most proactive behavior
                 if environment.is_player_vulnerable {
                     self.policy = Policy::Offensive;
-                } else if environment.health_advantage > 0.3 {
-                    // Significant health advantage - maintain pressure
-                    if environment.distance < 300.0 {
-                        self.policy = Policy::Offensive;
-                    } else {
-                        let rand = rand();
-                        if rand < 0.7 {
+                } else if should_engage_proactively || environment.health_advantage >= -0.2 {
+                    if environment.health_advantage > 0.2 {
+                        // Health advantage - maintain pressure
+                        if environment.distance < 400.0 {
+                            self.policy = Policy::Offensive;
+                        } else {
+                            // Close distance first
+                            self.policy = Policy::Offensive;
+                        }
+                    } else if environment.health_advantage < -0.2 {
+                        // Health disadvantage but still engage strategically
+                        if environment.distance < 180.0 && environment.player_energy > 70 {
+                            self.policy = Policy::Defensive;
+                        } else if environment.energy_advantage > 15 || environment.fire_charge_advantage > 30 {
+                            // Use resource advantage
                             self.policy = Policy::Offensive;
                         } else {
                             self.policy = Policy::Neutral;
                         }
-                    }
-                } else if environment.health_advantage < -0.3 {
-                    // Health disadvantage - be cautious
-                    if environment.distance < 150.0 {
-                        self.policy = Policy::Defensive;
                     } else {
-                        let rand = rand();
-                        if rand < 0.5 {
-                            self.policy = Policy::Defensive;
-                        } else {
-                            self.policy = Policy::Neutral;
-                        }
-                    }
-                } else {
-                    // Balanced situation - use resource advantage
-                    if environment.energy_advantage > 20 || environment.fire_charge_advantage > 50 {
-                        self.policy = Policy::Offensive;
-                    } else if environment.energy_advantage < -20 {
-                        self.policy = Policy::Defensive;
-                    } else {
-                        // Dynamic policy based on distance and player state
-                        if environment.distance < 200.0 {
+                        // Balanced situation - proactive engagement
+                        if environment.distance > 500.0 {
+                            // Close distance for engagement
+                            self.policy = Policy::Offensive;
+                        } else if environment.distance < 200.0 {
                             let rand = rand();
-                            if rand < 0.6 {
+                            if rand < 0.7 {
                                 self.policy = Policy::Offensive;
                             } else {
                                 self.policy = Policy::Defensive;
                             }
                         } else {
-                            self.policy = Policy::Neutral;
+                            // Optimal fighting range
+                            self.policy = Policy::Offensive;
                         }
                     }
+                } else {
+                    // Severe health disadvantage - desperate measures
+                    self.policy = self.select_desperate_policy(environment);
                 }
             }
         }
+    }
+    
+    /// Determine if agent should engage proactively without waiting for damage
+    fn should_engage_proactively(&self, environment: &Environment, player_took_damage: bool) -> bool {
+        // Engage if we successfully attacked the player
+        if player_took_damage {
+            return true;
+        }
+        
+        // Engage based on engagement timer (prevents standing around)
+        let engagement_threshold = match self.level {
+            Level::Easy => 90,   // 3 seconds at 30 FPS
+            Level::Normal => 60, // 2 seconds
+            Level::Hard => 30,   // 1 second
+        };
+        
+        if self.engagement_timer > engagement_threshold {
+            return true;
+        }
+        
+        // Engage if player is within striking distance
+        if environment.distance < 300.0 && environment.distance > 50.0 {
+            return true;
+        }
+        
+        // Engage if we have significant resource advantages
+        if environment.energy_advantage > 30 || environment.fire_charge_advantage > 50 {
+            return true;
+        }
+        
+        // Engage if player is vulnerable
+        if environment.is_player_vulnerable {
+            return true;
+        }
+        
+        // Engage if player is approaching aggressively
+        if environment.player_state.check(PlayerState::WALKING | PlayerState::JUMP_FORWARD) && environment.distance < 400.0 {
+            return true;
+        }
+        
+        false
     }
     
     /// Calculate scores for each policy based on environmental factors
@@ -355,29 +480,129 @@ impl Agent {
     }
     
     /// Select the best action based on current policy and environment
-    fn select_action(&self, environment: &Environment) -> Action {
+    fn select_action(&mut self, environment: &Environment) -> Action {
+        // First, update the current action state timer
+        self.action_state.tick();
+        
         if environment.agent_state.check(PlayerState::COOLDOWN) {
             return Action::None;
         }
         
+        // Check if we should continue current action
+        if self.should_continue_current_action(environment) {
+            return self.action_state.current_action;
+        }
+        
         // Priority actions based on game state
         if self.should_use_skill(environment) {
-            return Action::Skill;
+            let new_action = Action::Skill;
+            if self.can_interrupt_for_action(new_action) {
+                self.action_state = ActionState::new(new_action);
+                return new_action;
+            }
         }
         
         if self.should_counter_attack(environment) {
-            return self.get_counter_action(environment);
+            let new_action = self.get_counter_action(environment);
+            if self.can_interrupt_for_action(new_action) {
+                self.action_state = ActionState::new(new_action);
+                return new_action;
+            }
         }
         
         if self.should_punish_vulnerability(environment) {
-            return self.get_punishment_action(environment);
+            let new_action = self.get_punishment_action(environment);
+            if self.can_interrupt_for_action(new_action) {
+                self.action_state = ActionState::new(new_action);
+                return new_action;
+            }
         }
         
-        match self.policy {
+        // Select action based on policy
+        let new_action = match self.policy {
             Policy::Offensive => self.select_offensive_action(environment),
             Policy::Defensive => self.select_defensive_action(environment),
             Policy::Neutral => self.select_neutral_action(environment),
+        };
+        
+        // Check if we can change to this new action
+        if self.can_interrupt_for_action(new_action) {
+            self.action_state = ActionState::new(new_action);
+            new_action
+        } else {
+            // Continue current action if we can't interrupt
+            self.action_state.current_action
         }
+    }
+    
+    /// Check if current action should continue
+    fn should_continue_current_action(&self, environment: &Environment) -> bool {
+        // Don't continue if action is complete
+        if !self.action_state.should_continue() {
+            return false;
+        }
+        
+        // Always continue high priority actions unless they're complete
+        if self.action_state.priority >= ActionPriority::High {
+            return true;
+        }
+        
+        // Continue medium priority actions unless there's urgent need to change
+        if self.action_state.priority == ActionPriority::Medium {
+            // Stop if player is about to attack and we're vulnerable
+            if environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING) 
+               && environment.distance < 200.0 {
+                return false;
+            }
+            
+            // Stop if we're doing something ineffective
+            match self.action_state.current_action {
+                Action::MoveForward => {
+                    // Stop if we're too close or player moved away
+                    environment.distance > 80.0 && environment.distance < 500.0
+                }
+                Action::MoveBackward => {
+                    // Stop if we're far enough or player is vulnerable
+                    environment.distance < 300.0 && !environment.is_player_vulnerable
+                }
+                _ => true, // Continue other medium priority actions
+            }
+        } else {
+            // Low priority actions can be interrupted more easily
+            // Continue only if it makes sense
+            match self.action_state.current_action {
+                Action::MoveForward => {
+                    // Continue if we need to get closer
+                    environment.distance > 150.0 && !environment.is_player_vulnerable
+                }
+                Action::MoveBackward => {
+                    // Continue if we need distance
+                    environment.distance < 200.0 && environment.player_state.check(PlayerState::WALKING)
+                }
+                Action::Bend => {
+                    // Continue bending unless immediate threat
+                    !environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING)
+                }
+                _ => false, // Don't continue other low priority actions
+            }
+        }
+    }
+    
+    /// Check if current action can be interrupted for new action
+    fn can_interrupt_for_action(&self, new_action: Action) -> bool {
+        let new_priority = match new_action {
+            Action::MoveForward | Action::MoveBackward => ActionPriority::Low,
+            Action::Bend => ActionPriority::Low,
+            Action::RollForward | Action::RollBackward => ActionPriority::Medium,
+            Action::JumpUP | Action::JumpForward | Action::JumpBackward => ActionPriority::Medium,
+            Action::JumpKick => ActionPriority::Medium, // Can be added to existing jump
+            Action::Kick | Action::BackKick | Action::Punch => ActionPriority::Medium,
+            Action::RangedAttack => ActionPriority::Medium,
+            Action::Skill => ActionPriority::High,
+            Action::None => ActionPriority::Low,
+        };
+        
+        self.action_state.can_be_interrupted_by(new_priority)
     }
     
     /// Check if agent should use skill ability
@@ -436,7 +661,12 @@ impl Agent {
             if environment.agent_fire_charge == FIRE_CHARGE_MAX {
                 Action::RangedAttack
             } else {
-                Action::JumpKick
+                // Jump forward first, then kick on next frame
+                if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+                    Action::Kick  // Add kick to existing jump
+                } else {
+                    Action::JumpForward  // Jump first
+                }
             }
         } else {
             Action::MoveForward
@@ -469,14 +699,24 @@ impl Agent {
         } else if environment.distance < 350.0 {
             // More aggressive approach at medium distance
             if environment.player_state.check(PlayerState::WALKING) {
-                return Action::JumpKick;
+                // Jump forward first, then kick can be added later
+                if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+                    Action::Kick  // Add kick to existing jump
+                } else {
+                    Action::JumpForward  // Jump first
+                }
             } else {
                 return Action::MoveForward;
             }
         } else if environment.distance < 500.0 {
             if environment.player_state.check(PlayerState::BEND_DOWN) || 
                environment.player_state.is_idle() {
-                return Action::JumpKick;
+                // Jump forward first, then kick can be added later  
+                if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+                    Action::Kick  // Add kick to existing jump
+                } else {
+                    Action::JumpForward  // Jump first
+                }
             } else if environment.player_state.check(PlayerState::WALKING) && 
                      environment.agent_fire_charge == FIRE_CHARGE_MAX {
                 return Action::RangedAttack;
@@ -580,6 +820,8 @@ pub fn agent_system(
     if agent.timer.finished() {
         agent.count += 1;
         let mut environment = Environment::default();
+        
+        // Collect environment data
         if let Some((player, _, _, transform)) = player_query.iter().find(|(_, id, _, _)| id.0 == 0) {
             environment.player_health = player.health as f32
                 / CHARACTER_PROFILES[player.character_id as usize].health as f32;
@@ -607,287 +849,269 @@ pub fn agent_system(
         ) || (environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING) 
               && environment.distance > 200.0);
         
-        if agent.count == AGENT_FREQUENCY as u8 * 2 {
+        // Update policy every 2 seconds (was every 2 seconds before)
+        if agent.count >= AGENT_FREQUENCY as u8 * 2 {
             agent.count = 0;
             agent.select_policy(&environment);
         }
+        
+        // Select action with continuity
         let action = agent.select_action(&environment);
+        println!("Agent Action: {:?}", action);
+        
+        // Execute action on agent
         if let Some((mut player, player_id, mut sprite, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == 1) {
-            if action != Action::MoveForward && action != Action::MoveBackward {
-                // agent is idle
+            // Reset engagement timer when taking action
+            if action != Action::None {
+                agent.engagement_timer = 0;
+            }
+            
+            // Handle action execution with better state management
+            execute_agent_action(action, &mut player, player_id, &mut sprite, &characters_textures, &mut commands, &mut fighting);
+        }
+    }
+}
+
+/// Execute the selected action on the agent player
+fn execute_agent_action(
+    action: Action,
+    player: &mut Player,
+    player_id: &PlayerID,
+    sprite: &mut Sprite,
+    characters_textures: &CharacterTextures,
+    commands: &mut Commands,
+    fighting: &mut Fighting,
+) {
+    // Only reset to idle state if we're changing to a non-movement action
+    if action != Action::MoveForward && action != Action::MoveBackward && action != Action::None {
+        // Reset to idle for new actions
+        sprite.image = characters_textures.textures[player.character_id as usize].idle.clone();
+        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+        player.animation_frame_max = FRAMES_IDLE;
+        player.state = PlayerState::IDLE;
+        player.state &= !PlayerState::WALKING;
+    }
+    
+    // Only remove BEND_DOWN state when not bending
+    if action != Action::Bend {
+        player.state &= !PlayerState::BEND_DOWN;
+        // Only set cooldown for non-movement actions
+        if action != Action::MoveForward && action != Action::MoveBackward && action != Action::None {
+            player.state |= PlayerState::COOLDOWN;
+        }
+    }
+    
+    match action {
+        Action::MoveForward => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_WALK;
+                player.state |= PlayerState::WALKING;
+                player.set_animation(WALKING_POSE1, 0, 15);
+            }
+            if player.pose.facing {
+                player.state |= PlayerState::DIRECTION;
+            } else {
+                player.state &= !PlayerState::DIRECTION;
+            }
+        }
+        Action::MoveBackward => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                player.animation_frame_max = FRAMES_WALK;
+                player.state |= PlayerState::WALKING;
+                player.set_animation(WALKING_POSE1, 0, 15);
+            }
+            if player.pose.facing {
+                player.state &= !PlayerState::DIRECTION;
+            } else {
+                player.state |= PlayerState::DIRECTION;
+            }
+        }
+        Action::RollForward => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_ROLL;
+                player.state |= PlayerState::ROLL_FORWARD;
+                player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                if player.pose.facing {
+                    player.state |= PlayerState::DIRECTION;
+                } else {
+                    player.state &= !PlayerState::DIRECTION;
+                }
+                let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
+                    * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                player.velocity = Vec2::new(x_vel, 0.0);
+            }
+        }
+        Action::RollBackward => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
+                player.animation_frame_max = FRAMES_ROLL;
+                player.state |= PlayerState::ROLL_BACK;
+                player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                if player.pose.facing {
+                    player.state &= !PlayerState::DIRECTION;
+                } else {
+                    player.state |= PlayerState::DIRECTION;
+                }
+                let x_vel = if player.state.is_forward() { -1.0 } else { 1.0 }
+                    * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                player.velocity = Vec2::new(x_vel, 0.0);
+            }
+        }
+        Action::JumpUP => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_JUMP;
+                player.state |= PlayerState::JUMP_UP;
+                player.set_animation(JUMP_POSE1, 0, 11);
+                player.velocity = Vec2::new(0.0, 12.0);
+                player.energy += 1;
+            } else if !player.state.check(
+                PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD,
+            ) && player.state.check(PlayerState::WALKING) {
+                if player.state.check(PlayerState::DIRECTION) {
+                    sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                    player.animation_frame_max = FRAMES_JUMP;
+                    player.state |= PlayerState::JUMP_FORWARD;
+                    player.set_animation(JUMP_POSE1, 0, 11);
+                    let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                    player.velocity = Vec2::new(x_vel, 12.0);
+                } else {
+                    sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                    player.animation_frame_max = FRAMES_JUMP;
+                    player.state |= PlayerState::JUMP_BACKWARD;
+                    player.set_animation(JUMP_POSE1, 0, 11);
+                    let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                    player.velocity = Vec2::new(-x_vel, 12.0);
+                }
+                player.energy += 1;
+            }
+        }
+        Action::JumpForward => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_JUMP;
+                if player.pose.facing {
+                    player.state |= PlayerState::DIRECTION;
+                } else {
+                    player.state &= !PlayerState::DIRECTION;
+                }
+                player.state |= PlayerState::JUMP_FORWARD;
+                player.set_animation(JUMP_POSE1, 0, 11);
+                player.velocity = Vec2::ZERO;
+                player.energy += 1;
+            }
+        }
+        Action::JumpBackward => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_JUMP;
+                if !player.pose.facing {
+                    player.state &= !PlayerState::DIRECTION;
+                } else {
+                    player.state |= PlayerState::DIRECTION;
+                }
+                player.state |= PlayerState::JUMP_BACKWARD;
+                player.set_animation(JUMP_POSE1, 0, 11);
+                player.velocity = Vec2::ZERO;
+                player.energy += 1;
+            }
+        }
+        Action::JumpKick => {
+            // JumpKick can only be executed when already jumping
+            if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) 
+               && !player.state.check(PlayerState::KICKING) {
+                // Add kicking to existing jump state
+                player.state |= PlayerState::KICKING;
+                player.energy += 2;
+            }
+            // If not jumping, this action has no effect (should not happen with proper logic)
+        }
+        Action::Bend => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].bend_down.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_BEND_DOWN;
+                player.state |= PlayerState::BEND_DOWN;
+                player.set_animation(BEND_DOWN_POSE1, 0, 27);
+            }
+        }
+        Action::Kick => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].kick.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_KICK;
+                player.state |= PlayerState::KICKING;
+                player.set_animation(KICK_POSE1, 0, 21);
+                player.energy += 2;
+            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) 
+                     && !player.state.check(PlayerState::KICKING) {
+                player.state |= PlayerState::KICKING;
+                player.energy += 2;
+            }
+        }
+        Action::BackKick => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].back_kick.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_BACK_KICK;
+                player.state |= PlayerState::BACK_KICKING;
+                player.set_animation(BACK_KICK_POSE1, 0, 11);
+                player.energy += 2;
+            }
+        }
+        Action::RangedAttack => {
+            if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
+                sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_PUNCH;
+                player.fire_charge = 0;
+                player.state |= PlayerState::RANGED_ATTACK;
+                player.set_animation(PUNCH_POSE, 0, 19);
+                player.energy += 2;
+            }
+        }
+        Action::Punch => {
+            if player.state.is_idle() {
+                sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = FRAMES_PUNCH;
+                player.state |= PlayerState::PUNCHING;
+                player.set_animation(PUNCH_POSE, 0, 19);
+                player.energy += 2;
+            }
+        }
+        Action::Skill => {
+            if player.state.is_idle() && player.energy == ENERGY_MAX {
+                player.energy = 0;
+                player.state |= PlayerState::SKILL;
+                fighting.0 = player_id.0 + 1;
+                player.animation.phase = 0;
+                player.animation.count = 0;
+                if player.character_id == 1 {
+                    commands.insert_resource(SoulAbsorb);
+                }
+            }
+        }
+        Action::None => {
+            if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
-            }
-            if action != Action::Bend {
-                player.state &= !PlayerState::BEND_DOWN;
-                player.state |= PlayerState::COOLDOWN;
-            }
-            match action {
-                Action::MoveForward => {
-                    if player.state.is_idle() {
-                        // player is just walking
-                        sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_WALK;
-                        player.state |= PlayerState::WALKING;
-                        player.set_animation(WALKING_POSE1, 0, 15);
-                    }
-                    if player.pose.facing {
-                        // direction is right
-                        player.state |= PlayerState::DIRECTION;
-                    } else {
-                        // direction is left
-                        player.state &= !PlayerState::DIRECTION;
-                    }
-                }
-                Action::MoveBackward => {
-                    if player.state.is_idle() {
-                        // player is just walking
-                        sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
-                        player.animation_frame_max = FRAMES_WALK;
-                        player.state |= PlayerState::WALKING;
-                        player.set_animation(WALKING_POSE1, 0, 15);
-                    }
-                    if player.pose.facing {
-                        // direction is right
-                        player.state &= !PlayerState::DIRECTION;
-                    } else {
-                        // direction is left
-                        player.state |= PlayerState::DIRECTION;
-                    }
-                }
-                Action::RollForward => {
-                    if player.state.is_idle() {
-                        // player is rolling forward
-                        sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_ROLL;
-                        player.state |= PlayerState::ROLL_FORWARD;
-                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
-                        if player.pose.facing {
-                            player.state |= PlayerState::DIRECTION;
-                        } else {
-                            player.state &= !PlayerState::DIRECTION;
-                        }
-                        let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
-                            * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
-                        player.velocity = Vec2::new(x_vel, 0.0);
-                    }
-                }
-                Action::RollBackward => {
-                    if player.state.is_idle() {
-                        // player is rolling backward
-                        sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
-                        player.animation_frame_max = FRAMES_ROLL;
-                        player.state |= PlayerState::ROLL_BACK;
-                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
-                        if player.pose.facing {
-                            player.state &= !PlayerState::DIRECTION;
-                        } else {
-                            player.state |= PlayerState::DIRECTION;
-                        }
-                        let x_vel = if player.state.is_forward() { -1.0 } else { 1.0 }
-                            * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
-                        player.velocity = Vec2::new(x_vel, 0.0);
-                    }
-                }
-                Action::JumpUP => {
-                    // character 0 and 2 can only single jump
-                    if player.state.is_idle() {
-                        // player is idle
-                        // then player will jump up
-                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_JUMP;
-                        player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMP_POSE1, 0, 10);
-                        player.velocity = Vec2::new(0.0, 12.0);
-                        player.energy += 1;
-                    } else if !player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::JUMP_BACKWARD,
-                    ) && player.state.check(PlayerState::WALKING)
-                    {
-                        if player.state.check(PlayerState::DIRECTION) {
-                            // player is walking right
-                            // then player will jump forward
-                            sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
-                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                            player.animation_frame_max = FRAMES_JUMP;
-                            player.state |= PlayerState::JUMP_FORWARD;
-                            player.set_animation(JUMP_POSE1, 0, 10);
-                            let x_vel =
-                                CHARACTER_PROFILES[player.character_id as usize].agility;
-                            player.velocity = Vec2::new(x_vel, 12.0);
-                        } else {
-                            // player is walking left
-                            // then player will jump backward
-                            sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
-                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                            player.animation_frame_max = FRAMES_JUMP;
-                            player.state |= PlayerState::JUMP_BACKWARD;
-                            player.set_animation(JUMP_POSE1, 0, 10);
-                            let x_vel =
-                                CHARACTER_PROFILES[player.character_id as usize].agility;
-                            player.velocity = Vec2::new(-x_vel, 12.0);
-                        }
-                        player.energy += 1;
-                    }
-                }
-                Action::JumpForward => {
-                    if player.state.is_idle() {
-                        // agent is walking right
-                        // then player will jump forward
-                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_JUMP;
-                        if player.pose.facing {
-                            player.state |= PlayerState::DIRECTION;
-                        } else {
-                            player.state &= !PlayerState::DIRECTION;
-                        }
-                        player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                        player.energy += 1;
-                    }
-                }
-                Action::JumpBackward => {
-                    if player.state.is_idle() {
-                        // agent is walking left
-                        // then player will jump backward
-                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_JUMP;
-                        if !player.pose.facing {
-                            player.state &= !PlayerState::DIRECTION;
-                        } else {
-                            player.state |= PlayerState::DIRECTION;
-                        }
-                        player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                        player.energy += 1;
-                    }
-                }
-                Action::JumpKick => {
-                    if player.state.is_idle() {
-                        // agent is walking right
-                        // then player will jump kick
-                        sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_JUMP;
-                        if player.pose.facing {
-                            player.state |= PlayerState::DIRECTION;
-                        } else {
-                            player.state &= !PlayerState::DIRECTION;
-                        }
-                        player.state |= PlayerState::JUMP_FORWARD | PlayerState::KICKING;
-                        player.set_animation(JUMP_POSE1, 0, 10);
-                        // stop moving for preparing motion
-                        player.velocity = Vec2::ZERO;
-                        player.energy += 2;
-                    }
-                }
-                Action::Bend => {
-                    if player.state.is_idle() {
-                        // player is idle
-                        // then player will bend
-                        sprite.image = characters_textures.textures[player.character_id as usize].bend_down.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_BEND_DOWN;
-                        player.state |= PlayerState::BEND_DOWN;
-                        player.set_animation(BEND_DOWN_POSE1, 0, 5);
-                    }
-                }
-                Action::Kick => {
-                    if player.state.is_idle() {
-                        // player is idle
-                        // then player will kick
-                        sprite.image = characters_textures.textures[player.character_id as usize].kick.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_KICK;
-                        player.state |= PlayerState::KICKING;
-                        player.set_animation(KICK_POSE1, 0, 10);
-                        player.energy += 2;
-                    } else if player.state.check(
-                        PlayerState::JUMP_UP
-                            | PlayerState::JUMP_FORWARD
-                            | PlayerState::JUMP_BACKWARD,
-                    ) && !player.state.check(PlayerState::KICKING) {
-                        // player is jumping
-                        // then just adding state
-                        player.state |= PlayerState::KICKING;
-                        player.energy += 2;
-                    }
-                }
-                Action::BackKick => {
-                    if player.state.is_idle() {
-                        // player is idle
-                        // then player will back kick
-                        sprite.image = characters_textures.textures[player.character_id as usize].back_kick.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_BACK_KICK;
-                        player.state |= PlayerState::BACK_KICKING;
-                        player.set_animation(BACK_KICK_POSE1, 0, 10);
-                        player.energy += 2;
-                    }
-                }
-                Action::RangedAttack => {
-                    if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
-                        // player is idle
-                        // then player will knee kick
-                        sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_PUNCH;
-                        player.fire_charge = 0;
-                        player.state |= PlayerState::RANGED_ATTACK;
-                        player.set_animation(PUNCH_POSE, 0, 32);
-                        player.energy += 2;
-                    }
-                }
-                Action::Punch => {
-                    if player.state.is_idle() {
-                        // player is idle
-                        // then player will punch
-                        sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = FRAMES_PUNCH;
-                        player.state |= PlayerState::PUNCHING;
-                        player.set_animation(PUNCH_POSE, 0, 32);
-                        player.energy += 2;
-                    }
-                }
-                Action::Skill => {
-                    if player.state.is_idle() && player.energy == ENERGY_MAX {
-                        // player is idle
-                        // then player will use skill
-                        player.energy = 0;
-                        player.state |= PlayerState::SKILL;
-                        fighting.0 = player_id.0 + 1;
-                        player.animation.phase = 0;
-                        player.animation.count = 0;
-                        if player.character_id == 1 {
-                            commands.insert_resource(SoulAbsorb);
-                        }
-                    }
-                }
-                Action::None => {
-                    if player.state.check(PlayerState::WALKING) {
-                        // player is walking
-                        // then player will idle
-                        player.state &= !PlayerState::WALKING;
-                        if player.state.is_idle() {
-                            sprite.image = characters_textures.textures[player.character_id as usize].idle.clone();
-                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                            player.animation_frame_max = FRAMES_IDLE;
-                            player.set_animation(IDLE_POSE1, 0, 30);
-                        }
-                    }
+                if player.state.is_idle() {
+                    sprite.image = characters_textures.textures[player.character_id as usize].idle.clone();
+                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                    player.animation_frame_max = FRAMES_IDLE;
+                    player.set_animation(IDLE_POSE1, 0, 30);
                 }
             }
         }

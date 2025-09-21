@@ -775,7 +775,7 @@ fn keyboard_input(
             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
             player.animation_frame_max = FRAMES_IDLE;
             player.state &= !PlayerState::BEND_DOWN;
-            player.set_animation(IDLE_POSE1, 1, 30);
+            player.set_animation(IDLE_POSE1, 1, 25);
         }
         // NOTE: this code block contains a lot of duplicate code
         //       I should refactor it later
@@ -1053,9 +1053,7 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 1 {
                     if player.state.check(PlayerState::KICKING) {
-                        let mut jumping_kick_pose = JUMPING_KICK_POSE;
-                        jumping_kick_pose.body = 0.0;
-                        player.set_animation(jumping_kick_pose, 2, 5);
+                        player.set_animation(JUMPING_KICK_POSE, 2, 5);
                     }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
@@ -1063,9 +1061,7 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 2 {
                     if player.state.check(PlayerState::KICKING) {
-                        let mut jumping_kick_pose = JUMPING_KICK_POSE;
-                        jumping_kick_pose.body = 0.0;
-                        player.set_animation(jumping_kick_pose, 2, 5);
+                        player.set_animation(JUMPING_KICK_POSE, 2, 5);
                     }
                     if player.velocity.y > 0.0 {
                         player.animation.count += 1;
@@ -1080,9 +1076,7 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 3 {
                     if player.state.check(PlayerState::KICKING) {
-                        let mut jumping_kick_pose = JUMPING_KICK_POSE;
-                        jumping_kick_pose.body = 0.0;
-                        player.set_animation(jumping_kick_pose, 3, 5);
+                        player.set_animation(JUMPING_KICK_POSE, 3, 5);
                     }
                     player.update_animation(&mut sprite);
                 } else if player.animation.phase == 4 {
@@ -1327,12 +1321,12 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(WALKING_POSE2, 1, 15);
+                            player.set_animation(WALKING_POSE2, 1, 14);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(WALKING_POSE1, 0, 15);
+                            player.set_animation(WALKING_POSE1, 0, 14);
                         }
                     }
                 }
