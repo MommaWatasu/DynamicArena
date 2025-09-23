@@ -93,7 +93,7 @@ impl ActionState {
     fn new(action: Action) -> Self {
         let (planned_duration, priority) = match action {
             Action::MoveForward | Action::MoveBackward => (15, ActionPriority::Low),
-            Action::Bend => (10, ActionPriority::Low),
+            Action::Bend => (10, ActionPriority::Medium),
             Action::RollForward | Action::RollBackward => (20, ActionPriority::Medium),
             Action::JumpUP | Action::JumpForward | Action::JumpBackward => (25, ActionPriority::Medium),
             Action::JumpKick => (5, ActionPriority::Medium), // Short duration as it's added to existing jump
@@ -857,7 +857,7 @@ pub fn agent_system(
         
         // Select action with continuity
         let action = agent.select_action(&environment);
-        println!("Agent Action: {:?}", action);
+        //println!("Agent Action: {:?}", action);
         
         // Execute action on agent
         if let Some((mut player, player_id, mut sprite, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == 1) {

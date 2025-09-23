@@ -1442,6 +1442,11 @@ fn main_game_system(
                     for (id, mut player, mut sprite, mut transform) in player_query.iter_mut() {
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        if id.0 == 0 {
+                            sprite.flip_x = false;
+                        } else {
+                            sprite.flip_x = true;
+                        }
                         player.reset(id);
                         if cfg!(target_arch = "wasm32") {
                             transform.translation.x = if id.0 == 0 { -250.0 } else { 250.0 };
