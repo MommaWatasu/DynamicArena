@@ -739,7 +739,8 @@ fn keyboard_input(
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_FORWARD;
-                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                        player.pose.set(ROLL_FORWARD_POSE1);
+                        player.set_animation(ROLL_FORWARD_POSE2, 0, 11);
                     } else {
                         // player is walking left
                         // then player will roll back
@@ -747,7 +748,8 @@ fn keyboard_input(
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
                         player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_BACK;
-                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                        player.pose.set(ROLL_BACK_POSE1);
+                        player.set_animation(ROLL_BACK_POSE2, 0, 4);
                     }
                 } else {
                     if !player.state.check(PlayerState::DIRECTION) {
@@ -757,7 +759,8 @@ fn keyboard_input(
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_FORWARD;
-                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                        player.pose.set(ROLL_FORWARD_POSE1);
+                        player.set_animation(ROLL_FORWARD_POSE2, 0, 11);
                     } else {
                         // player is walking left
                         // then player will roll back
@@ -765,7 +768,8 @@ fn keyboard_input(
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
                         player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_BACK;
-                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                        player.pose.set(ROLL_BACK_POSE1);
+                        player.set_animation(ROLL_BACK_POSE2, 0, 4);
                     }
                 }
                 let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
@@ -1141,42 +1145,33 @@ fn player_movement(
                 if player.animation.phase == 0 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE2, 1, 5);
+                        player.set_animation(ROLL_FORWARD_POSE3, 1, 7);
                     }
                 } else if player.animation.phase == 1 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE3, 2, 5);
+                        player.set_animation(ROLL_FORWARD_POSE4, 2, 6);
                     }
                 } else if player.animation.phase == 2 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE4, 3, 5);
+                        player.pose.body = 30.0;
+                        player.set_animation(ROLL_FORWARD_POSE5, 3, 6);
                     }
                 } else if player.animation.phase == 3 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE5, 4, 5);
+                        player.set_animation(ROLL_FORWARD_POSE6, 4, 5);
                     }
                 } else if player.animation.phase == 4 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE6, 5, 5);
-                    }
-                } else if player.animation.phase == 5 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        player.set_animation(ROLL_FORWARD_POSE7, 6, 5);
-                    }
-                } else if player.animation.phase == 6 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_IDLE;
-                        player.pose.body = -20.0;
-                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
-                        player.set_animation(IDLE_POSE1, 0, 10);
+                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                        player.pose.set(IDLE_POSE1);
+                        player.set_animation(IDLE_POSE2, 0, 15);
                     }
                 }
             } else if player.state.check(PlayerState::ROLL_BACK) {
@@ -1185,41 +1180,33 @@ fn player_movement(
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.pose.body = -380.0;
-                        player.set_animation(ROLL_BACK_POSE2, 1, 5);
+                        player.set_animation(ROLL_BACK_POSE3, 1, 6);
                     }
                 } else if player.animation.phase == 1 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE3, 2, 5);
+                        player.pose.body = -330.0;
+                        player.set_animation(ROLL_BACK_POSE4, 2, 6);
                     }
                 } else if player.animation.phase == 2 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE4, 3, 5);
+                        player.set_animation(ROLL_BACK_POSE5, 3, 7);
                     }
                 } else if player.animation.phase == 3 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE5, 4, 5);
+                        player.set_animation(ROLL_BACK_POSE6, 4, 12);
                     }
                 } else if player.animation.phase == 4 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE6, 5, 5);
-                    }
-                } else if player.animation.phase == 5 {
-                    player.update_animation(&mut sprite);
-                    if player.animation.count == 0 {
-                        player.set_animation(ROLL_BACK_POSE7, 6, 5);
-                    }
-                } else if player.animation.phase == 6 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_IDLE;
-                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
-                        player.set_animation(IDLE_POSE1, 0, 10);
+                        player.state = PlayerState::IDLE | PlayerState::COOLDOWN;
+                        player.pose.set(IDLE_POSE1);
+                        player.set_animation(IDLE_POSE2, 0, 15);
                     }
                 }
             } else {
