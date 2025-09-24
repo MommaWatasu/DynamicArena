@@ -730,7 +730,7 @@ impl Agent {
                     // Use roll forward for faster, evasive approach
                     return Action::RollForward;
                 } else if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
-                    return Action::Kick;  // Add kick to existing jump
+                    return Action::JumpKick;  // Add kick to existing jump
                 } else {
                     return Action::JumpForward;  // Jump first
                 }
