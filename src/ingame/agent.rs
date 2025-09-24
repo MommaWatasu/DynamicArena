@@ -86,7 +86,7 @@ enum ActionPriority {
     Low,      // Can be interrupted easily (movement, bend)
     Medium,   // Should complete but can be interrupted for high priority (attacks)
     High,     // Must complete (skills, special moves)
-    Critical, // Cannot be interrupted (recovery states)
+    //Critical, // Cannot be interrupted (recovery states)
 }
 
 impl ActionState {
@@ -579,6 +579,14 @@ impl Agent {
                     // Continue if we need distance
                     environment.distance < 200.0 && environment.player_state.check(PlayerState::WALKING)
                 }
+                Action::RollForward => {
+                    // Continue rolling forward - it's a committed action
+                    true
+                }
+                Action::RollBackward => {
+                    // Continue rolling backward - it's a committed action
+                    true
+                }
                 Action::Bend => {
                     // Continue bending unless immediate threat
                     !environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING)
@@ -623,7 +631,11 @@ impl Agent {
     fn get_counter_action(&self, environment: &Environment) -> Action {
         if environment.player_state.check(PlayerState::KICKING) {
             if environment.distance < 150.0 {
+                // Close range kick - jump up to avoid
                 return Action::JumpUP;
+            } else if environment.distance < 250.0 {
+                // Medium range kick - roll backward for evasion
+                return Action::RollBackward;
             } else {
                 return Action::MoveBackward;
             }
@@ -631,12 +643,20 @@ impl Agent {
         if environment.player_state.check(PlayerState::PUNCHING) {
             if environment.distance < 120.0 {
                 return Action::Bend;
+            } else if environment.distance < 200.0 {
+                // Roll backward to avoid punch and create counter-attack opportunity
+                return Action::RollBackward;
             } else {
                 return Action::BackKick;
             }
         }
         if environment.player_state.check(PlayerState::BACK_KICKING) {
-            return Action::MoveForward;
+            if environment.distance < 180.0 {
+                // Roll forward to get behind player after their back kick
+                return Action::RollForward;
+            } else {
+                return Action::MoveForward;
+            }
         }
         Action::None
     }
@@ -660,14 +680,20 @@ impl Agent {
         } else if environment.distance < 300.0 {
             if environment.agent_fire_charge == FIRE_CHARGE_MAX {
                 Action::RangedAttack
+            } else if environment.distance > 200.0 {
+                // Use roll forward for quick approach to vulnerable player
+                Action::RollForward
             } else {
                 // Jump forward first, then kick on next frame
                 if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
-                    Action::Kick  // Add kick to existing jump
+                    Action::JumpKick  // Add kick to existing jump
                 } else {
                     Action::JumpForward  // Jump first
                 }
             }
+        } else if environment.distance < 500.0 {
+            // Medium-long range - roll forward to close distance quickly for punishment
+            Action::RollForward
         } else {
             Action::MoveForward
         }
@@ -675,7 +701,7 @@ impl Agent {
     
     /// Select aggressive action based on distance and resources
     fn select_offensive_action(&self, environment: &Environment) -> Action {
-        // Improved offensive strategy with better resource management
+        // Improved offensive strategy with better resource management and rolling actions
         if environment.distance < 150.0 {
             let rand = rand();
             if environment.agent_energy >= 80 && rand < 0.3 {
@@ -697,25 +723,34 @@ impl Agent {
                 return Action::MoveForward;
             }
         } else if environment.distance < 350.0 {
-            // More aggressive approach at medium distance
+            // More aggressive approach at medium distance with rolling for positioning
             if environment.player_state.check(PlayerState::WALKING) {
-                // Jump forward first, then kick can be added later
-                if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
-                    Action::Kick  // Add kick to existing jump
+                let rand = rand();
+                if rand < 0.3 {
+                    // Use roll forward for faster, evasive approach
+                    return Action::RollForward;
+                } else if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+                    return Action::Kick;  // Add kick to existing jump
                 } else {
-                    Action::JumpForward  // Jump first
+                    return Action::JumpForward;  // Jump first
                 }
+            } else if environment.is_player_vulnerable {
+                // Quick roll forward to punish vulnerable player
+                return Action::RollForward;
             } else {
                 return Action::MoveForward;
             }
         } else if environment.distance < 500.0 {
             if environment.player_state.check(PlayerState::BEND_DOWN) || 
                environment.player_state.is_idle() {
-                // Jump forward first, then kick can be added later  
-                if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
-                    Action::Kick  // Add kick to existing jump
+                let rand = rand();
+                if rand < 0.4 {
+                    // Roll forward for surprise attack on idle/bending player
+                    return Action::RollForward;
+                } else if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+                    return Action::JumpKick;  // Add kick to existing jump
                 } else {
-                    Action::JumpForward  // Jump first
+                    return Action::JumpForward;  // Jump first
                 }
             } else if environment.player_state.check(PlayerState::WALKING) && 
                      environment.agent_fire_charge == FIRE_CHARGE_MAX {
@@ -723,12 +758,21 @@ impl Agent {
             } else if environment.player_state.check(PlayerState::JUMP_FORWARD) {
                 return Action::BackKick;
             } else {
-                return Action::MoveForward;
+                let rand = rand();
+                if rand < 0.25 {
+                    // Occasional roll forward for positioning
+                    return Action::RollForward;
+                } else {
+                    return Action::MoveForward;
+                }
             }
         } else if environment.distance < 800.0 {
             let rand = rand();
             if rand < 0.6 && environment.agent_fire_charge == FIRE_CHARGE_MAX {
                 return Action::RangedAttack;
+            } else if rand < 0.2 {
+                // Long range roll forward for closing distance quickly
+                return Action::RollForward;
             } else if rand < 0.8 {
                 return Action::MoveForward;
             } else {
@@ -736,7 +780,10 @@ impl Agent {
             }
         } else {
             let rand = rand();
-            if rand < 0.3 {
+            if rand < 0.15 {
+                // Use roll forward to close extreme distances quickly
+                return Action::RollForward;
+            } else if rand < 0.3 {
                 return Action::JumpForward;
             } else {
                 return Action::MoveForward;
@@ -746,21 +793,43 @@ impl Agent {
     
     /// Select defensive action to avoid damage and maintain distance
     fn select_defensive_action(&self, environment: &Environment) -> Action {
-        // Enhanced defensive strategy
+        // Enhanced defensive strategy with rolling evasion
         if environment.distance < 80.0 {
             let rand = rand();
-            if rand < 0.6 {
+            if environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING | PlayerState::BACK_KICKING) {
+                // Player is attacking at close range - use roll backward for quick escape
+                if rand < 0.7 {
+                    return Action::RollBackward;
+                } else {
+                    return Action::JumpBackward;
+                }
+            } else if rand < 0.4 {
+                // Use roll backward for safer retreat
+                return Action::RollBackward;
+            } else if rand < 0.8 {
                 return Action::JumpBackward;
             } else {
                 return Action::MoveBackward;
             }
         } else if environment.distance < 200.0 {
             if environment.player_state.check(PlayerState::WALKING) {
-                return Action::MoveBackward;
+                let rand = rand();
+                if rand < 0.3 {
+                    // Roll backward to maintain distance from approaching player
+                    return Action::RollBackward;
+                } else {
+                    return Action::MoveBackward;
+                }
+            } else if environment.player_state.check(PlayerState::JUMP_FORWARD) {
+                // Player jumping toward us - roll backward to avoid
+                return Action::RollBackward;
             } else {
                 let rand = rand();
                 if rand < 0.3 && environment.agent_fire_charge == FIRE_CHARGE_MAX {
                     return Action::RangedAttack;
+                } else if rand < 0.2 {
+                    // Occasional defensive roll
+                    return Action::RollBackward;
                 } else {
                     return Action::MoveBackward;
                 }
@@ -769,17 +838,29 @@ impl Agent {
             // Maintain distance and look for opportunities
             if environment.player_state.check(PlayerState::JUMP_FORWARD) {
                 return Action::BackKick;
+            } else if environment.player_state.check(PlayerState::KICKING | PlayerState::PUNCHING) {
+                // Player attacking but not in range - use roll backward for repositioning
+                return Action::RollBackward;
             } else if environment.agent_fire_charge == FIRE_CHARGE_MAX && 
                      environment.player_state.check(PlayerState::WALKING) {
                 return Action::RangedAttack;
             } else {
-                return Action::MoveBackward;
+                let rand = rand();
+                if rand < 0.15 {
+                    // Occasional roll backward for positioning
+                    return Action::RollBackward;
+                } else {
+                    return Action::MoveBackward;
+                }
             }
         } else {
-            // Safe distance - prepare for counter-attack
+            // Safe distance - prepare for counter-attack or maintain position
             let rand = rand();
             if rand < 0.4 {
                 return Action::None;
+            } else if rand < 0.1 {
+                // Very occasional roll backward at safe distance for unpredictability
+                return Action::RollBackward;
             } else {
                 return Action::Bend;
             }
@@ -789,6 +870,20 @@ impl Agent {
     /// Select neutral action for positioning and resource management
     fn select_neutral_action(&self, environment: &Environment) -> Action {
         let rand = rand();
+        
+        // Add some rolling for positioning and unpredictability
+        if environment.distance > 400.0 && environment.distance < 600.0 {
+            if rand < 0.15 {
+                // Occasional roll forward for positioning at medium-long range
+                return Action::RollForward;
+            }
+        } else if environment.distance > 150.0 && environment.distance < 300.0 {
+            if rand < 0.1 {
+                // Occasional roll backward for spacing at medium range
+                return Action::RollBackward;
+            }
+        }
+        
         if rand < 0.5 {
             return Action::None;
         } else if rand < 0.8 {
@@ -936,7 +1031,8 @@ fn execute_agent_action(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_ROLL;
                 player.state |= PlayerState::ROLL_FORWARD;
-                player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                player.pose.set(ROLL_FORWARD_POSE1);
+                player.set_animation(ROLL_FORWARD_POSE2, 0, 11);
                 if player.pose.facing {
                     player.state |= PlayerState::DIRECTION;
                 } else {
@@ -953,7 +1049,8 @@ fn execute_agent_action(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
                 player.animation_frame_max = FRAMES_ROLL;
                 player.state |= PlayerState::ROLL_BACK;
-                player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                player.pose.set(ROLL_BACK_POSE1);
+                player.set_animation(ROLL_BACK_POSE2, 0, 4);
                 if player.pose.facing {
                     player.state &= !PlayerState::DIRECTION;
                 } else {
