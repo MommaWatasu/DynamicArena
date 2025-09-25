@@ -8,7 +8,7 @@
 
 #define BUTTON_1_PIN        33  // ボタン1
 #define BUTTON_2_PIN        25  // ボタン2
-#define BUTTON_3_PIN        35  // ボタン3
+#define BUTTON_3_PIN        13  // ボタン3
 #define BUTTON_4_PIN        32  // ボタン4
 
 // BLEGamepadオブジェクト作成
