@@ -1024,7 +1024,6 @@ fn player_movement(
             // player is stunning
             if player.state.check(PlayerState::STUN) {
                 if player.animation.phase == 0 {
-                    println!("Player {} is stunning!", player_id.0 + 1);
                     if !player.state.check(PlayerState::BEND_DOWN) {
                         // if the player is not bend down
                         // the player will slip a little
@@ -1036,11 +1035,14 @@ fn player_movement(
                     }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
+                        player.set_animation(STUN_POSE1, 1, 18);
+                    }
+                } else if player.animation.phase == 1 {
+                    player.update_animation(&mut sprite);
+                    if player.animation.count == 0 {
                         if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
-                            println!("Player {} fell down!", player_id.0 + 1);
-                            player.animation.phase = 1;
+                            player.animation.phase = 2;
                         } else {
-                            println!("Player {} is stunned!", player_id.0 + 1);
                             sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_IDLE;
@@ -1049,7 +1051,7 @@ fn player_movement(
                             player.set_animation(IDLE_POSE2, 1, 15);
                         }
                     }
-                } else if player.animation.phase == 1 {
+                } else if player.animation.phase == 2 {
                     if player.velocity == Vec2::ZERO {
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
@@ -1359,8 +1361,11 @@ fn player_movement(
             }
             if player_collision.0 == 2 {
                 // no collision, player moves freely
-                transform.translation +=
-                    Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+                if !player.state.check(PlayerState::STUN) {
+                    // if not in stun state, apply velocity
+                    transform.translation +=
+                        Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+                }
             } else {
                 // collision, player cannot move along x-axis
                 transform.translation +=
@@ -2071,9 +2076,6 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
         if player.animation.phase == 0 {
             continue;
         }
-        if transform.translation.y < 270.0 - config.window_size.y / 2.0 {
-            println!("player state: {:?}", player.state);
-        }
         // change offset based on the type of jump
         if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD | PlayerState::STUN)
             && transform.translation.y < 270.0 - config.window_size.y / 2.0
@@ -2401,21 +2403,26 @@ fn check_attack(
                         }
                     }
                     player.health = player.health.saturating_sub(damage);
-                    println!("Player {:?} takes {} damage!", opponent_id.0, damage);
                     if !player.state.check(PlayerState::BEND_DOWN) && player.stun_count <= 3 {
                         player.stun_count -= 1;
                         if player.stun_count == 0 {
                             // after 3 hits, player will be invicible for 240 frames(4 seconds)
                             player.stun_count = 243;
                         }
-                        println!("Player {:?} is stunned!", opponent_id.0);
                         if player.state.is_idle() {
                             sprite.image = character_textures.textures[player.character_id as usize].attacked.clone();
-                            player.state = PlayerState::STUN | PlayerState::BEND_DOWN;
-                            player.set_animation(STUN_POSE, 0, 5);
-                        } else {
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_ATTACKED;
                             player.state = PlayerState::STUN;
-                            player.set_animation(STUN_POSE, 0, 5);
+                            player.pose.set(STUN_POSE1);
+                            player.set_animation(STUN_POSE2, 0, 6);
+                        } else {
+                            sprite.image = character_textures.textures[player.character_id as usize].attacked.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_ATTACKED;
+                            player.state = PlayerState::STUN;
+                            player.pose.set(STUN_POSE1);
+                            player.set_animation(STUN_POSE2, 0, 6);
                         }
                     }
                 }
@@ -2527,13 +2534,14 @@ fn update_fire_animation(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     config: Res<GameConfig>,
+    character_textures: Res<CharacterTextures>,
     mut fire_query: Query<(Entity, &PlayerID, &mut FireAnimation, &mut Transform, &mut Sprite), (Without<Player>, Without<DamageDisplay>)>,
-    mut player_query: Query<(&mut Player, &PlayerID, &Transform), (Without<FireAnimation>, Without<DamageDisplay>)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform), (Without<FireAnimation>, Without<DamageDisplay>)>,
     mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay), (Without<Player>, Without<FireAnimation>)>,
     mut fire_charge_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID)>,
 ) {
-    for (entity, fire_player_id, fire_animation, mut fire_transform, mut sprite) in fire_query.iter_mut() {
-        if let Some(atlas) = &mut sprite.texture_atlas {
+    for (entity, fire_player_id, fire_animation, mut fire_transform, mut arrow_sprite) in fire_query.iter_mut() {
+        if let Some(atlas) = &mut arrow_sprite.texture_atlas {
             atlas.index += 1;
             if atlas.index == 10 {
                 atlas.index = 0;
@@ -2548,9 +2556,9 @@ fn update_fire_animation(
             || fire_transform.translation.x > config.window_size.x / 2.0
         {
             commands.entity(entity).despawn();
-            if let Some((_, player_id, _)) = player_query
+            if let Some((_, player_id, _, _)) = player_query
                 .iter_mut()
-                .find(|(_, id, _)| id.0 == fire_player_id.0)
+                .find(|(_, id, _, _)| id.0 == fire_player_id.0)
             {
                 for (_, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
                     if player_id == fire_id {
@@ -2568,7 +2576,7 @@ fn update_fire_animation(
             }
         }
         let mut hit = false;
-        for (mut player, player_id, transform) in player_query.iter_mut() {
+        for (mut player, player_id, mut sprite, transform) in player_query.iter_mut() {
             if player_id != fire_player_id {
                 if transform.translation.x > fire_transform.translation.x - 150.0
                 && transform.translation.x < fire_transform.translation.x + 150.0
@@ -2582,14 +2590,26 @@ fn update_fire_animation(
                     commands.entity(entity).despawn();
                     hit = true;
 
-                    if !player.state.check(PlayerState::BEND_DOWN) {
+                    if !player.state.check(PlayerState::BEND_DOWN) && player.stun_count <= 3 {
+                        player.stun_count -= 1;
+                        if player.stun_count == 0 {
+                            // after 3 hits, player will be invicible for 240 frames(4 seconds)
+                            player.stun_count = 243;
+                        }
                         if player.state.is_idle() {
-                            // if player is idle, player won't slip(like BEND_DOWN)
-                            player.state = PlayerState::STUN | PlayerState::BEND_DOWN;
-                            player.set_animation(STUN_POSE, 0, 5);
-                        } else {
+                            sprite.image = character_textures.textures[player.character_id as usize].attacked.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_ATTACKED;
                             player.state = PlayerState::STUN;
-                            player.set_animation(STUN_POSE, 0, 5);
+                            player.pose.set(STUN_POSE1);
+                            player.set_animation(STUN_POSE2, 0, 6);
+                        } else {
+                            sprite.image = character_textures.textures[player.character_id as usize].attacked.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_ATTACKED;
+                            player.state = PlayerState::STUN;
+                            player.pose.set(STUN_POSE1);
+                            player.set_animation(STUN_POSE2, 0, 6);
                         }
                     }
 
@@ -2607,9 +2627,9 @@ fn update_fire_animation(
             }
         }
         if hit {
-            if let Some((_, player_id, _)) = player_query
+            if let Some((_, player_id, _, _)) = player_query
                 .iter_mut()
-                .find(|(_, id, _)| id.0 == fire_player_id.0)
+                .find(|(_, id, _, _)| id.0 == fire_player_id.0)
             {
                 for (_, mesh_handler, fire_id) in fire_charge_query.iter_mut() {
                     if player_id == fire_id {

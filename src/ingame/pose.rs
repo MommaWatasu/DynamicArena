@@ -442,6 +442,7 @@ pub const KICK_POSE2: Pose = Pose {
     left_lower_leg: -10.0,
 };
 
+// TODO: fix this pose
 pub const BACK_KICK_POSE1: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
@@ -538,18 +539,34 @@ pub const HAMMER_POSE2: Pose = Pose {
     left_lower_leg: -60.0,
 };
 
-pub const STUN_POSE: Pose = Pose {
+pub const STUN_POSE1: Pose = Pose {
     facing: true,
-    offset: [0.0, 0.0],
+    offset: [10.0, 0.0],
     old_offset: [0.0, 0.0],
-    head: 0.0,
-    body: -20.0,
-    right_upper_arm: 30.0,
+    head: 20.0,
+    body: 0.0,
+    right_upper_arm: 20.0,
     right_lower_arm: 150.0,
-    right_upper_leg: 10.0,
+    right_upper_leg: 15.0,
+    right_lower_leg: -30.0,
+    left_upper_arm: 30.0,
+    left_lower_arm: 120.0,
+    left_upper_leg: 20.0,
+    left_lower_leg: -40.0,
+};
+
+pub const STUN_POSE2: Pose = Pose {
+    facing: true,
+    offset: [10.0, 0.0],
+    old_offset: [0.0, 0.0],
+    head: -40.0,
+    body: 15.0,
+    right_upper_arm: -10.0,
+    right_lower_arm: 130.0,
+    right_upper_leg: -20.0,
     right_lower_leg: -40.0,
-    left_upper_arm: 50.0,
-    left_lower_arm: 130.0,
-    left_upper_leg: 70.0,
-    left_lower_leg: -60.0,
+    left_upper_arm: 10.0,
+    left_lower_arm: 90.0,
+    left_upper_leg: 30.0,
+    left_lower_leg: -50.0,
 };
