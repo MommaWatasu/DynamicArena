@@ -310,22 +310,24 @@ impl Player {
         if self.animation.count == 0 {
             return;
         }
-        if let Some(atlas) = sprite.texture_atlas.as_mut() {
-            if self.state.check(PlayerState::ROLL_BACK)
-                || (self.state.check(PlayerState::WALKING) && self.state.check(PlayerState::DIRECTION) && !self.pose.facing)
-                || (self.state.check(PlayerState::WALKING) && !self.state.check(PlayerState::DIRECTION) && self.pose.facing) {
-                atlas.index = atlas.index.saturating_sub(1);
-                if atlas.index == 0 {
-                    atlas.index = self.animation_frame_max - 1;
-                }
-            } else {
-                atlas.index += 1;
-                if atlas.index == self.animation_frame_max - 1 {
-                    atlas.index = 0;
+        if !(self.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) && self.state.check(PlayerState::KICKING)) {
+            if let Some(atlas) = sprite.texture_atlas.as_mut() {
+                if self.state.check(PlayerState::ROLL_BACK)
+                    || (self.state.check(PlayerState::WALKING) && self.state.check(PlayerState::DIRECTION) && !self.pose.facing)
+                    || (self.state.check(PlayerState::WALKING) && !self.state.check(PlayerState::DIRECTION) && self.pose.facing) {
+                    atlas.index = atlas.index.saturating_sub(1);
+                    if atlas.index == 0 {
+                        atlas.index = self.animation_frame_max - 1;
+                    }
+                } else {
+                    atlas.index += 1;
+                    if atlas.index == self.animation_frame_max - 1 {
+                        atlas.index = 0;
+                    }
                 }
             }
+            self.pose += self.animation.diff_pose;
         }
-        self.pose += self.animation.diff_pose;
         self.animation.count -= 1;
     }
     pub fn update_animation_idle(&mut self, transform: &mut Transform, sprite: &mut Sprite) {
@@ -860,6 +862,8 @@ fn keyboard_input(
                 .state
                 .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD)
                 && !player.state.check(PlayerState::KICKING)
+                && player.animation.phase > 0
+                && player.animation.phase < 4
             {
                 // player is jumping
                 // then just adding state
@@ -1084,25 +1088,11 @@ fn player_movement(
                         player.set_animation(JUMP_POSE3, 1, 14);
                     }
                 } else if player.animation.phase == 1 {
-                    if player.state.check(PlayerState::KICKING) {
-                        sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = 1;
-                        player.pose.set(JUMP_KICK_POSE);
-                        player.energy += 1;
-                    }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.animation.phase = 2;
                     }
                 } else if player.animation.phase == 2 {
-                    if player.state.check(PlayerState::KICKING) {
-                        sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = 1;
-                        player.pose.set(JUMP_KICK_POSE);
-                        player.energy += 1;
-                    }
                     if player.velocity.y > 0.0 {
                         player.animation.count += 1;
                     } else {
@@ -1115,15 +1105,15 @@ fn player_movement(
                         player.set_animation(JUMP_POSE2, 3, 17);
                     }
                 } else if player.animation.phase == 3 {
-                    if player.state.check(PlayerState::KICKING) {
-                        sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
-                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                        player.animation_frame_max = 1;
-                        player.pose.set(JUMP_KICK_POSE);
-                        player.energy += 1;
-                    }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
+                        if player.state.check(PlayerState::KICKING) {
+                            player.state &= !PlayerState::KICKING;
+                            sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 42);
+                            player.animation_frame_max = FRAMES_JUMP;
+                            player.pose.set(JUMP_POSE2);
+                        }
                         player.set_animation(JUMP_POSE1, 4, 18);
                     }
                 } else if player.animation.phase == 4 {
