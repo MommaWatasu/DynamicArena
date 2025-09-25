@@ -427,7 +427,7 @@ pub fn spawn_player(
     let texture = asset_server.load(format!("{}character{}/idle.png", PATH_IMAGE_PREFIX, character_id+1));
 
     // The sprite sheet has 30 sprites arranged in a row, and they are all 512px x 512px
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 2, None, None);
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 4, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     builder
@@ -863,6 +863,10 @@ fn keyboard_input(
             {
                 // player is jumping
                 // then just adding state
+                sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = 1;
+                player.pose.set(JUMP_KICK_POSE);
                 player.state |= PlayerState::KICKING;
                 player.energy += 2;
             }
@@ -1081,7 +1085,11 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 1 {
                     if player.state.check(PlayerState::KICKING) {
-                        player.set_animation(JUMPING_KICK_POSE, 2, 5);
+                        sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = 1;
+                        player.pose.set(JUMP_KICK_POSE);
+                        player.energy += 1;
                     }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
@@ -1089,7 +1097,11 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 2 {
                     if player.state.check(PlayerState::KICKING) {
-                        player.set_animation(JUMPING_KICK_POSE, 2, 5);
+                        sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = 1;
+                        player.pose.set(JUMP_KICK_POSE);
+                        player.energy += 1;
                     }
                     if player.velocity.y > 0.0 {
                         player.animation.count += 1;
@@ -1104,7 +1116,11 @@ fn player_movement(
                     }
                 } else if player.animation.phase == 3 {
                     if player.state.check(PlayerState::KICKING) {
-                        player.set_animation(JUMPING_KICK_POSE, 3, 5);
+                        sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = 1;
+                        player.pose.set(JUMP_KICK_POSE);
+                        player.energy += 1;
                     }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
@@ -2265,11 +2281,12 @@ fn check_attack(
     mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
-    mut player_query: Query<(&mut Player, &PlayerID)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
+    character_textures: Res<CharacterTextures>,
     mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
 ) {
     let mut player_info: [(isize, PlayerState); 2] = [(0, PlayerState::IDLE); 2];
-    for (player, player_id) in player_query.iter() {
+    for (player, player_id, _) in player_query.iter() {
         player_info[player_id.0 as usize] = (player.character_id, player.state);
     }
     for collision_event in collision_events.read() {
@@ -2293,7 +2310,7 @@ fn check_attack(
                 let mut opponent_parts: &BodyParts = &BodyParts::NULL;
                 let mut attacker_phase: u8 = 0;
                 let mut attacker_count: u8 = 0;
-                for (mut player, player_id) in player_query.iter_mut() {
+                for (mut player, player_id, _) in player_query.iter_mut() {
                     if player.state.check(
                         PlayerState::KICKING
                             | PlayerState::BACK_KICKING
@@ -2346,7 +2363,7 @@ fn check_attack(
                     // No attacker found
                     // If the collision is between one body and another body part, move player to avoid collision
                     if parts1.is_body() && !parts2.is_body() {
-                        for (player, player_id) in player_query.iter() {
+                        for (player, player_id, _) in player_query.iter() {
                             if player_id == id2 {
                                 if player.state.is_idle() {
                                     player_collision.0 = id1.0;
@@ -2356,7 +2373,7 @@ fn check_attack(
                             }
                         }
                     } else if parts2.is_body() && !parts1.is_body() {
-                        for (player, player_id) in player_query.iter() {
+                        for (player, player_id, _) in player_query.iter() {
                             if player_id == id1 {
                                 if player.state.is_idle() {
                                     player_collision.0 = id2.0;
@@ -2374,9 +2391,9 @@ fn check_attack(
                     player_info[opponent_id.0 as usize],
                     opponent_parts,
                 );
-                if let Some((mut player, _)) = player_query
+                if let Some((mut player, _, mut sprite)) = player_query
                     .iter_mut()
-                    .find(|(_, id)| id.0 == opponent_id.0)
+                    .find(|(_, id, _)| id.0 == opponent_id.0)
                 {
                     for (player_id, mut text, mut color, mut damage_display) in
                         damage_display_query.iter_mut()
@@ -2403,6 +2420,7 @@ fn check_attack(
                         }
                         println!("Player {:?} is stunned!", opponent_id.0);
                         if player.state.is_idle() {
+                            sprite.image = character_textures.textures[player.character_id as usize].attacked.clone();
                             player.state = PlayerState::STUN | PlayerState::BEND_DOWN;
                             player.set_animation(STUN_POSE, 0, 5);
                         } else {

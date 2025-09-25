@@ -394,7 +394,7 @@ pub const JUMP_POSE3: Pose = Pose {
     left_lower_leg: -120.0,
 };
 
-pub const JUMPING_KICK_POSE: Pose = Pose {
+pub const JUMP_KICK_POSE: Pose = Pose {
     facing: true,
     offset: [0.0, 0.0],
     old_offset: [0.0, 0.0],
