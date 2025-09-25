@@ -11,6 +11,7 @@ pub const FRAMES_BEND_DOWN: usize = 50;
 pub const FRAMES_ROLL: usize = 36;
 pub const FRAMES_VICTORY: usize = 93;
 pub const FRAMES_DEFEATED: usize = 120;
+pub const FRAMES_ATTACKED: usize = 25;
 
 // The pose of a character
 // facing: true means right facing, false means left facing
