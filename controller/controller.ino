@@ -1,15 +1,15 @@
 #include <BleGamepad.h>
 
 // ピン定義 - 実際のピン番号に合わせて変更してください
-#define JOYSTICK_UP_PIN     14   // ジョイスティック上
-#define JOYSTICK_DOWN_PIN   0   // ジョイスティック下  
-#define JOYSTICK_LEFT_PIN   26  // ジョイスティック左
-#define JOYSTICK_RIGHT_PIN  25  // ジョイスティック右
+#define JOYSTICK_NORTH_PIN   14   // ジョイスティック上
+#define JOYSTICK_SOUTH_PIN   26   // ジョイスティック下  
+#define JOYSTICK_WEST_PIN    27  // ジョイスティック左
+#define JOYSTICK_EAST_PIN    12  // ジョイスティック右
 
 #define BUTTON_1_PIN        33  // ボタン1
-#define BUTTON_2_PIN        32  // ボタン2
-#define BUTTON_3_PIN        27  // ボタン3
-#define BUTTON_4_PIN        2  // ボタン4
+#define BUTTON_2_PIN        25  // ボタン2
+#define BUTTON_3_PIN        35  // ボタン3
+#define BUTTON_4_PIN        32  // ボタン4
 
 // BLEGamepadオブジェクト作成
 BleGamepad bleGamepad("ESP32ArcadeController", "MommaWatasu", 100);
@@ -30,10 +30,10 @@ void setup() {
   Serial.println("ESP32 Arcade Controller Starting...");
   
   // ピンモードを入力プルアップに設定（ボタンはGNDに接続）
-  pinMode(JOYSTICK_UP_PIN, INPUT_PULLUP);
-  pinMode(JOYSTICK_DOWN_PIN, INPUT_PULLUP);
-  pinMode(JOYSTICK_LEFT_PIN, INPUT_PULLUP);
-  pinMode(JOYSTICK_RIGHT_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_NORTH_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_SOUTH_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_WEST_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_EAST_PIN, INPUT_PULLUP);
   
   pinMode(BUTTON_1_PIN, INPUT_PULLUP);
   pinMode(BUTTON_2_PIN, INPUT_PULLUP);
@@ -47,12 +47,11 @@ void setup() {
 
 void loop() {
   if (bleGamepad.isConnected()) {
-    Serial.
     // ジョイスティック（DPad）の状態読み取り
-    bool joystickUp = !digitalRead(JOYSTICK_UP_PIN);      // LOW = 押された状態
-    bool joystickDown = !digitalRead(JOYSTICK_DOWN_PIN);
-    bool joystickLeft = !digitalRead(JOYSTICK_LEFT_PIN);
-    bool joystickRight = !digitalRead(JOYSTICK_RIGHT_PIN);
+    bool joystickUp = !digitalRead(JOYSTICK_NORTH_PIN);      // LOW = 押された状態
+    bool joystickDown = !digitalRead(JOYSTICK_SOUTH_PIN);
+    bool joystickLeft = !digitalRead(JOYSTICK_WEST_PIN);
+    bool joystickRight = !digitalRead(JOYSTICK_EAST_PIN);
     
     // ボタンの状態読み取り
     bool button1 = !digitalRead(BUTTON_1_PIN);
