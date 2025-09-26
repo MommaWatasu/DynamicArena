@@ -97,7 +97,7 @@ fn setup(
                         ));
                 });
             
-            config.characters_id = [0, 2];
+            config.characters_id = [0, choose_rand_character(0)];
             spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
