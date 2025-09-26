@@ -78,8 +78,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
             },
             Settings,
         ))
-        .with_children(|builder| {
-            builder
+        .with_children(|spawner| {
+            spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(10.0),
@@ -87,8 +87,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                     align_items: AlignItems::Center,
                     ..default()
                 })
-                .with_children(|builder| {
-                    builder
+                .with_children(|spawner| {
+                    spawner
                         .spawn((
                             Button,
                             Node {
@@ -114,7 +114,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             TextColor(Color::BLACK),
                         ));
                 });
-            builder
+            spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(90.0),
@@ -125,8 +125,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                     justify_items: JustifyItems::Center,
                     ..default()
                 })
-                .with_children(|builder| {
-                    builder.spawn((
+                .with_children(|spawner| {
+                    spawner.spawn((
                         Text::new("設定"),
                         TextFont {
                             font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
@@ -140,7 +140,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             ..default()
                         },
                     ));
-                    builder
+                    spawner
                         .spawn((
                             Node {
                                 width: Val::Percent(90.0),
@@ -155,10 +155,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             BackgroundColor(Color::Srgba(Srgba::new(0.1, 0.1, 0.1, 0.8))),
                             BorderRadius::all(Val::Px(20.0)),
                         ))
-                        .with_children(|builder| {
+                        .with_children(|spawner| {
                             create_setting_item(
                                 &asset_server,
-                                builder,
+                                spawner,
                                 SettingItem::new(
                                     "音量".to_string(),
                                     0f32,
@@ -172,7 +172,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             #[cfg(not(target_arch = "wasm32"))]
                             create_setting_item(
                                 &asset_server,
-                                builder,
+                                spawner,
                                 SettingItem::new(
                                     "ゲームモード".to_string(),
                                     1u32,
@@ -185,7 +185,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             );
                             create_setting_item(
                                 &asset_server,
-                                builder,
+                                spawner,
                                 SettingItem::new(
                                     "ボットの強さ".to_string(),
                                     1u32,
@@ -203,7 +203,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             #[cfg(target_arch = "wasm32")]
                             create_setting_item(
                                 &asset_server,
-                                builder,
+                                spawner,
                                 SettingItem::new(
                                     "フルスクリーン".to_string(),
                                     1u32,
@@ -224,11 +224,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
 
 fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
     asset_server: &Res<AssetServer>,
-    builder: &mut ChildBuilder,
+    spawner: &mut ChildSpawnerCommands,
     item: SettingItem<T>,
     config_num: u32,
 ) {
-    builder
+    spawner
         .spawn((
             Node {
                 width: Val::Percent(90.0),
@@ -245,8 +245,8 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
             BackgroundColor(Color::WHITE),
             BorderRadius::all(Val::Px(20.0)),
         ))
-        .with_children(|builder| {
-            builder
+        .with_children(|spawner| {
+            spawner
                 .spawn((Node {
                     width: Val::Percent(30.0),
                     height: Val::Percent(100.0),
@@ -254,8 +254,8 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     justify_content: JustifyContent::Center,
                     ..default()
                 },))
-                .with_children(|builder| {
-                    builder.spawn((
+                .with_children(|spawner| {
+                    spawner.spawn((
                         Text::new(item.get_name()),
                         TextFont {
                             font: asset_server.load(PATH_BOLD_JP_FONT),
@@ -267,7 +267,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                         ConfigElement(config_num),
                     ));
                 });
-            builder
+            spawner
                 .spawn((
                     Button,
                     Node {
@@ -295,7 +295,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::BLACK),
                 ));
-            builder
+            spawner
                 .spawn((Node {
                     width: Val::Percent(30.0),
                     height: Val::Percent(100.0),
@@ -303,8 +303,8 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     justify_content: JustifyContent::Center,
                     ..default()
                 },))
-                .with_children(|builder| {
-                    builder.spawn((
+                .with_children(|spawner| {
+                    spawner.spawn((
                         Text::new(item.get_string()),
                         TextFont {
                             font: asset_server.load(if item.is_list() {
@@ -321,7 +321,7 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                         ConfigElement(config_num),
                     ));
                 });
-            builder
+            spawner
                 .spawn((
                     Button,
                     Node {
@@ -411,9 +411,9 @@ fn update_setting(
                 text.0 = format!("{:.1}", new_value);
                 if element.0 == 0 {
                     config.sound_volume = new_value;
-                    global_volume.volume = Volume::new(new_value);
-                    let sink = audio.single_mut();
-                    sink.set_volume(new_value);
+                    global_volume.volume = Volume::Linear(new_value);
+                    let mut sink = audio.single_mut().unwrap();
+                    sink.set_volume(Volume::Linear(new_value));
                 }
             }
         }
@@ -437,7 +437,7 @@ fn update_setting(
                 } else if element.0 == 2 {
                     config.level = Level::from(new_value);
                 } else if element.0 == 3 {
-                    windows.single_mut().mode = if { new_value } == 1 {
+                    windows.single_mut().unwrap().mode = if { new_value } == 1 {
                         WindowMode::Windowed
                     } else {
                         WindowMode::BorderlessFullscreen(MonitorSelection::Primary)
@@ -490,7 +490,7 @@ fn check_back(
                         "<Back" => {
                             // reset audio player(unused sound effect entity)
                             for entity in sound_query.iter() {
-                                commands.entity(entity).despawn_recursive();
+                                commands.entity(entity).despawn();
                             }
                             commands.spawn((
                                 AudioPlayer::new(asset_server.load(format!(
@@ -514,7 +514,7 @@ fn check_back(
 fn exit(mut commands: Commands, query: Query<Entity, With<Settings>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

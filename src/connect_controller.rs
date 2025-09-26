@@ -34,8 +34,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
             },
             ConnectController,
         ))
-        .with_children(|builder| {
-            builder
+        .with_children(|spawner| {
+            spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(10.0),
@@ -43,8 +43,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
                     align_items: AlignItems::Center,
                     ..default()
                 })
-                .with_children(|builder| {
-                    builder
+                .with_children(|spawner| {
+                    spawner
                         .spawn((
                             Button,
                             Node {
@@ -66,7 +66,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
                             TextLayout::new_with_justify(JustifyText::Center),
                             TextColor(Color::BLACK),
                         ));
-                    builder
+                    spawner
                         .spawn((
                             Button,
                             Node {
@@ -89,7 +89,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
                             TextColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
                         ));
                 });
-            builder
+            spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(90.0),
@@ -100,8 +100,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
                     justify_items: JustifyItems::Center,
                     ..default()
                 })
-                .with_children(|builder| {
-                    builder.spawn((
+                .with_children(|spawner| {
+                    spawner.spawn((
                         Text::new("コントローラーを接続してください"),
                         TextFont {
                             font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
@@ -115,7 +115,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
                             ..default()
                         },
                     ));
-                    builder
+                    spawner
                         .spawn((
                             Node {
                                 width: Val::Percent(90.0),
@@ -131,23 +131,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
                             BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
                             BorderRadius::all(Val::Px(20.0)),
                         ))
-                        .with_children(|builder| {
+                        .with_children(|spawner| {
                             if game_config.mode == GameMode::SinglePlayer {
                                 create_controller_box(
-                                    builder,
+                                    spawner,
                                     &asset_server,
                                     &game_config.gamepads,
                                     0,
                                 );
                             } else {
                                 create_controller_box(
-                                    builder,
+                                    spawner,
                                     &asset_server,
                                     &game_config.gamepads,
                                     0,
                                 );
                                 create_controller_box(
-                                    builder,
+                                    spawner,
                                     &asset_server,
                                     &game_config.gamepads,
                                     1,
@@ -159,12 +159,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, game_config: Re
 }
 
 fn create_controller_box(
-    builder: &mut ChildBuilder,
+    spawner: &mut ChildSpawnerCommands,
     asset_server: &Res<AssetServer>,
     gamepads: &[Entity; 2],
     id: u8,
 ) {
-    builder
+    spawner
         .spawn((
             Node {
                 width: Val::Percent(40.0),
@@ -178,8 +178,8 @@ fn create_controller_box(
             BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
             BackgroundColor(Color::srgb(1.0, 1.0, 1.0)),
         ))
-        .with_children(|builder| {
-            builder.spawn((
+        .with_children(|spawner| {
+            spawner.spawn((
                 Text::new(format!("コントローラー {}", id + 1)),
                 TextFont {
                     font: asset_server.load(PATH_BOLD_JP_FONT),
@@ -189,7 +189,7 @@ fn create_controller_box(
                 TextLayout::new_with_justify(JustifyText::Center),
                 TextColor(Color::BLACK),
             ));
-            builder.spawn((
+            spawner.spawn((
                 if gamepads[id as usize] == Entity::from_raw(0) {
                     Text::new("未接続")
                 } else {
@@ -326,7 +326,7 @@ fn check_buttons(
                     let text = text_query.get(children[0]).unwrap();
                     // reset audio player(unused sound effect entity)
                     for sound in sound_query.iter() {
-                        commands.entity(sound).despawn_recursive();
+                        commands.entity(sound).despawn();
                     }
                     match text.0.as_str() {
                         "<Back" => {
@@ -366,7 +366,7 @@ fn check_buttons(
 fn exit(mut commands: Commands, query: Query<Entity, With<ConnectController>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 
