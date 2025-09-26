@@ -34,8 +34,8 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
         },
         Confirm,
     ))
-    .with_children(|builder| {
-        builder
+    .with_children(|spawner| {
+        spawner
             .spawn(Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(10.0),
@@ -43,8 +43,8 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                 align_items: AlignItems::Center,
                 ..default()
             })
-            .with_children(|builder| {
-                builder
+            .with_children(|spawner| {
+                spawner
                     .spawn((
                         Button,
                         Node {
@@ -71,7 +71,7 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                     ));
                 });
 
-        builder
+        spawner
             .spawn(Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(90.0),
@@ -82,8 +82,8 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                 justify_items: JustifyItems::Center,
                 ..default()
             })
-            .with_children(|builder| {
-                builder.spawn((
+            .with_children(|spawner| {
+                spawner.spawn((
                     Text::new("まもなく開始します"),
                     TextFont {
                         font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
@@ -97,7 +97,7 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                         ..default()
                     },
                 ));
-                builder
+                spawner
                     .spawn((
                         Node {
                             width: Val::Percent(90.0),
@@ -113,8 +113,8 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                         BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
                         BorderRadius::all(Val::Px(20.0)),
                     ))
-                    .with_children(|builder| {
-                        builder.spawn((
+                    .with_children(|spawner| {
+                        spawner.spawn((
                             Node {
                                 width: Val::Percent(100.0),
                                 height: Val::Percent(10.0),
@@ -136,7 +136,7 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                                 TextColor(Color::BLACK),
                                 TextLayout::new_with_justify(JustifyText::Center),
                             ));
-                        builder.spawn((
+                        spawner.spawn((
                             Node {
                                 width: Val::Percent(100.0),
                                 height: Val::Percent(70.0),
@@ -146,9 +146,9 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                             },
                             BackgroundColor(Color::srgba(0.6, 0.8, 0.9, 0.8)),
                         ))
-                            .with_children(|builder| {
-                                create_player_box(builder, &asset_server, 0, config.characters_id[0], false);
-                                builder.spawn((
+                            .with_children(|spawner| {
+                                create_player_box(spawner, &asset_server, 0, config.characters_id[0], false);
+                                spawner.spawn((
                                     Text::new("VS"),
                                     TextFont {
                                         font: asset_server.load(PATH_BOLD_JP_FONT),
@@ -158,9 +158,9 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                                     TextColor(Color::srgba(20.0, 0.0, 0.0, 1.0)),
                                     TextLayout::new_with_justify(JustifyText::Center),
                                 ));
-                                create_player_box(builder, &asset_server, 1, config.characters_id[1], config.mode == GameMode::SinglePlayer);
+                                create_player_box(spawner, &asset_server, 1, config.characters_id[1], config.mode == GameMode::SinglePlayer);
                             });
-                        builder.spawn((
+                        spawner.spawn((
                             Button,
                             Node {
                                 width: Val::Percent(100.0),
@@ -188,13 +188,13 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
 }
 
 fn create_player_box(
-    builder: &mut ChildBuilder,
+    spawner: &mut ChildSpawnerCommands,
     asset_server: &Res<AssetServer>,
     player_id: u8,
     character_id: isize,
     agent: bool,
 ) {
-    builder.spawn((
+    spawner.spawn((
         Node {
             width: Val::Percent(40.0),
             height: Val::Percent(90.0),
@@ -203,8 +203,8 @@ fn create_player_box(
         },
         BackgroundColor(Color::srgba(0.6, 0.8, 0.9, 0.8)),
     ))
-    .with_children(|builder| {
-        builder.spawn((
+    .with_children(|spawner| {
+        spawner.spawn((
             if agent {
                 Text::new("Bot")
             } else {
@@ -218,7 +218,7 @@ fn create_player_box(
             TextColor(Color::BLACK),
             TextLayout::new_with_justify(JustifyText::Center),
         ));
-        builder.spawn((
+        spawner.spawn((
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(80.0),
@@ -228,8 +228,8 @@ fn create_player_box(
                 ..default()
             },
         ))
-        .with_children(|builder| {
-            builder.spawn((
+        .with_children(|spawner| {
+            spawner.spawn((
                 ImageNode::new(asset_server.load(format!(
                     "{}character_{}.png",
                     PATH_IMAGE_PREFIX, character_id + 1
@@ -283,7 +283,7 @@ fn check_buttons(
                     let text = text_query.get(children[0]).unwrap();
                     // reset audio player(unused sound effect entity)
                     for sound in sound_query.iter() {
-                        commands.entity(sound).despawn_recursive();
+                        commands.entity(sound).despawn();
                     }
                     match text.0.as_str() {
                         "<Back" => {
@@ -321,7 +321,7 @@ fn exit(mut commands: Commands, mut timer: ResMut<StartGameTimer>, query: Query<
     info!("exit");
     timer.0.reset();
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

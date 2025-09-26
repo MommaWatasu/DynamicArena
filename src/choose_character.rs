@@ -35,8 +35,8 @@ fn setup(
             },
             ChooseCharacter,
         ))
-        .with_children(|builder| {
-            builder
+        .with_children(|spawner| {
+            spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(10.0),
@@ -44,8 +44,8 @@ fn setup(
                     align_items: AlignItems::Center,
                     ..default()
                 })
-                .with_children(|builder| {
-                    builder
+                .with_children(|spawner| {
+                    spawner
                         .spawn((
                             Button,
                             Node {
@@ -70,7 +70,7 @@ fn setup(
                             TextLayout::new_with_justify(JustifyText::Center),
                             TextColor(Color::BLACK),
                         ));
-                    builder
+                    spawner
                         .spawn((
                             Button,
                             Node {
@@ -98,7 +98,7 @@ fn setup(
                 });
             
             config.characters_id = [0, 2];
-            builder
+            spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(90.0),
@@ -109,8 +109,8 @@ fn setup(
                     justify_items: JustifyItems::Center,
                     ..default()
                 })
-                .with_children(|builder| {
-                    builder.spawn((
+                .with_children(|spawner| {
+                    spawner.spawn((
                         Text::new("キャラクターを選んでください"),
                         TextFont {
                             font: asset_server.load(PATH_EXTRA_BOLD_JP_FONT),
@@ -124,7 +124,7 @@ fn setup(
                             ..default()
                         },
                     ));
-                    builder
+                    spawner
                         .spawn((
                             Node {
                                 width: Val::Percent(90.0),
@@ -140,9 +140,9 @@ fn setup(
                             BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
                             BorderRadius::all(Val::Px(20.0)),
                         ))
-                        .with_children(|builder| {
+                        .with_children(|spawner| {
                             for i in 0..3 {
-                                create_character_box(builder, &asset_server, &mut config, i as isize);
+                                create_character_box(spawner, &asset_server, &mut config, i as isize);
                             }
                         });
                 });
@@ -151,13 +151,13 @@ fn setup(
 
 // TODO: now the character selection is not available for wasm target
 fn create_character_box(
-    builder: &mut ChildBuilder,
+    spawner: &mut ChildSpawnerCommands,
     asset_server: &Res<AssetServer>,
     config: &mut GameConfig,
     character_id: isize,
 ) {
     let profile = &CHARACTER_PROFILES[character_id as usize];
-    builder
+    spawner
         .spawn(
             Node {
                 width: Val::Percent(30.0),
@@ -166,8 +166,8 @@ fn create_character_box(
                 ..default()
             },
         )
-        .with_children(|builder| {
-            builder.spawn(
+        .with_children(|spawner| {
+            spawner.spawn(
                 Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(10.0),
@@ -191,7 +191,7 @@ fn create_character_box(
                 },
                 TextColor(Color::srgba(10.0, 0.0, 0.0, 0.8)),
             ));
-            builder.spawn((
+            spawner.spawn((
                 Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(85.0),
@@ -201,8 +201,8 @@ fn create_character_box(
                 BorderRadius::all(Val::Px(20.0)),
                 BackgroundColor(Color::srgba(0.6, 0.8, 0.9, 0.8)),
             ))
-            .with_children(|builder| {
-                builder.spawn((
+            .with_children(|spawner| {
+                spawner.spawn((
                     Text::new(profile.name),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
@@ -215,7 +215,7 @@ fn create_character_box(
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(Color::BLACK),
                 ));
-                builder.spawn((
+                spawner.spawn((
                     Text::new(profile.description),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_JP_FONT),
@@ -228,7 +228,7 @@ fn create_character_box(
                     TextLayout::new_with_justify(JustifyText::Left),
                     TextColor(Color::BLACK),
                 ));
-                builder.spawn((
+                spawner.spawn((
                     Text::new(format!(
                         "<スキル> {}\n{}",
                         profile.skill_name, profile.skill_description
@@ -244,13 +244,13 @@ fn create_character_box(
                     TextLayout::new_with_justify(JustifyText::Left),
                     TextColor(Color::BLACK),
                 ));
-                builder.spawn((ImageNode::new(asset_server.load(format!(
+                spawner.spawn((ImageNode::new(asset_server.load(format!(
                     "{}character_{}_chart.png",
                     PATH_IMAGE_PREFIX, character_id
                 ))),));
             });
             if config.mode == GameMode::MultiPlayer {
-                builder.spawn(
+                spawner.spawn(
                     Node {
                         width: Val::Percent(100.0),
                         height: Val::Percent(10.0),
@@ -435,7 +435,7 @@ fn check_buttons(
                     let text = text_query.get(children[0]).unwrap();
                     // reset audio player(unused sound effect entity)
                     for sound in sound_query.iter() {
-                        commands.entity(sound).despawn_recursive();
+                        commands.entity(sound).despawn();
                     }
                     match text.0.as_str() {
                         "<Back" => {
@@ -475,7 +475,7 @@ fn check_buttons(
 fn exit(mut commands: Commands, query: Query<Entity, With<ChooseCharacter>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

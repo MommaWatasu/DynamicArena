@@ -28,8 +28,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
             },
             ShowResult,
         ))
-        .with_children(|builder| {
-            builder
+        .with_children(|spawner| {
+            spawner
                 .spawn((
                     Node {
                         width: Val::Percent(80.0),
@@ -42,8 +42,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
                     BorderRadius::all(Val::Px(20.0)),
                     BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.8)),
                 ))
-                .with_children(|builder| {
-                    builder.spawn((
+                .with_children(|spawner| {
+                    spawner.spawn((
                         Text::new("対戦結果"),
                         TextFont {
                             font: asset_server.load(PATH_EXTRA_BOLD_FONT),
@@ -57,7 +57,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
                             ..default()
                         },
                     ));
-                    builder
+                    spawner
                         .spawn(Node {
                             width: Val::Percent(100.0),
                             height: Val::Percent(80.0),
@@ -67,13 +67,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
                             align_items: AlignItems::Center,
                             ..default()
                         })
-                        .with_children(|builder| {
-                            create_round_result(builder, &asset_server, 1, gamestate.winners[0]);
-                            create_round_result(builder, &asset_server, 2, gamestate.winners[1]);
-                            create_round_result(builder, &asset_server, 3, gamestate.winners[2]);
-                            create_total_result(builder, &asset_server, gamestate.get_winner());
+                        .with_children(|spawner| {
+                            create_round_result(spawner, &asset_server, 1, gamestate.winners[0]);
+                            create_round_result(spawner, &asset_server, 2, gamestate.winners[1]);
+                            create_round_result(spawner, &asset_server, 3, gamestate.winners[2]);
+                            create_total_result(spawner, &asset_server, gamestate.get_winner());
                         });
-                    builder
+                    spawner
                         .spawn((
                             Button,
                             Node {
@@ -110,12 +110,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
 }
 
 fn create_round_result(
-    builder: &mut ChildBuilder,
+    spawner: &mut ChildSpawnerCommands,
     asset_server: &Res<AssetServer>,
     round: u8,
     winner_id: u8,
 ) {
-    builder
+    spawner
         .spawn((
             Node {
                 width: Val::Percent(90.0),
@@ -129,8 +129,8 @@ fn create_round_result(
             BorderRadius::all(Val::Px(10.0)),
             BorderColor(Color::BLACK),
         ))
-        .with_children(|builder| {
-            builder.spawn((
+        .with_children(|spawner| {
+            spawner.spawn((
                 Text::new(format!("Round {} Result", round)),
                 TextFont {
                     font: asset_server.load(PATH_BOLD_FONT),
@@ -145,7 +145,7 @@ fn create_round_result(
                 },
             ));
             if winner_id == 0 {
-                builder.spawn((
+                spawner.spawn((
                     Text::new("DRAW"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
@@ -160,7 +160,7 @@ fn create_round_result(
                     },
                 ));
             } else {
-                builder.spawn((
+                spawner.spawn((
                     Text::new(format!("Player {} WIN!", winner_id)),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
@@ -182,8 +182,8 @@ fn create_round_result(
         });
 }
 
-fn create_total_result(builder: &mut ChildBuilder, asset_server: &Res<AssetServer>, winner_id: u8) {
-    builder
+fn create_total_result(spawner: &mut ChildSpawnerCommands, asset_server: &Res<AssetServer>, winner_id: u8) {
+    spawner
         .spawn((
             Node {
                 width: Val::Percent(90.0),
@@ -197,8 +197,8 @@ fn create_total_result(builder: &mut ChildBuilder, asset_server: &Res<AssetServe
             BorderRadius::all(Val::Px(10.0)),
             BorderColor(Color::srgba(1.0, 0.0, 0.0, 0.8)),
         ))
-        .with_children(|builder| {
-            builder.spawn((
+        .with_children(|spawner| {
+            spawner.spawn((
                 Text::new("Total Result"),
                 TextFont {
                     font: asset_server.load(PATH_BOLD_FONT),
@@ -213,7 +213,7 @@ fn create_total_result(builder: &mut ChildBuilder, asset_server: &Res<AssetServe
                 },
             ));
             if winner_id == 0 {
-                builder.spawn((
+                spawner.spawn((
                     Text::new("DRAW"),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
@@ -228,7 +228,7 @@ fn create_total_result(builder: &mut ChildBuilder, asset_server: &Res<AssetServe
                     },
                 ));
             } else {
-                builder.spawn((
+                spawner.spawn((
                     Text::new(format!("Player {} WIN!", winner_id)),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
@@ -268,7 +268,7 @@ fn check_exit_button(
         match *interaction {
             Interaction::Pressed => {
                 for sound in sound_query.iter() {
-                    commands.entity(sound).despawn_recursive();
+                    commands.entity(sound).despawn();
                 }
                 commands.spawn((
                     AudioPlayer::new(asset_server.load(format!(
@@ -287,7 +287,7 @@ fn check_exit_button(
 fn exit(mut commands: Commands, query: Query<Entity, With<ShowResult>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

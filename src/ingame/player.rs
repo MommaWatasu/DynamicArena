@@ -406,7 +406,7 @@ struct PlayerCollision(u8);
 ///
 /// * `id` - The player ID (0 for player 1, 1 for player 2)
 /// * `character_id` - Index into CHARACTER_PROFILES for the character definition
-/// * `builder` - The entity builder to spawn the player hierarchy
+/// * `spawner` - The entity spawner to spawn the player hierarchy
 /// * `meshes` - Asset server for creating mesh components
 /// * `materials` - Asset server for creating material components
 /// * `y_pos` - Initial Y position to spawn the player at
@@ -418,7 +418,7 @@ struct PlayerCollision(u8);
 pub fn spawn_player(
     id: u8,
     character_id: isize,
-    builder: &mut Commands,
+    commands: &mut Commands,
     texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
     asset_server: &Res<AssetServer>,
     y_pos: f32,
@@ -432,7 +432,7 @@ pub fn spawn_player(
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 4, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
-    builder
+    commands
         .spawn((
             if id == 0 {
                 Player::new(character_id)
@@ -470,8 +470,8 @@ pub fn spawn_player(
             Visibility::Visible,
         ))
         // Body
-        .with_children(|builder| {
-            builder
+        .with_children(|spawner| {
+            spawner
                 .spawn((
                     Transform::from_translation(Vec3::new(10.0, BODY_OFFSET, 0.0)),
                     BodyParts::BODY,
@@ -485,10 +485,10 @@ pub fn spawn_player(
                     ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                 ))
                 // Head and Neck
-                .with_children(|builder| {
+                .with_children(|spawner| {
                     // Neck
                     // Neck is invisible(completely transparent)
-                    builder
+                    spawner
                         .spawn((
                             BodyParts::HEAD,
                             PlayerID(id),
@@ -496,7 +496,6 @@ pub fn spawn_player(
                         ))
                         // Head
                         .with_child((
-                            //BodyParts::HEAD,
                             #[cfg(not(target_arch = "wasm32"))]
                             Transform::from_translation(Vec3::new(0.0, 20.0, -1.0)),
                             #[cfg(target_arch = "wasm32")]
@@ -511,7 +510,7 @@ pub fn spawn_player(
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ));
                     // Right Upper Arm
-                    builder
+                    spawner
                         .spawn((
                             BodyParts::new(false, false, true, true, true),
                             PlayerID(id),
@@ -536,7 +535,7 @@ pub fn spawn_player(
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ));
                     // Left Upper Arm
-                    builder
+                    spawner
                         .spawn((
                             BodyParts::new(false, false, true, false, true),
                             PlayerID(id),
@@ -561,7 +560,7 @@ pub fn spawn_player(
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ));
                     // Right Upper Leg
-                    builder
+                    spawner
                         .spawn((
                             // right upper leg
                             BodyParts::new(false, false, false, true, true),
@@ -576,8 +575,8 @@ pub fn spawn_player(
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ))
                         // Right Lower Leg
-                        .with_children(|builder| {
-                            builder
+                        .with_children(|spawner| {
+                            spawner
                                 .spawn((
                                     // right lower leg
                                     BodyParts::new(false, false, false, true, false),
@@ -595,7 +594,7 @@ pub fn spawn_player(
                                 ));
                         });
                     // Left Upper Leg
-                    builder
+                    spawner
                         .spawn((
                             BodyParts::new(false, false, false, false, true),
                             PlayerID(id),
@@ -607,8 +606,8 @@ pub fn spawn_player(
                                 | ActiveCollisionTypes::KINEMATIC_KINEMATIC,
                         ))
                         // Left Lower Leg
-                        .with_children(|builder| {
-                            builder
+                        .with_children(|spawner| {
+                            spawner
                                 .spawn((
                                     BodyParts::new(false, false, false, false, false),
                                     PlayerID(id),
@@ -1378,7 +1377,7 @@ fn player_movement(
         /*
         // move player and ground
          */
-        let mut ground = ground_query.single_mut();
+        let mut ground = ground_query.single_mut().unwrap();
 
         // Check if players are at opposite ends of the screen
         // 0 means player isn't at edge, 1 means player is at left edge, 2 means player is at right edge
@@ -1818,7 +1817,7 @@ fn skill_animation(
                                 }
                             }
                             // earthquake effect
-                            let mut transform = camera_query.single_mut();
+                            let mut transform = camera_query.single_mut().unwrap();
                             transform.translation.x = rand() * 100.0;
                             transform.translation.y = rand() * 100.0;
                         }
@@ -1847,7 +1846,7 @@ fn skill_animation(
                             player.set_animation(IDLE_POSE1, 5, 30);
                             player.velocity = Vec2::ZERO;
 
-                            let mut transform = camera_query.single_mut();
+                            let mut transform = camera_query.single_mut().unwrap();
                             transform.translation.x = 0.0;
                             transform.translation.y = 0.0;
                         }
@@ -1951,18 +1950,18 @@ fn skill_animation(
                                 }
                             }
                             // earthquake effect
-                            let mut transform = camera_query.single_mut();
+                            let mut transform = camera_query.single_mut().unwrap();
                             transform.translation.x = rand() * 50.0;
                             transform.translation.y = rand() * 50.0;
                         }
                         if player.animation.count == 20 {
                             if let Some((entity, _, _)) = curtain_query.iter().find(|x| x.1.id == 3) {
-                                commands.entity(entity).despawn_recursive();
+                                commands.entity(entity).despawn();
                             }
                             player.animation.phase = 7;
                             player.animation.count = 0;
 
-                            let mut transform = camera_query.single_mut();
+                            let mut transform = camera_query.single_mut().unwrap();
                             transform.translation.x = 0.0;
                             transform.translation.y = 0.0;
                         }

@@ -293,7 +293,7 @@ fn update(
                     let text = text_query.get(children[0]).unwrap();
                     // reset audio player(unused sound effect entity)
                     for entity in sound_query.iter() {
-                        commands.entity(entity).despawn_recursive();
+                        commands.entity(entity).despawn();
                     }
                     match text.0.as_str() {
                         "Start" => {
@@ -334,7 +334,7 @@ fn update(
 fn exit(mut commands: Commands, query: Query<Entity, With<Mainmenu>>) {
     info!("exit");
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

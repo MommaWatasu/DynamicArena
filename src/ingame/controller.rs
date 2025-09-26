@@ -6,6 +6,7 @@ use crate::{
     AppState, GameConfig,
 };
 
+// TODO: controller system is old and needs to be updated based on the new animation system
 fn controller_system(
     game_config: Res<GameConfig>,
     gamepads: Query<(&Gamepad, Entity)>,

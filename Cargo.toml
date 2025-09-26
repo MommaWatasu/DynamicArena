@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.15.0"
-bevy_rapier2d = "0.28.0"
+bevy = "0.16.0"
+bevy_rapier2d = "0.31.0"
 
 [features]
 pause = []
