@@ -908,7 +908,8 @@ fn keyboard_input(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_BACK_KICK;
                 player.state |= PlayerState::BACK_KICKING;
-                player.set_animation(BACK_KICK_POSE1, 0, 11);
+                player.pose.set(BACK_KICK_POSE1);
+                player.set_animation(BACK_KICK_POSE2, 0, 6);
                 player.energy += 2;
             }
         }
@@ -1283,18 +1284,18 @@ fn player_movement(
                     if player.animation.phase == 0 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(BACK_KICK_POSE2, 1, 9);
+                            player.set_animation(BACK_KICK_POSE3, 1, 13);
                         }
                     } else if player.animation.phase == 1 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
                             player.state |= PlayerState::COOLDOWN | PlayerState::ATTACK_DISABLED;
-                            player.set_animation(BACK_KICK_POSE1, 2, 9);
+                            player.set_animation(BACK_KICK_POSE2, 2, 10);
                         }
                     } else if player.animation.phase == 2 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(IDLE_POSE1, 3, 19);
+                            player.set_animation(BACK_KICK_POSE1, 3, 19);
                         }
                     } else if player.animation.phase == 3 {
                         player.update_animation(&mut sprite);
@@ -1303,7 +1304,8 @@ fn player_movement(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_IDLE;
                             player.state = PlayerState::IDLE;
-                            player.set_animation(IDLE_POSE2, 1, 20);
+                            player.pose.set(IDLE_POSE1);
+                            player.set_animation(IDLE_POSE2, 1, 15);
                         }
                     }
                 } else if player.state.check(PlayerState::PUNCHING) {
@@ -2186,11 +2188,12 @@ fn update_pose(
                     // Body
                     0b01000 => {
                         rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body, BODY_LENGTH);
+                        let sign = if player.pose.facing { 1.0 } else { -1.0 };
                         if cfg!(not(target_arch = "wasm32")) {
-                            transform.translation.x += player.pose.offset[0] - player.pose.old_offset[0];
+                            transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) * sign;
                             transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
                         } else {
-                            transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0;
+                            transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) / 2.0 * sign;
                             transform.translation.y += (player.pose.offset[1] - player.pose.old_offset[1]) / 2.0;
                         }
                     }
@@ -2791,31 +2794,39 @@ fn update_fire_bar(
     }
 }
 
-fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform)>) {
+fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>) {
     let mut positions = [0.0; 2];
     for (_, player_id, _, transform) in player_query.iter_mut() {
         positions[player_id.0 as usize] = transform.translation.x;
     }
-    for (mut player, player_id, mut sprite, _) in player_query.iter_mut() {
+    for (mut player, player_id, mut sprite, mut transform) in player_query.iter_mut() {
         if !player
             .state
             .check(!(PlayerState::COOLDOWN | PlayerState::DIRECTION | PlayerState::WALKING))
         {
             if player_id.0 == 0 {
                 if positions[0] < positions[1] {
+                    if player.pose.facing == true { continue; }
                     player.pose.facing = true;
                     sprite.flip_x = false;
+                    transform.translation.x -= player.pose.offset[0] * 2.0;
                 } else {
+                    if player.pose.facing == false { continue; }
                     player.pose.facing = false;
                     sprite.flip_x = true;
+                    transform.translation.x += player.pose.offset[0] * 2.0;
                 }
             } else {
                 if positions[1] < positions[0] {
+                    if player.pose.facing == true { continue; }
                     player.pose.facing = true;
                     sprite.flip_x = false;
+                    transform.translation.x -= player.pose.offset[0] * 2.0;
                 } else {
+                    if player.pose.facing == false { continue; }
                     player.pose.facing = false;
                     sprite.flip_x = true;
+                    transform.translation.x += player.pose.offset[0] * 2.0;
                 }
             }
         }
