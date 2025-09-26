@@ -77,6 +77,9 @@ const FPS: f32 = 60.0;
 pub struct PlayerID(pub u8);
 
 #[derive(Component)]
+struct Head;
+
+#[derive(Component)]
 pub struct HealthBar(pub f32, pub f32);
 
 #[derive(Component)]
@@ -496,6 +499,7 @@ pub fn spawn_player(
                         ))
                         // Head
                         .with_child((
+                            Head,
                             #[cfg(not(target_arch = "wasm32"))]
                             Transform::from_translation(Vec3::new(0.0, 20.0, -1.0)),
                             #[cfg(target_arch = "wasm32")]
@@ -2170,13 +2174,17 @@ fn rotate_neck(transform: &mut Transform, degree: f32) {
 fn update_pose(
     mut player_query: Query<
         (&mut Player, &PlayerID),
-        Without<BodyParts>,
+        (Without<BodyParts>, Without<Head>),
     >,
     mut parts_query: Query<
         (&BodyParts, &PlayerID, &mut Transform),
-        Without<Player>,
+        (Without<Player>, Without<Head>),
     >,
+    mut head_query: Query<&mut Transform, (With<Head>, Without<BodyParts>)>,
 ) {
+    for mut head_transform in head_query.iter_mut() {
+        head_transform.translation = Vec3::new(0.0, 20.0, -1.0);
+    }
     for (player, player_id) in player_query.iter_mut() {
         let flip = if player.pose.facing { 1.0 } else { -1.0 };
         for (parts, parts_id, mut transform) in parts_query.iter_mut() {
