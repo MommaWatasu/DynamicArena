@@ -1000,7 +1000,6 @@ fn execute_agent_action(
     
     match action {
         Action::MoveForward => {
-            sprite.texture_atlas.as_mut().map(|atlas| if atlas.index >= FRAMES_WALK { atlas.index = 0; });
             if player.state.is_idle() {
                 sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);

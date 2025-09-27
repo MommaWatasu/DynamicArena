@@ -7,7 +7,7 @@ use crate::{
     ingame::{GameState, InGame, DamageDisplay},
     AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX, PATH_IMAGE_PREFIX
 };
-use bevy::{prelude::*, asset::RenderAssetUsages, render::mesh::{VertexAttributeValues, PrimitiveTopology, Indices}};
+use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
 use std::{
     fmt::Debug,
@@ -310,7 +310,7 @@ impl Player {
         };
     }
     pub fn update_animation(&mut self, sprite: &mut Sprite) {
-        if self.animation.count == 0 {
+        if self.animation.count == 0 || self.state.check(PlayerState::SKILL) {
             return;
         }
         if !(self.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) && self.state.check(PlayerState::KICKING)) {
@@ -735,6 +735,8 @@ fn keyboard_input(
                 player.state |= PlayerState::BEND_DOWN;
                 player.pose.set(BEND_DOWN_POSE1);
                 player.set_animation(BEND_DOWN_POSE2, 0, 27);
+                // This is for testing purpose
+                player.energy = 100;
             } else if player.state.is_just_walk() {
                 if player.pose.facing {
                     if player.state.check(PlayerState::DIRECTION) {
@@ -1544,9 +1546,9 @@ fn skill_animation(
         (Without<SkillName>, Without<Player>, Without<Mesh2d>),
     >,
     curtain_query: Query<(Entity, &SkillEntity, &Mesh2d), Without<EnergyBar>>,
-    mut hammer_query: Query<
-        (Entity, &SkillEntity, &Mesh2d, &mut Transform),
-        (Without<SkillName>, Without<Player>),
+    mut fist_query: Query<
+        (Entity, &SkillEntity, &mut Transform),
+        (Without<SkillName>, Without<Player>, Without<Visibility>),
     >,
     mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
     mut camera_query: Query<
@@ -1661,102 +1663,20 @@ fn skill_animation(
                         }
                     } else if player.character_id == 2 {
                         // character 2 skill
-                        player.set_animation(HAMMER_POSE1, 3, 30);
                         commands.spawn((
-                            Mesh2d(
-                                meshes.add(
-                                    Mesh::new(
-                                        PrimitiveTopology::TriangleList,
-                                        RenderAssetUsages::default(),
-                                    )
-                                    .with_inserted_attribute(
-                                        Mesh::ATTRIBUTE_POSITION,
-                                        if player.pose.facing {
-                                            vec![
-                                                [100.0, 100.0, 0.0],
-                                                [100.0, 500.0, 0.0],
-                                                [160.0, 500.0, 0.0],
-                                                [160.0, 100.0, 0.0],
-                                            ]
-                                        } else {
-                                            vec![
-                                                [-100.0, 100.0, 0.0],
-                                                [-100.0, 500.0, 0.0],
-                                                [-160.0, 500.0, 0.0],
-                                                [-160.0, 100.0, 0.0],
-                                            ]
-                                        }
-                                    )
-                                    .with_inserted_attribute(
-                                        Mesh::ATTRIBUTE_COLOR,
-                                        vec![
-                                            [5.0, 0.0, 0.0, 0.0],
-                                            [5.0, 0.0, 0.0, 0.0],
-                                            [5.0, 0.0, 0.0, 0.0],
-                                            [5.0, 0.0, 0.0, 0.0],
-                                        ],
-                                    )
-                                    .with_inserted_indices(Indices::U32(vec![
-                                        0, 1, 2,
-                                        0, 2, 3,
-                                    ])),
-                                ),
-                            ),
-                            MeshMaterial2d(materials.add(ColorMaterial::default())),
-                            SkillEntity { id: 3 },
+                            Sprite {
+                                image: asset_server.load(format!("{}fist.png", PATH_IMAGE_PREFIX)),
+                                ..Default::default()
+                            },
                             Transform::from_translation(Vec3::new(
-                                transform.translation.x,
-                                transform.translation.y,
+                                0.0,
+                                0.0,
                                 20.0,
                             )),
-                        ))
-                            .with_child((
-                                Mesh2d(
-                                    meshes.add(
-                                        Mesh::new(
-                                            PrimitiveTopology::TriangleList,
-                                            RenderAssetUsages::default(),
-                                        )
-                                        .with_inserted_attribute(
-                                            Mesh::ATTRIBUTE_POSITION,
-                                            vec![
-                                                [-100.0, -50.0, 0.0],
-                                                [-100.0, 50.0, 0.0],
-                                                [100.0, 50.0, 0.0],
-                                                [100.0, -50.0, 0.0],
-                                            ],
-                                        )
-                                        .with_inserted_attribute(
-                                            Mesh::ATTRIBUTE_COLOR,
-                                            vec![
-                                                [0.0, 0.0, 0.0, 0.0],
-                                                [0.0, 0.0, 0.0, 0.0],
-                                                [0.0, 0.0, 0.0, 0.0],
-                                                [0.0, 0.0, 0.0, 0.0],
-                                            ],
-                                        )
-                                        .with_inserted_indices(Indices::U32(vec![
-                                            0, 1, 2,
-                                            0, 2, 3,
-                                        ])),
-                                    ),
-                                ),
-                                MeshMaterial2d(materials.add(ColorMaterial::default())),
-                                SkillEntity { id: 4 },
-                                if player.pose.facing {
-                                    Transform::from_translation(Vec3::new(
-                                        130.0,
-                                        400.0,
-                                        1.0,
-                                    ))
-                                } else {
-                                    Transform::from_translation(Vec3::new(
-                                        -130.0,
-                                        400.0,
-                                        1.0,
-                                    ))
-                                },
-                            ));
+                            SkillEntity { id: 3 },
+                        ));
+                        player.animation.phase = 3;
+                        player.animation.count = 60;
                     }
                 } else if player.animation.phase == 3 {
                     if player.character_id == 0 {
@@ -1788,22 +1708,14 @@ fn skill_animation(
                         }
                     } else if player.character_id == 2 {
                         player.update_animation(&mut sprite);
-                        for (_, skill_entity, mesh_handler, _) in hammer_query.iter() {
-                            if skill_entity.id == 3 || skill_entity.id == 4 {
-                                if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
-                                    if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
-                                        mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
-                                    {
-                                        for i in 0..4 {
-                                            colors[i][3] = (30 - player.animation.count) as f32 / 30.0;
-                                        }
-                                    }
-                                }
+                        for (_, skill_entity, mut fist_transform) in fist_query.iter_mut() {
+                            if skill_entity.id == 3 {
+                                fist_transform.translation.y += (270.0 - config.window_size.y) / 60.0;
                             }
                         }
                         if player.animation.count == 0 {
                             player.animation.phase = 4;
-                            player.animation.count = 60;
+                            player.animation.count = 0;
                         }
                     }
                 } else if player.animation.phase == 4 {
@@ -1879,9 +1791,33 @@ fn skill_animation(
                             player.animation.phase = 7;
                         }
                     } else if player.character_id == 2 {
-                        player.animation.count -= 1;
-                        if player.animation.count == 0 {
-                            player.set_animation(HAMMER_POSE2, 5, 5);
+                        player.animation.count += 1;
+                        if let Some((_, _, mesh_handler)) =
+                            curtain_query.iter().find(|x| x.1.id == 1)
+                        {
+                            let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
+                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
+                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
+                            {
+                                for i in 0..4 {
+                                    colors[i][3] = (20 - player.animation.count) as f32 / 60.0;
+                                }
+                            }
+                            // earthquake effect
+                            let mut transform = camera_query.single_mut().unwrap();
+                            transform.translation.x = rand() * 50.0;
+                            transform.translation.y = rand() * 50.0;
+                        }
+                        if player.animation.count == 20 {
+                            if let Some((entity, _, _)) = curtain_query.iter().find(|x| x.1.id == 3) {
+                                commands.entity(entity).despawn();
+                            }
+                            player.animation.phase = 7;
+                            player.animation.count = 0;
+
+                            let mut transform = camera_query.single_mut().unwrap();
+                            transform.translation.x = 0.0;
+                            transform.translation.y = 0.0;
                         }
                     }
                 } else if player.animation.phase == 5 {
@@ -1902,27 +1838,6 @@ fn skill_animation(
                                 player.animation.phase = 6;
                             }
                         }
-                    } else if player.character_id == 2 {
-                        player.update_animation(&mut sprite);
-                        for (_, skill_entity, _, mut hammer_transform) in hammer_query.iter_mut() {
-                            if skill_entity.id == 3 {
-                                if player.pose.facing {
-                                    let rad = (18.0 * player.animation.count as f32 - 90.0).to_radians();
-                                    hammer_transform.rotation = Quat::from_rotation_z(rad);
-                                } else {
-                                    let rad = (90.0 - 18.0 * player.animation.count as f32).to_radians();
-                                    hammer_transform.rotation = Quat::from_rotation_z(rad);
-                                }
-                            }
-                        }
-                        if player.animation.count == 0 {
-                            // if the opponent is at the ground, the hammer will hit the opponent
-                            if opponent_position.y < 300.0 - config.window_size.y / 2.0 {
-                                damage = 300;
-                            }
-                            player.animation.phase = 6;
-                            player.animation.count = 0;
-                        }
                     }
                 } else if player.animation.phase == 6 {
                     if player.character_id == 0 {
@@ -1933,48 +1848,6 @@ fn skill_animation(
                                 transform.translation.y = 270.0 - config.window_size.y / 2.0;
                                 player.animation.phase = 7;
                             }
-                        }
-                    } else if player.character_id == 2 {
-                        player.animation.count += 1;
-                        if let Some((_, _, mesh_handler)) =
-                            curtain_query.iter().find(|x| x.1.id == 1)
-                        {
-                            let mesh = meshes.get_mut(mesh_handler.id()).unwrap();
-                            if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
-                                mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
-                            {
-                                for i in 0..4 {
-                                    colors[i][3] = (20 - player.animation.count) as f32 / 60.0;
-                                }
-                            }
-                            for (_, skill_entity, mesh_handler, _) in hammer_query.iter() {
-                                if skill_entity.id == 3 || skill_entity.id == 4 {
-                                    if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
-                                        if let Some(VertexAttributeValues::Float32x4(ref mut colors)) =
-                                            mesh.attribute_mut(Mesh::ATTRIBUTE_COLOR)
-                                        {
-                                            for i in 0..4 {
-                                                colors[i][3] = (20 - player.animation.count) as f32 / 20.0;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            // earthquake effect
-                            let mut transform = camera_query.single_mut().unwrap();
-                            transform.translation.x = rand() * 50.0;
-                            transform.translation.y = rand() * 50.0;
-                        }
-                        if player.animation.count == 20 {
-                            if let Some((entity, _, _)) = curtain_query.iter().find(|x| x.1.id == 3) {
-                                commands.entity(entity).despawn();
-                            }
-                            player.animation.phase = 7;
-                            player.animation.count = 0;
-
-                            let mut transform = camera_query.single_mut().unwrap();
-                            transform.translation.x = 0.0;
-                            transform.translation.y = 0.0;
                         }
                     }
                 } else {
@@ -2029,11 +1902,11 @@ fn skill_animation(
 fn update_soul_absorb_animation(
     mut commands: Commands,
     mut soul_query: Query<(Entity, &SkillEntity, &mut Transform), Without<Player>>,
-    mut player_query: Query<(&mut Player, &Transform), Without<SkillEntity>>,
+    mut player_query: Query<(&mut Player, &PlayerID, &Transform), Without<SkillEntity>>,
+    mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
 ) {
     let mut destination = Vec2::ZERO;
-    let mut vibe = false;
-    for (mut player, transform) in player_query.iter_mut() {
+    for (mut player, _, transform) in player_query.iter_mut() {
         if player.character_id == 1 {
             if player.animation.phase == 3 && soul_query.iter().count() == 2 {
                 player.animation.phase = 4;
@@ -2041,16 +1914,6 @@ fn update_soul_absorb_animation(
             }
             destination.x = transform.translation.x;
             destination.y = transform.translation.y + 50.0;
-            if player.animation.phase == 2 {
-                vibe = true;
-            }
-        }
-    }
-    if vibe {
-        if let Some((mut player, _)) = player_query.iter_mut().find(|x| x.0.character_id != 1) {
-            // opponent shakes
-            player.pose.offset[0] = rand() * 10.0;
-            player.pose.offset[1] = rand() * 10.0;
         }
     }
     for (entity, skill_entity, mut transform) in soul_query.iter_mut() {
@@ -2061,12 +1924,22 @@ fn update_soul_absorb_animation(
         // if distance between soul and character is lower than threshold, despawn soul and player gains HP
         if destination.distance(pos) < 10.0 {
             commands.entity(entity).despawn();
-            for (mut player, _) in player_query.iter_mut() {
+            for (mut player, player_id, _) in player_query.iter_mut() {
                 if player.character_id == 1 {
                     player.health += 1;
                 } else {
                     player.health -= 1;
                 }
+                for (display_id, mut text, mut color, mut damage_display) in
+                        damage_display_query.iter_mut()
+                    {
+                        if player_id.0 == display_id.0 {
+                            text.0 = format!("1");
+                            color.0 = Color::srgba(5.0, 0.0, 0.0, 1.0);   
+                            damage_display.is_red = true;              
+                            damage_display.alpha = 1.0;
+                        }
+                    }
             }
         }
         let diff = {
