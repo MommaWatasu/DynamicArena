@@ -1059,7 +1059,7 @@ fn player_movement(
                         }
                     }
                 } else if player.animation.phase == 2 {
-                    if player.velocity == Vec2::ZERO {
+                    if transform.translation.y == 270.0 - config.window_size.y / 2.0 {
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_IDLE;
