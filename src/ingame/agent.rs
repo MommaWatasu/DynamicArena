@@ -955,7 +955,6 @@ pub fn agent_system(
         
         // Select action with continuity
         let action = agent.select_action(&environment);
-        //println!("Agent Action: {:?}", action);
         
         // Execute action on agent
         if let Some((mut player, player_id, mut sprite, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == 1) {
@@ -1001,6 +1000,7 @@ fn execute_agent_action(
     
     match action {
         Action::MoveForward => {
+            sprite.texture_atlas.as_mut().map(|atlas| if atlas.index >= FRAMES_WALK { atlas.index = 0; });
             if player.state.is_idle() {
                 sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
@@ -1237,7 +1237,7 @@ fn execute_agent_action(
                     sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                     player.animation_frame_max = FRAMES_IDLE;
                     player.pose.set(IDLE_POSE1);
-                    player.set_animation(IDLE_POSE2, 0, 30);
+                    player.set_animation(IDLE_POSE2, 0, 15);
                 }
             }
         }
