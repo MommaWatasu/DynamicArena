@@ -6,9 +6,9 @@
 #define JOYSTICK_WEST_PIN    27  // ジョイスティック左
 #define JOYSTICK_EAST_PIN    12  // ジョイスティック右
 
-#define BUTTON_1_PIN        33  // ボタン1
-#define BUTTON_2_PIN        25  // ボタン2
-#define BUTTON_3_PIN        13  // ボタン3
+#define BUTTON_1_PIN        25  // ボタン1
+#define BUTTON_2_PIN        13  // ボタン2
+#define BUTTON_3_PIN        33 // ボタン3
 #define BUTTON_4_PIN        32  // ボタン4
 
 // BLEGamepadオブジェクト作成
