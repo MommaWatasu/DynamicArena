@@ -904,7 +904,7 @@ pub fn agent_system(
     time: Res<Time>,
     game_config: Res<GameConfig>,
     mut agent: ResMut<Agent>,
-    characters_textures: Res<CharacterTextures>,
+    character_textures: Res<CharacterTextures>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform)>,
 ) {
     // Skip if multiplayer
@@ -962,7 +962,7 @@ pub fn agent_system(
             }
             
             // Handle action execution with better state management
-            execute_agent_action(action, &mut player, player_id, &mut sprite, &characters_textures, &mut commands, &mut fighting);
+            execute_agent_action(action, &mut player, player_id, &mut sprite, &character_textures, &mut commands, &mut fighting);
         }
     }
 }
@@ -973,14 +973,14 @@ fn execute_agent_action(
     player: &mut Player,
     player_id: &PlayerID,
     sprite: &mut Sprite,
-    characters_textures: &CharacterTextures,
+    character_textures: &CharacterTextures,
     commands: &mut Commands,
     fighting: &mut Fighting,
 ) {
     // Only reset to idle state if we're changing to a non-movement action
     if action != Action::MoveForward && action != Action::MoveBackward && action != Action::None {
         // Reset to idle for new actions
-        sprite.image = characters_textures.textures[player.character_id as usize].idle.clone();
+        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
         player.animation_frame_max = FRAMES_IDLE;
         player.state = PlayerState::IDLE;
@@ -999,11 +999,12 @@ fn execute_agent_action(
     match action {
         Action::MoveForward => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_WALK;
                 player.state |= PlayerState::WALKING;
-                player.set_animation(WALKING_POSE1, 0, 15);
+                player.pose.set(WALKING_POSE1);
+                player.set_animation(WALKING_POSE2, 1, 15);
             }
             if player.pose.facing {
                 player.state |= PlayerState::DIRECTION;
@@ -1013,11 +1014,12 @@ fn execute_agent_action(
         }
         Action::MoveBackward => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].walk.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
                 player.animation_frame_max = FRAMES_WALK;
                 player.state |= PlayerState::WALKING;
-                player.set_animation(WALKING_POSE1, 0, 15);
+                player.pose.set(WALKING_POSE1);
+                player.set_animation(WALKING_POSE2, 1, 15);
             }
             if player.pose.facing {
                 player.state &= !PlayerState::DIRECTION;
@@ -1027,7 +1029,7 @@ fn execute_agent_action(
         }
         Action::RollForward => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_ROLL;
                 player.state |= PlayerState::ROLL_FORWARD;
@@ -1045,7 +1047,7 @@ fn execute_agent_action(
         }
         Action::RollBackward => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].roll.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_ROLL - 1);
                 player.animation_frame_max = FRAMES_ROLL;
                 player.state |= PlayerState::ROLL_BACK;
@@ -1063,30 +1065,33 @@ fn execute_agent_action(
         }
         Action::JumpUP => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_JUMP;
                 player.state |= PlayerState::JUMP_UP;
-                player.set_animation(JUMP_POSE1, 0, 11);
+                player.pose.set(JUMP_POSE1);
+                player.set_animation(JUMP_POSE2, 0, 11);
                 player.velocity = Vec2::new(0.0, 12.0);
                 player.energy += 1;
             } else if !player.state.check(
                 PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD,
             ) && player.state.check(PlayerState::WALKING) {
                 if player.state.check(PlayerState::DIRECTION) {
-                    sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                    sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                     sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                     player.animation_frame_max = FRAMES_JUMP;
                     player.state |= PlayerState::JUMP_FORWARD;
-                    player.set_animation(JUMP_POSE1, 0, 11);
+                    player.pose.set(JUMP_POSE1);
+                    player.set_animation(JUMP_POSE2, 0, 11);
                     let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                     player.velocity = Vec2::new(x_vel, 12.0);
                 } else {
-                    sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                    sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                     sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                     player.animation_frame_max = FRAMES_JUMP;
                     player.state |= PlayerState::JUMP_BACKWARD;
-                    player.set_animation(JUMP_POSE1, 0, 11);
+                    player.pose.set(JUMP_POSE1);
+                    player.set_animation(JUMP_POSE2, 0, 11);
                     let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
                     player.velocity = Vec2::new(-x_vel, 12.0);
                 }
@@ -1095,7 +1100,7 @@ fn execute_agent_action(
         }
         Action::JumpForward => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_JUMP;
                 if player.pose.facing {
@@ -1104,14 +1109,15 @@ fn execute_agent_action(
                     player.state &= !PlayerState::DIRECTION;
                 }
                 player.state |= PlayerState::JUMP_FORWARD;
-                player.set_animation(JUMP_POSE1, 0, 11);
+                player.pose.set(JUMP_POSE1);
+                player.set_animation(JUMP_POSE2, 0, 11);
                 player.velocity = Vec2::ZERO;
                 player.energy += 1;
             }
         }
         Action::JumpBackward => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].jump.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_JUMP;
                 if !player.pose.facing {
@@ -1120,7 +1126,8 @@ fn execute_agent_action(
                     player.state |= PlayerState::DIRECTION;
                 }
                 player.state |= PlayerState::JUMP_BACKWARD;
-                player.set_animation(JUMP_POSE1, 0, 11);
+                player.pose.set(JUMP_POSE1);
+                player.set_animation(JUMP_POSE2, 0, 11);
                 player.velocity = Vec2::ZERO;
                 player.energy += 1;
             }
@@ -1137,54 +1144,72 @@ fn execute_agent_action(
         }
         Action::Bend => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].bend_down.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].bend_down.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_BEND_DOWN;
                 player.state |= PlayerState::BEND_DOWN;
-                player.set_animation(BEND_DOWN_POSE1, 0, 27);
+                player.pose.set(BEND_DOWN_POSE1);
+                player.set_animation(BEND_DOWN_POSE2, 0, 27);
             }
         }
         Action::Kick => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].kick.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].kick.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_KICK;
                 player.state |= PlayerState::KICKING;
-                player.set_animation(KICK_POSE1, 0, 21);
+                player.pose.set(KICK_POSE1);
+                player.set_animation(KICK_POSE2, 0, 21);
                 player.energy += 2;
-            } else if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD) 
-                     && !player.state.check(PlayerState::KICKING) {
+            } else if player
+                .state
+                .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD)
+                && !player.state.check(PlayerState::KICKING)
+                && player.animation.phase > 0
+                && player.animation.phase < 4
+            {
+                // player is jumping
+                // then just adding state
+                sprite.image = character_textures.textures[player.character_id as usize].jump_kick.clone();
+                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                player.animation_frame_max = 1;
+                player.pose.set(JUMP_KICK_POSE);
                 player.state |= PlayerState::KICKING;
                 player.energy += 2;
             }
         }
         Action::BackKick => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].back_kick.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].back_kick.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_BACK_KICK;
                 player.state |= PlayerState::BACK_KICKING;
-                player.set_animation(BACK_KICK_POSE1, 0, 11);
+                player.pose.set(BACK_KICK_POSE1);
+                player.set_animation(BACK_KICK_POSE2, 0, 11);
                 player.energy += 2;
             }
         }
         Action::RangedAttack => {
             if player.state.is_idle() && player.fire_charge == FIRE_CHARGE_MAX {
-                sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].punch.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_PUNCH;
                 player.fire_charge = 0;
                 player.state |= PlayerState::RANGED_ATTACK;
+                // the first pose for punch similar to that of kick
+                player.pose.set(KICK_POSE1);
                 player.set_animation(PUNCH_POSE, 0, 19);
                 player.energy += 2;
             }
         }
         Action::Punch => {
             if player.state.is_idle() {
-                sprite.image = characters_textures.textures[player.character_id as usize].punch.clone();
+                sprite.image = character_textures.textures[player.character_id as usize].punch.clone();
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_PUNCH;
                 player.state |= PlayerState::PUNCHING;
+                // the first pose for punch similar to that of kick
+                player.pose.set(KICK_POSE1);
                 player.set_animation(PUNCH_POSE, 0, 19);
                 player.energy += 2;
             }
@@ -1205,10 +1230,11 @@ fn execute_agent_action(
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
                 if player.state.is_idle() {
-                    sprite.image = characters_textures.textures[player.character_id as usize].idle.clone();
+                    sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                     sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                     player.animation_frame_max = FRAMES_IDLE;
-                    player.set_animation(IDLE_POSE1, 0, 30);
+                    player.pose.set(IDLE_POSE1);
+                    player.set_animation(IDLE_POSE2, 0, 30);
                 }
             }
         }
