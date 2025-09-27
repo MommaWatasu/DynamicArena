@@ -360,12 +360,12 @@ fn controller_input(
                 }
             }
         }
-        if gamepad.just_pressed(GamepadButton::DPadDown) {
+        if gamepad.just_pressed(GamepadButton::West) {
             #[cfg(not(target_arch = "wasm32"))]
             next_state.set(AppState::ConnectController);
             #[cfg(target_arch = "wasm32")]
             next_state.set(AppState::Mainmenu);
-        } else if gamepad.just_pressed(GamepadButton::DPadUp) {
+        } else if gamepad.just_pressed(GamepadButton::East) {
             next_state.set(AppState::Confirm);
         }
     }

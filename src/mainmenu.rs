@@ -257,7 +257,7 @@ fn controller_input(
                     }
                 }
             }
-        } else if gamepad.just_pressed(GamepadButton::West) {
+        } else if gamepad.just_pressed(GamepadButton::South) {
             match button_idx.idx {
                 0 => {
                     #[cfg(not(target_arch = "wasm32"))]

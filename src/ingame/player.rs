@@ -786,8 +786,6 @@ fn keyboard_input(
             // then stop bending down
             player.set_animation(BEND_DOWN_POSE1, 2, 23);
         }
-        // NOTE: this code block contains a lot of duplicate code
-        //       I should refactor it later
         if keys.just_pressed(KeyCode::Space) {
             if player.state.is_idle() {
                 // player is idle
@@ -859,6 +857,7 @@ fn keyboard_input(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_KICK;
                 player.state |= PlayerState::KICKING;
+                player.pose.set(KICK_POSE1);
                 player.set_animation(KICK_POSE2, 0, 21);
                 player.energy += 2;
             } else if player
@@ -886,6 +885,8 @@ fn keyboard_input(
                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                 player.animation_frame_max = FRAMES_PUNCH;
                 player.state |= PlayerState::PUNCHING;
+                // the first pose for punch similar to that of kick
+                player.pose.set(KICK_POSE1);
                 player.set_animation(PUNCH_POSE, 0, 19);
                 player.energy += 2;
             }
@@ -899,6 +900,8 @@ fn keyboard_input(
                 player.animation_frame_max = FRAMES_PUNCH;
                 player.fire_charge = 0;
                 player.state |= PlayerState::RANGED_ATTACK;
+                // the first pose for punch similar to that of kick
+                player.pose.set(KICK_POSE1);
                 player.set_animation(PUNCH_POSE, 0, 19);
                 player.energy += 2;
             }
