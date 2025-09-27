@@ -93,12 +93,15 @@ impl ActionState {
     fn new(action: Action) -> Self {
         let (planned_duration, priority) = match action {
             Action::MoveForward | Action::MoveBackward => (15, ActionPriority::Low),
-            Action::Bend => (10, ActionPriority::Medium),
-            Action::RollForward | Action::RollBackward => (20, ActionPriority::Medium),
+            Action::Bend => (27, ActionPriority::Medium),
+            Action::RollForward => (11, ActionPriority::Medium),
+            Action::RollBackward => (4, ActionPriority::Medium),
             Action::JumpUP | Action::JumpForward | Action::JumpBackward => (25, ActionPriority::Medium),
-            Action::JumpKick => (5, ActionPriority::Medium), // Short duration as it's added to existing jump
-            Action::Kick | Action::BackKick | Action::Punch => (20, ActionPriority::Medium),
-            Action::RangedAttack => (25, ActionPriority::Medium),
+            Action::JumpKick => (1, ActionPriority::Medium), // Short duration as it's added to existing jump
+            Action::Kick => (21, ActionPriority::Medium),
+            Action::Punch => (19, ActionPriority::Medium),
+            Action::BackKick => (9, ActionPriority::Medium),
+            Action::RangedAttack => (19, ActionPriority::Medium),
             Action::Skill => (60, ActionPriority::High),
             Action::None => (0, ActionPriority::Low),
         };
