@@ -1369,7 +1369,8 @@ fn player_movement(
             }
             if player_collision.0 == 2 {
                 // no collision, player moves freely
-                if !player.state.check(PlayerState::STUN) {
+                if !player.state.check(PlayerState::STUN)
+                    || (player.state.check(PlayerState::STUN) && player.animation.phase == 2) {
                     // if not in stun state, apply velocity
                     transform.translation +=
                         Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
