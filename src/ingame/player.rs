@@ -718,6 +718,7 @@ fn keyboard_input(
             // player is not walking
             if player.state.check(PlayerState::WALKING) {
                 player.state &= !PlayerState::WALKING;
+                player.velocity = Vec2::ZERO;
                 if player.state.is_idle() {
                     sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                     sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);

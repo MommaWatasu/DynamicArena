@@ -985,12 +985,15 @@ fn execute_agent_action(
     // Only reset to idle state if we're changing to a non-movement action
     if action != Action::MoveForward && action != Action::MoveBackward && player.state.check(PlayerState::WALKING) {
         // Reset to idle for new actions
-        sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
-        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-        player.animation_frame_max = FRAMES_IDLE;
         player.state &= !PlayerState::WALKING;
-        player.pose.set(IDLE_POSE1);
-        player.set_animation(IDLE_POSE2, 0, 15);
+        player.velocity = Vec2::ZERO;
+        if player.state.is_idle() {
+            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+            player.animation_frame_max = FRAMES_IDLE;
+            player.pose.set(IDLE_POSE1);
+            player.set_animation(IDLE_POSE2, 0, 15);
+        }
     }
     
     // Only remove BEND_DOWN state when not bending
