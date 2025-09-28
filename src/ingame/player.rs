@@ -310,7 +310,7 @@ impl Player {
         };
     }
     pub fn update_animation(&mut self, sprite: &mut Sprite) {
-        if self.animation.count == 0 || self.state.check(PlayerState::SKILL) {
+        if self.animation.count == 0 {
             return;
         }
         if !(self.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) && self.state.check(PlayerState::KICKING)) {
@@ -1333,7 +1333,7 @@ fn player_movement(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_IDLE;
                             player.state = PlayerState::IDLE;
-                            player.set_animation(IDLE_POSE2, 1, 25);
+                            player.set_animation(IDLE_POSE2, 1, 15);
                         }
                     }
                 }
@@ -1534,6 +1534,7 @@ fn skill_animation(
     asset_server: Res<AssetServer>,
     time: Res<Time>,
     config: Res<GameConfig>,
+    character_textures: Res<CharacterTextures>,
     mut timer: ResMut<AnimationTimer>,
     mut player_query: Query<
         (&mut Player, &PlayerID, &mut Sprite, &mut Transform, &mut Visibility),
@@ -1668,7 +1669,7 @@ fn skill_animation(
                                 ..Default::default()
                             },
                             Transform::from_translation(Vec3::new(
-                                0.0,
+                                opponent_position.x,
                                 0.0,
                                 20.0,
                             )),
@@ -1688,7 +1689,9 @@ fn skill_animation(
                                 thunder_transform.translation.x = transform.translation.x;
                             }
                             *player_visibility = Visibility::Hidden;
-                            player.pose = THUNDER_PUNCH_POSE;
+                            sprite.image = character_textures.textures[player.character_id as usize].punch.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 20);
+                            player.pose.set(PUNCH_POSE);
                             if player.pose.facing {
                                 transform.translation.x = opponent_position.x - 100.0;
                                 transform.translation.y = opponent_position.y + 50.0;
@@ -1706,7 +1709,6 @@ fn skill_animation(
                             player.animation.count = 0;
                         }
                     } else if player.character_id == 2 {
-                        player.update_animation(&mut sprite);
                         for (_, skill_entity, _, mut fist_transform) in skill_entity_query.iter_mut() {
                             if skill_entity.id == 3 {
                                 fist_transform.translation.y -= 200.0 / 60.0;
@@ -1715,7 +1717,7 @@ fn skill_animation(
                         player.animation.count -= 1;
                         if player.animation.count == 0 {
                             if opponent_position.y - (270.0 - config.window_size.y/2.0) < 50.0 {
-                                damage = 200;
+                                damage = 250;
                             }
                             player.animation.phase = 4;
                             player.animation.count = 0;
@@ -1769,7 +1771,7 @@ fn skill_animation(
                             {
                                 *thunder_visibility = Visibility::Hidden;
                             }
-                            player.set_animation(IDLE_POSE1, 5, 30);
+                            player.set_animation(IDLE_POSE1, 5, 12);
                             player.velocity = Vec2::ZERO;
 
                             let mut transform = camera_query.single_mut().unwrap();
@@ -1835,7 +1837,10 @@ fn skill_animation(
                         }
                         if player.animation.count == 0 {
                             if transform.translation.y == 270.0 - config.window_size.y / 2.0 {
-                                player.animation.phase = 7;
+                                sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                                player.animation_frame_max = FRAMES_IDLE;
+                                player.set_animation(IDLE_POSE2, 7, 15);
                             } else {
                                 // player position have to be reset
                                 player.animation.phase = 6;
@@ -1849,7 +1854,10 @@ fn skill_animation(
                             transform.translation.y += player.velocity.y;
                             if transform.translation.y < 270.0 - config.window_size.y / 2.0 {
                                 transform.translation.y = 270.0 - config.window_size.y / 2.0;
-                                player.animation.phase = 7;
+                                sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                                sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                                player.animation_frame_max = FRAMES_IDLE;
+                                player.set_animation(IDLE_POSE2, 7, 15);
                             }
                         }
                     }

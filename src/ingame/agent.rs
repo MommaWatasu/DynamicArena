@@ -102,7 +102,7 @@ impl ActionState {
             Action::Punch => (32, ActionPriority::Medium),
             Action::BackKick => (49, ActionPriority::Medium),
             Action::RangedAttack => (32, ActionPriority::Medium),
-            Action::Skill => (60, ActionPriority::High),
+            Action::Skill => (180, ActionPriority::High),
             Action::None => (0, ActionPriority::Low),
         };
         

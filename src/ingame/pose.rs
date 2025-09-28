@@ -506,22 +506,6 @@ pub const PUNCH_POSE: Pose = Pose {
     left_lower_leg: -60.0,
 };
 
-pub const THUNDER_PUNCH_POSE: Pose = Pose {
-    facing: true,
-    offset: [0.0, 0.0],
-    old_offset: [0.0, 0.0],
-    head: 0.0,
-    body: -40.0,
-    right_upper_arm: -80.0,
-    right_lower_arm: 160.0,
-    right_upper_leg: -50.0,
-    right_lower_leg: -20.0,
-    left_upper_arm: 100.0,
-    left_lower_arm: -30.0,
-    left_upper_leg: 10.0,
-    left_lower_leg: -60.0,
-};
-
 pub const STUN_POSE1: Pose = Pose {
     facing: true,
     offset: [10.0, 0.0],
