@@ -635,7 +635,7 @@ impl Agent {
         if environment.player_state.check(PlayerState::KICKING) {
             if environment.distance < 150.0 {
                 // Close range kick - jump up to avoid
-                return Action::JumpUP;
+                return Action::JumpBackward;
             } else if environment.distance < 250.0 {
                 // Medium range kick - roll backward for evasion
                 return Action::RollBackward;
