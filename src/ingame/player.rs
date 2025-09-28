@@ -1544,15 +1544,11 @@ fn skill_animation(
         (&SkillName, &mut Visibility),
         (Without<SkillEntity>, Without<Player>),
     >,
-    mut thunder_query: Query<
-        (&SkillEntity, &mut Visibility, &mut Transform),
+    mut skill_entity_query: Query<
+        (Entity, &SkillEntity, &mut Visibility, &mut Transform),
         (Without<SkillName>, Without<Player>, Without<Mesh2d>),
     >,
     curtain_query: Query<(Entity, &SkillEntity, &Mesh2d), Without<EnergyBar>>,
-    mut fist_query: Query<
-        (Entity, &SkillEntity, &mut Transform),
-        (Without<SkillName>, Without<Player>, Without<Visibility>),
-    >,
     mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
     mut camera_query: Query<
         &mut Transform,
@@ -1685,8 +1681,8 @@ fn skill_animation(
                     if player.character_id == 0 {
                         player.animation.count += 1;
                         if player.animation.count == 30 {
-                            if let Some((_, mut thunder_visibility, mut thunder_transform)) =
-                                thunder_query.iter_mut().find(|x| x.0.id == 0)
+                            if let Some((_, _, mut thunder_visibility, mut thunder_transform)) =
+                                skill_entity_query.iter_mut().find(|x| x.1.id == 0)
                             {
                                 *thunder_visibility = Visibility::Visible;
                                 thunder_transform.translation.x = transform.translation.x;
@@ -1711,12 +1707,16 @@ fn skill_animation(
                         }
                     } else if player.character_id == 2 {
                         player.update_animation(&mut sprite);
-                        for (_, skill_entity, mut fist_transform) in fist_query.iter_mut() {
+                        for (_, skill_entity, _, mut fist_transform) in skill_entity_query.iter_mut() {
                             if skill_entity.id == 3 {
-                                fist_transform.translation.y += (270.0 - config.window_size.y) / 60.0;
+                                fist_transform.translation.y -= 200.0 / 60.0;
                             }
                         }
+                        player.animation.count -= 1;
                         if player.animation.count == 0 {
+                            if opponent_position.y - (270.0 - config.window_size.y/2.0) < 50.0 {
+                                damage = 200;
+                            }
                             player.animation.phase = 4;
                             player.animation.count = 0;
                         }
@@ -1764,8 +1764,8 @@ fn skill_animation(
                                     }
                                 }
                             }
-                            if let Some((_, mut thunder_visibility, _)) =
-                                thunder_query.iter_mut().find(|x| x.0.id == 0)
+                            if let Some((_, _, mut thunder_visibility, _)) =
+                                skill_entity_query.iter_mut().find(|x| x.1.id == 0)
                             {
                                 *thunder_visibility = Visibility::Hidden;
                             }
@@ -1812,7 +1812,7 @@ fn skill_animation(
                             transform.translation.y = rand() * 50.0;
                         }
                         if player.animation.count == 20 {
-                            if let Some((entity, _, _)) = curtain_query.iter().find(|x| x.1.id == 3) {
+                            if let Some((entity, _, _, _)) = skill_entity_query.iter().find(|x| x.1.id == 3) {
                                 commands.entity(entity).despawn();
                             }
                             player.animation.phase = 7;
