@@ -739,7 +739,7 @@ fn keyboard_input(
                 player.pose.set(BEND_DOWN_POSE1);
                 player.set_animation(BEND_DOWN_POSE2, 0, 27);
                 // This is for testing purpose
-                player.energy = 100;
+                player.energy += 1;
             } else if player.state.is_just_walk() {
                 if player.pose.facing {
                     if player.state.check(PlayerState::DIRECTION) {
@@ -1694,10 +1694,10 @@ fn skill_animation(
                             player.pose.set(PUNCH_POSE);
                             if player.pose.facing {
                                 transform.translation.x = opponent_position.x - 100.0;
-                                transform.translation.y = opponent_position.y + 50.0;
+                                transform.translation.y = opponent_position.y;
                             } else {
                                 transform.translation.x = opponent_position.x + 100.0;
-                                transform.translation.y = opponent_position.y + 50.0;
+                                transform.translation.y = opponent_position.y;
                             }
                             commands.spawn((
                                 AudioPlayer::new(
@@ -1852,7 +1852,7 @@ fn skill_animation(
                         if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
                             player.velocity.y -= GRAVITY_ACCEL * 4.0 / FPS;
                             transform.translation.y += player.velocity.y;
-                            if transform.translation.y < 270.0 - config.window_size.y / 2.0 {
+                            if transform.translation.y <= 270.0 - config.window_size.y / 2.0 {
                                 transform.translation.y = 270.0 - config.window_size.y / 2.0;
                                 sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                                 sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
