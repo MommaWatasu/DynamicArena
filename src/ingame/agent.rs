@@ -92,16 +92,16 @@ enum ActionPriority {
 impl ActionState {
     fn new(action: Action) -> Self {
         let (planned_duration, priority) = match action {
-            Action::MoveForward | Action::MoveBackward => (15, ActionPriority::Low),
-            Action::Bend => (27, ActionPriority::Medium),
-            Action::RollForward => (11, ActionPriority::Medium),
-            Action::RollBackward => (4, ActionPriority::Medium),
-            Action::JumpUP | Action::JumpForward | Action::JumpBackward => (25, ActionPriority::Medium),
+            Action::MoveForward | Action::MoveBackward => (30, ActionPriority::Low),
+            Action::Bend => (50, ActionPriority::Medium),
+            Action::RollForward => (36, ActionPriority::Medium),
+            Action::RollBackward => (36, ActionPriority::Medium),
+            Action::JumpUP | Action::JumpForward | Action::JumpBackward => (58, ActionPriority::Medium),
             Action::JumpKick => (1, ActionPriority::Medium), // Short duration as it's added to existing jump
-            Action::Kick => (21, ActionPriority::Medium),
-            Action::Punch => (19, ActionPriority::Medium),
-            Action::BackKick => (9, ActionPriority::Medium),
-            Action::RangedAttack => (19, ActionPriority::Medium),
+            Action::Kick => (46, ActionPriority::Medium),
+            Action::Punch => (32, ActionPriority::Medium),
+            Action::BackKick => (49, ActionPriority::Medium),
+            Action::RangedAttack => (32, ActionPriority::Medium),
             Action::Skill => (60, ActionPriority::High),
             Action::None => (0, ActionPriority::Low),
         };
@@ -955,6 +955,7 @@ pub fn agent_system(
         
         // Select action with continuity
         let action = agent.select_action(&environment);
+        println!("Action: {:?}, State: {:?}", action, environment.agent_state);
         
         // Execute action on agent
         if let Some((mut player, player_id, mut sprite, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == 1) {
@@ -980,22 +981,22 @@ fn execute_agent_action(
     fighting: &mut Fighting,
 ) {
     // Only reset to idle state if we're changing to a non-movement action
-    if action != Action::MoveForward && action != Action::MoveBackward && action != Action::None {
+    if action != Action::MoveForward && action != Action::MoveBackward && player.state.check(PlayerState::WALKING) {
         // Reset to idle for new actions
         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
         player.animation_frame_max = FRAMES_IDLE;
-        player.state = PlayerState::IDLE;
         player.state &= !PlayerState::WALKING;
+        player.pose.set(IDLE_POSE1);
+        player.set_animation(IDLE_POSE2, 0, 15);
     }
     
     // Only remove BEND_DOWN state when not bending
-    if action != Action::Bend {
-        player.state &= !PlayerState::BEND_DOWN;
-        // Only set cooldown for non-movement actions
-        if action != Action::MoveForward && action != Action::MoveBackward && action != Action::None {
-            player.state |= PlayerState::COOLDOWN;
-        }
+    if action != Action::Bend && player.state.check(PlayerState::BEND_DOWN) && player.animation.phase != 2 {
+        // player is bending down
+        // then stop bending down
+        player.set_animation(BEND_DOWN_POSE1, 2, 23);
+        return;
     }
     
     match action {
