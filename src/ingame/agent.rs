@@ -53,6 +53,7 @@ impl PolicyScore {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum Action {
     MoveForward,

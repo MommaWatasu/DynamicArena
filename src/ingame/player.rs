@@ -2171,6 +2171,8 @@ fn update_pose(
 // Now, attacker is determined based on their animation phase and count and PlayerState
 /// Checks for collisions between players and updates their states accordingly.
 fn check_attack(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
@@ -2292,6 +2294,12 @@ fn check_attack(
                         damage_display_query.iter_mut()
                     {
                         if player_id.0 == opponent_id.0 {
+                            commands.spawn((
+                                AudioPlayer::new(
+                                    asset_server.load(format!("{}/attacked.ogg", PATH_SOUND_PREFIX)),
+                                ),
+                                SoundEffect,
+                            ));
                             text.0 = format!("{}", damage);
                             if damage > 100 {
                                 color.0 = Color::srgba(5.0, 0.0, 0.0, 1.0);   
@@ -2433,6 +2441,7 @@ fn calculate_damage(
 
 fn update_fire_animation(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     config: Res<GameConfig>,
     character_textures: Res<CharacterTextures>,
@@ -2488,6 +2497,12 @@ fn update_fire_animation(
                         damage = 40;
                     }
                     player.health = player.health.saturating_sub(damage);
+                    commands.spawn((
+                        AudioPlayer::new(
+                            asset_server.load(format!("{}/attacked.ogg", PATH_SOUND_PREFIX)),
+                        ),
+                        SoundEffect,
+                    ));
                     commands.entity(entity).despawn();
                     hit = true;
 
