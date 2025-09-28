@@ -908,7 +908,7 @@ pub fn agent_system(
     game_config: Res<GameConfig>,
     mut agent: ResMut<Agent>,
     character_textures: Res<CharacterTextures>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>,
 ) {
     // Skip if multiplayer
     if game_config.mode == GameMode::MultiPlayer {
@@ -916,6 +916,9 @@ pub fn agent_system(
     }
     agent.timer.tick(time.delta());
     if agent.timer.finished() {
+        // update facing
+        update_facing(&mut player_query);
+
         agent.count += 1;
         let mut environment = Environment::default();
         
@@ -955,7 +958,6 @@ pub fn agent_system(
         
         // Select action with continuity
         let action = agent.select_action(&environment);
-        println!("Action: {:?}, State: {:?}", action, environment.agent_state);
         
         // Execute action on agent
         if let Some((mut player, player_id, mut sprite, _)) = player_query.iter_mut().find(|(_, id, _, _)| id.0 == 1) {

@@ -659,14 +659,16 @@ fn keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<GameConfig>,
     character_textures: Res<CharacterTextures>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>,
 ) {
     if config.gamepads[0] != Entity::from_raw(0) {
         // if gamepad is enabled, we don't handle keyboard input
         return;
     }
 
-    for (mut player, player_id, mut sprite) in player_query.iter_mut() {
+    update_facing(&mut player_query);
+
+    for (mut player, player_id, mut sprite, _) in player_query.iter_mut() {
         // skip player 1(opponent) in order to control player 0
         // this is for debugging purpose
         #[cfg(debug_assertions)]
@@ -1364,7 +1366,7 @@ fn player_movement(
                     } else if player.animation.phase == 1 {
                         player.update_animation(&mut sprite);
                         if player.animation.count == 0 {
-                            player.set_animation(WALKING_POSE1, 0, 15);
+                            player.set_animation(WALKING_POSE1, 0, 14);
                         }
                     }
                 }
@@ -2681,15 +2683,13 @@ fn update_fire_bar(
     }
 }
 
-fn update_facing(mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>) {
+pub fn update_facing(player_query: &mut Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>) {
     let mut positions = [0.0; 2];
     for (_, player_id, _, transform) in player_query.iter_mut() {
         positions[player_id.0 as usize] = transform.translation.x;
     }
     for (mut player, player_id, mut sprite, mut transform) in player_query.iter_mut() {
-        if !player
-            .state
-            .check(!(PlayerState::COOLDOWN | PlayerState::DIRECTION | PlayerState::WALKING))
+        if player.state.is_idle() || player.state.check(PlayerState::WALKING)
         {
             if player_id.0 == 0 {
                 if positions[0] < positions[1] {
@@ -2768,10 +2768,6 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             Update,
             update_fire_animation.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
-        )
-        .add_systems(
-            Update,
-            update_facing.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
         )
         .add_systems(
             Update,
