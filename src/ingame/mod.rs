@@ -13,8 +13,8 @@ mod controller;
 mod pause;
 mod player;
 mod pose;
-#[cfg(target_arch = "wasm32")]
-mod wasm;
+#[cfg(feature="phone")]
+mod phone;
 
 #[cfg(feature="pause")]
 use crate::PATH_BOLD_FONT;
@@ -29,8 +29,8 @@ use controller::*;
 #[cfg(feature="pause")]
 use pause::*;
 use player::*;
-#[cfg(target_arch = "wasm32")]
-use wasm::*;
+#[cfg(feature="phone")]
+use phone::*;
 
 const FPS: f32 = 60.0;
 
@@ -140,9 +140,9 @@ fn setup(
             Node {
                 justify_self: JustifySelf::Start,
                 align_self: AlignSelf::Start,
-                #[cfg(not(target_arch = "wasm32"))]
+                #[cfg(not(feature="phone"))]
                 border: UiRect::all(Val::Px(5.0)),
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(feature="phone")]
                 border: UiRect::all(Val::Px(2.0)),
                 ..default()
             },
@@ -166,13 +166,13 @@ fn setup(
         .spawn((
             InGame,
             Node {
-                #[cfg(not(target_arch = "wasm32"))]
+                #[cfg(not(feature="phone"))]
                 width: Val::Px(300.0),
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(feature="phone")]
                 width: Val::Px(150.0),
-                #[cfg(not(target_arch = "wasm32"))]
+                #[cfg(not(feature="phone"))]
                 height: Val::Px(100.0),
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(feature="phone")]
                 height: Val::Px(50.0),
                 justify_self: JustifySelf::Center,
                 align_self: AlignSelf::Start,
@@ -271,11 +271,11 @@ fn setup(
     commands.spawn((
         InGame,
         PlayerID(0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         HealthBar(1.0, 250.0 - config.window_size.x / 2.0),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         HealthBar(1.0, 125.0 - config.window_size.x / 2.0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -303,7 +303,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -332,20 +332,20 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 30.0, 1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
     ));
     // health bar for player 2
     commands.spawn((
         InGame,
         PlayerID(1),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         HealthBar(1.0, config.window_size.x / 2.0 - 250.0),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         HealthBar(1.0, config.window_size.x / 2.0 - 125.0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -373,7 +373,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -402,16 +402,16 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 30.0, 1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
     ));
 
     // energy bar for player 1
     commands.spawn((
         InGame,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -439,7 +439,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -468,19 +468,19 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 60.0, 1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
     ));
     commands.spawn((
         InGame,
         PlayerID(0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         EnergyBar(0.0, 350.0 - config.window_size.x / 2.0),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         EnergyBar(0.0, 175.0 - config.window_size.x / 2.0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -508,7 +508,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -537,15 +537,15 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 60.0, 2.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
     ));
     // energy bar for player 2
     commands.spawn((
         InGame,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -573,7 +573,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -602,19 +602,19 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 60.0, 1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
     ));
     commands.spawn((
         InGame,
         PlayerID(1),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         EnergyBar(0.0, config.window_size.x / 2.0 - 350.0),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         EnergyBar(0.0, config.window_size.x / 2.0 - 175.0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -642,7 +642,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -671,16 +671,16 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 60.0, 2.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
     ));
 
     // fire charge bar for player 1
     commands.spawn((
         InGame,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -708,7 +708,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -737,19 +737,19 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
     ));
     commands.spawn((
         InGame,
         PlayerID(0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         FireBar(1.0, 450.0 - config.window_size.x / 2.0),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         FireBar(1.0, 175.0 - config.window_size.x / 2.0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -777,7 +777,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -806,16 +806,16 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
     ));
     
     // fire charge bar for player 2
     commands.spawn((
         InGame,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -843,7 +843,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -872,19 +872,19 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
     ));
     commands.spawn((
         InGame,
         PlayerID(1),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         FireBar(1.0, config.window_size.x / 2.0 - 450.0),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         FireBar(1.0, config.window_size.x / 2.0 - 175.0),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -912,7 +912,7 @@ fn setup(
                 .with_inserted_indices(Indices::U32(vec![0, 1, 2, 1, 2, 3])),
             ),
         ),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Mesh2d(
             meshes.add(
                 Mesh::new(
@@ -941,9 +941,9 @@ fn setup(
             ),
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
     ));
 
@@ -1043,39 +1043,39 @@ fn setup(
 
     // sky background
     commands.spawn((
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Sprite {
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
             ..default()
         },
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Sprite {
             image: asset_server.load(format!("{}sky_original.png", PATH_IMAGE_PREFIX)),
             ..default()
         },
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(0.0, 100.0, -2.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(0.0, 50.0, -2.0)),
         SkyBackground,
         InGame,
     ));
     commands.spawn((
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Sprite {
             image: asset_server.load(format!("{}sky_upscaled.png", PATH_IMAGE_PREFIX)),
             flip_x: true,
             ..default()
         },
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Sprite {
             image: asset_server.load(format!("{}sky_original.png", PATH_IMAGE_PREFIX)),
             flip_x: true,
             ..default()
         },
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(4800.0, 100.0, -2.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(1200.0, 50.0, -2.0)),
         SkyBackground,
         InGame,
@@ -1084,16 +1084,13 @@ fn setup(
     // background
     commands.spawn((
         Sprite {
-            #[cfg(not(target_arch = "wasm32"))]
-            image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
-            #[cfg(target_arch = "wasm32")]
             image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
             ..default()
         },
         BackGround,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         Transform::from_translation(Vec3::new(0.0, 70.0, -1.0)),
         InGame,
     ));
@@ -1134,7 +1131,7 @@ fn setup(
     }
 
     // create controller circle
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(feature="phone")]
     commands
         .spawn((
             InGame,
@@ -1585,11 +1582,11 @@ impl Plugin for GamePlugin {
         app
             .add_plugins(PausePlugin)
             .add_systems(Update, check_pause);
-
+        
         #[cfg(not(target_arch = "wasm32"))]
         app.add_plugins(ControllerPlugin);
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         app.insert_resource(TouchState {
             start_position: Vec2::ZERO,
             id: u64::MAX,

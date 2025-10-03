@@ -89,9 +89,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             Node {
                                 justify_self: JustifySelf::Start,
                                 align_self: AlignSelf::Start,
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(5.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(1.0)),
                                 ..default()
                             },
@@ -268,9 +268,9 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     Node {
                         width: Val::Percent(5.0),
                         height: Val::Percent(100.0),
-                        #[cfg(not(target_arch = "wasm32"))]
+                        #[cfg(not(feature="phone"))]
                         border: UiRect::all(Val::Px(5.0)),
-                        #[cfg(target_arch = "wasm32")]
+                        #[cfg(feature="phone")]
                         border: UiRect::all(Val::Px(1.0)),
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
@@ -322,9 +322,9 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     Node {
                         width: Val::Percent(5.0),
                         height: Val::Percent(100.0),
-                        #[cfg(not(target_arch = "wasm32"))]
+                        #[cfg(not(feature="phone"))]
                         border: UiRect::all(Val::Px(5.0)),
-                        #[cfg(target_arch = "wasm32")]
+                        #[cfg(feature="phone")]
                         border: UiRect::all(Val::Px(1.0)),
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,

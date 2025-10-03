@@ -11,13 +11,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
     info!("setup");
     commands
         .spawn((
-            #[cfg(not(target_arch = "wasm32"))]
             ImageNode::new(
                 asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
-            ),
-            #[cfg(target_arch = "wasm32")]
-            ImageNode::new(
-                asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX)),
             ),
             Node {
                 width: Val::Percent(100.0),
@@ -81,9 +76,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
                                 height: Val::Percent(10.0),
                                 justify_self: JustifySelf::Center,
                                 align_self: AlignSelf::Center,
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(10.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(5.0)),
                                 ..default()
                             },

@@ -18,13 +18,8 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
     info!("setup");
     commands
     .spawn((
-        #[cfg(not(target_arch = "wasm32"))]
         ImageNode::new(
             asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
-        ),
-        #[cfg(target_arch = "wasm32")]
-        ImageNode::new(
-            asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX)),
         ),
         Node {
             width: Val::Percent(100.0),
@@ -50,9 +45,9 @@ fn setup(mut commands: Commands, config: Res<GameConfig>, asset_server: Res<Asse
                         Node {
                             justify_self: JustifySelf::Start,
                             align_self: AlignSelf::Start,
-                            #[cfg(not(target_arch = "wasm32"))]
+                            #[cfg(not(feature="phone"))]
                             border: UiRect::all(Val::Px(5.0)),
-                            #[cfg(target_arch = "wasm32")]
+                            #[cfg(feature="phone")]
                             border: UiRect::all(Val::Px(2.0)),
                             ..default()
                         },

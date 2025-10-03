@@ -113,9 +113,9 @@ fn setup(
                             Node {
                                 width: Val::Percent(50.0),
                                 height: Val::Percent(10.0),
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(5.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(2.0)),
                                 margin: UiRect::all(Val::Percent(1.0)),
                                 justify_content: JustifyContent::Center,
@@ -145,9 +145,9 @@ fn setup(
                             Node {
                                 width: Val::Percent(50.0),
                                 height: Val::Percent(10.0),
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(5.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(2.0)),
                                 margin: UiRect::all(Val::Percent(1.0)),
                                 justify_content: JustifyContent::Center,
@@ -177,9 +177,9 @@ fn setup(
                             Node {
                                 width: Val::Percent(50.0),
                                 height: Val::Percent(10.0),
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(5.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(2.0)),
                                 margin: UiRect::all(Val::Percent(1.0)),
                                 justify_content: JustifyContent::Center,

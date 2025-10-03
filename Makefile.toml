@@ -25,6 +25,13 @@ script = ['''
 cargo run --target wasm32-unknown-unknown --features bevy/dynamic_linking pause
 ''']
 
+[tasks.wasm-phoneDEV]
+description = "Run project for development on phone"
+script = ['''
+#!/bin/bash
+cargo run --target wasm32-unknown-unknown --features bevy/dynamic_linking pause phone
+''']
+
 [tasks.BETA]
 description = "Build project for beta"
 script = ['''
@@ -52,6 +59,13 @@ script = ['''
 cargo build --target wasm32-unknown-unknown --release
 ''']
 
+[tasks.wasm-phoneRELEASE]
+description = "Build project for release on phone"
+script = ['''
+#/bin/bash
+cargo build --target wasm32-unknown-unknown --release --features phone
+''']
+
 [tasks.windowsRELEASE]
 description = "Build project for release on windows"
 condition = { platforms = ["windows"] }
@@ -73,6 +87,26 @@ cp ./wasm_build/index.html docs/index.html
 temp_file=$(mktemp)
 cat ./wasm_build/enable_sound.js ./docs/dynamicarena.js > $temp_file
 mv $temp_file ./docs/dynamicarena.js
+
+cd docs
+python3 -m http.server 8000
+''']
+
+[tasks.wasm-phoneDEPLOY]
+description = "create wasm directory to deploy, and launch the local server to test"
+script = ['''
+#!/bin/bash
+rm -r ./docs/*
+wasm-bindgen --no-typescript --target web --out-dir ./docs --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
+mkdir ./docs/phone/assets
+cp -r assets/fonts ./docs/phone/assets/fonts
+cp -r assets/images ./docs/phone/assets/images
+cp -r assets/sounds ./docs/phone/assets/sounds
+cp ./wasm_build/index.html docs/phone/index.html
+
+temp_file=$(mktemp)
+cat ./wasm_build/enable_sound.js ./docs/dynamicarena.js > $temp_file
+mv $temp_file ./docs/phone/dynamicarena.js
 
 cd docs
 python3 -m http.server 8000

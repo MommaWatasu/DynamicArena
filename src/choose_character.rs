@@ -19,11 +19,6 @@ fn setup(
     info!("setup");
     commands
         .spawn((
-            #[cfg(not(target_arch = "wasm32"))]
-            ImageNode::new(
-                asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
-            ),
-            #[cfg(target_arch = "wasm32")]
             ImageNode::new(
                 asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
             ),
@@ -51,9 +46,9 @@ fn setup(
                             Node {
                                 justify_self: JustifySelf::Start,
                                 align_self: AlignSelf::Start,
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(5.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(2.0)),
                                 ..default()
                             },
@@ -76,9 +71,9 @@ fn setup(
                             Node {
                                 justify_self: JustifySelf::End,
                                 align_self: AlignSelf::Start,
-                                #[cfg(not(target_arch = "wasm32"))]
+                                #[cfg(not(feature="phone"))]
                                 border: UiRect::all(Val::Px(5.0)),
-                                #[cfg(target_arch = "wasm32")]
+                                #[cfg(feature="phone")]
                                 border: UiRect::all(Val::Px(2.0)),
                                 ..default()
                             },
@@ -206,9 +201,9 @@ fn create_character_box(
                     Text::new(profile.name),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
-                        #[cfg(not(target_arch = "wasm32"))]
+                        #[cfg(not(feature="phone"))]
                         font_size: 40.0,
-                        #[cfg(target_arch = "wasm32")]
+                        #[cfg(feature="phone")]
                         font_size: 15.0,
                         ..Default::default()
                     },
@@ -219,9 +214,9 @@ fn create_character_box(
                     Text::new(profile.description),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_JP_FONT),
-                        #[cfg(not(target_arch = "wasm32"))]
+                        #[cfg(not(feature="phone"))]
                         font_size: 30.0,
-                        #[cfg(target_arch = "wasm32")]
+                        #[cfg(feature="phone")]
                         font_size: 10.0,
                         ..Default::default()
                     },
@@ -235,9 +230,9 @@ fn create_character_box(
                     )),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_JP_FONT),
-                        #[cfg(not(target_arch = "wasm32"))]
+                        #[cfg(not(feature="phone"))]
                         font_size: 30.0,
-                        #[cfg(target_arch = "wasm32")]
+                        #[cfg(feature="phone")]
                         font_size: 10.0,
                         ..Default::default()
                     },
@@ -362,16 +357,14 @@ fn controller_input(
             }
         }
         if gamepad.just_pressed(GamepadButton::West) {
-            #[cfg(not(target_arch = "wasm32"))]
             next_state.set(AppState::ConnectController);
-            #[cfg(target_arch = "wasm32")]
-            next_state.set(AppState::Mainmenu);
         } else if gamepad.just_pressed(GamepadButton::East) {
             next_state.set(AppState::Confirm);
         }
     }
 }
 
+#[cfg(not(feature="phone"))]
 fn keyboard_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut config: ResMut<GameConfig>,
@@ -489,7 +482,9 @@ impl Plugin for ChooseCharacterPlugin {
             .add_systems(
                 Update,
                 check_buttons.run_if(in_state(AppState::ChooseCharacter)),
-            )
+            );
+        #[cfg(not(feature="phone"))]
+        app
             .add_systems(
                 Update,
                 keyboard_input.run_if(in_state(AppState::ChooseCharacter)),

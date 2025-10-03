@@ -9,6 +9,7 @@ bevy_rapier2d = "0.31.0"
 
 [features]
 pause = []
+phone = []
 
 [profile.dev]
 opt-level = 2

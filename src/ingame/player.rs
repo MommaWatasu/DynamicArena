@@ -15,59 +15,59 @@ use std::{
 };
 
 // definition for normal display
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const UPPER_ARM_LENGTH: f32 = 20.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const UPPER_LEG_LENGTH: f32 = 40.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const LIMB_LENGTH: f32 = 30.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const NECK_LENGTH: f32 = 40.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const LIMB_RADIUS: f32 = 10.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const BODY_THICKNESS: f32 = 10.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const BODY_LENGTH: f32 = 65.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const HEAD_OFFSET: f32 = 80.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const BODY_OFFSET: f32 = -20.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const UPPER_ARM_OFFSET: f32 = 0.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const LOWER_ARM_OFFSET: f32 = -50.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const UPPER_LEG_OFFSET: f32 = -90.0;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 const LOWER_LEG_OFFSET: f32 = -70.0;
 
 // definition for web display
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const UPPER_ARM_LENGTH: f32 = 10.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const UPPER_LEG_LENGTH: f32 = 20.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const LIMB_LENGTH: f32 = 15.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const NECK_LENGTH: f32 = 20.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const LIMB_RADIUS: f32 = 7.5;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const BODY_THICKNESS: f32 = 5.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const BODY_LENGTH: f32 = 32.5;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const HEAD_OFFSET: f32 = 40.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const BODY_OFFSET: f32 = 20.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const UPPER_ARM_OFFSET: f32 = 15.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const LOWER_ARM_OFFSET: f32 = -30.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const UPPER_LEG_OFFSET: f32 = -50.0;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 const LOWER_LEG_OFFSET: f32 = -30.0;
 
 const PIXELS_PER_METER: f32 = 100.0;
@@ -460,13 +460,13 @@ pub fn spawn_player(
                 ..Default::default()
             },
             // Player 0 is on top of the screen
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(feature="phone"))]
             Transform::from_translation(Vec3::new(
                 if id == 0 { -500.0 } else { 500.0 },
                 y_pos,
                 if id == 0 { 10.0 } else { 1.0 },
             )),
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(feature="phone")]
             Transform::from_translation(Vec3::new(
                 if id == 0 { -250.0 } else { 250.0 },
                 y_pos,
@@ -481,9 +481,9 @@ pub fn spawn_player(
                     Transform::from_translation(Vec3::new(10.0, BODY_OFFSET, 0.0)),
                     BodyParts::BODY,
                     PlayerID(id),
-                    #[cfg(not(target_arch = "wasm32"))]
+                    #[cfg(not(feature="phone"))]
                     Collider::cuboid(BODY_THICKNESS * 2.0, BODY_LENGTH),
-                    #[cfg(target_arch = "wasm32")]
+                    #[cfg(feature="phone")]
                     Collider::cuboid(BODY_THICKNESS, 32.5),
                     RigidBody::KinematicPositionBased,
                     ActiveEvents::COLLISION_EVENTS,
@@ -502,14 +502,14 @@ pub fn spawn_player(
                         // Head
                         .with_child((
                             Head,
-                            #[cfg(not(target_arch = "wasm32"))]
+                            #[cfg(not(feature="phone"))]
                             Transform::from_translation(Vec3::new(0.0, 20.0, -1.0)),
-                            #[cfg(target_arch = "wasm32")]
+                            #[cfg(feature="phone")]
                             Transform::from_translation(Vec3::new(0.0, 10.0, 0.0)),
                             RigidBody::KinematicPositionBased,
-                            #[cfg(not(target_arch = "wasm32"))]
+                            #[cfg(not(feature="phone"))]
                             Collider::ball(40.0),
-                            #[cfg(target_arch = "wasm32")]
+                            #[cfg(feature="phone")]
                             Collider::ball(20.0),
                             ActiveEvents::COLLISION_EVENTS,
                             ActiveCollisionTypes::default()
@@ -654,15 +654,17 @@ pub fn spawn_player(
 /// handling state transitions and preventing invalid combinations
 /// of moves. For multiplayer, it processes input for both players
 /// unless in single player mode.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 fn keyboard_input(
     mut commands: Commands,
     mut fighting: ResMut<Fighting>,
     keys: Res<ButtonInput<KeyCode>>,
+    #[cfg(not(target_arch="wasm32"))]
     config: Res<GameConfig>,
     character_textures: Res<CharacterTextures>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>,
 ) {
+    #[cfg(not(target_arch="wasm32"))]
     if config.gamepads[0] != Entity::from_raw(0) {
         // if gamepad is enabled, we don't handle keyboard input
         return;
@@ -678,6 +680,7 @@ fn keyboard_input(
             continue;
         }
 
+        #[cfg(not(target_arch="wasm32"))]
         if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
             continue;
         }
@@ -1967,7 +1970,7 @@ fn update_soul_absorb_animation(
 }
 
 // check if the player is grounding
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature="phone"))]
 fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &mut Transform)>) {
     for (mut player, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
@@ -1985,7 +1988,7 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
 }
 
 // check if the player is grounding
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature="phone")]
 fn check_ground(
     config: Res<GameConfig>,
     mut player_query: Query<(&mut Player, &mut Transform)>,
@@ -2800,7 +2803,7 @@ impl Plugin for PlayerPlugin {
                 .run_if(in_state(AppState::Ingame).and(resource_exists::<SoulAbsorb>)),
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         app.add_systems(
             Update,
             keyboard_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),
