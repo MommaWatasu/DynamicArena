@@ -83,6 +83,7 @@ mkdir ./docs/assets
 mv ./phone ./docs/phone
 cp -r assets/fonts ./docs/assets/fonts
 cp -r assets/images ./docs/assets/images
+rm -r docs/assets/images/phone
 cp -r assets/sounds ./docs/assets/sounds
 cp ./wasm_build/index.html docs/index.html
 
@@ -102,12 +103,14 @@ rm -r ./docs/phone/*
 wasm-bindgen --no-typescript --target web --out-dir ./docs/phone --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
 mkdir ./docs/phone/assets
 cp -r assets/fonts ./docs/phone/assets/fonts
-cp -r assets/images ./docs/phone/assets/images
+cp -r assets/images/phone ./docs/phone/assets/images
+cp assets/images/background.png ./docs/phone/assets/images
+cp assets/images/background_mainmenu.png ./docs/phone/assets/images
 cp -r assets/sounds ./docs/phone/assets/sounds
 cp ./wasm_build/index.html docs/phone/index.html
 
 temp_file=$(mktemp)
-cat ./wasm_build/enable_sound.js ./docs/dynamicarena.js > $temp_file
+cat ./wasm_build/enable_sound.js ./docs/phone/dynamicarena.js > $temp_file
 mv $temp_file ./docs/phone/dynamicarena.js
 
 cd docs
