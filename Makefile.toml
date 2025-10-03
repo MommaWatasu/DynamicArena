@@ -96,8 +96,8 @@ python3 -m http.server 8000
 description = "create wasm directory to deploy, and launch the local server to test"
 script = ['''
 #!/bin/bash
-rm -r ./docs/*
-wasm-bindgen --no-typescript --target web --out-dir ./docs --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
+rm -r ./docs/phone/*
+wasm-bindgen --no-typescript --target web --out-dir ./docs/phone --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
 mkdir ./docs/phone/assets
 cp -r assets/fonts ./docs/phone/assets/fonts
 cp -r assets/images ./docs/phone/assets/images
