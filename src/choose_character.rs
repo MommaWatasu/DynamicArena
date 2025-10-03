@@ -25,7 +25,7 @@ fn setup(
             ),
             #[cfg(target_arch = "wasm32")]
             ImageNode::new(
-                asset_server.load(format!("{}web/background_mainmenu.png", PATH_IMAGE_PREFIX)),
+                asset_server.load(format!("{}background_mainmenu.png", PATH_IMAGE_PREFIX)),
             ),
             Node {
                 width: Val::Percent(100.0),
@@ -298,6 +298,7 @@ fn choose_rand_character(id: isize) -> isize {
     available_nums[random_index]
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn controller_input(
     mut next_state: ResMut<NextState<AppState>>,
     mut text_query: Query<(&mut Text, &TextColor, &CharacterID)>,
@@ -491,11 +492,13 @@ impl Plugin for ChooseCharacterPlugin {
             )
             .add_systems(
                 Update,
-                controller_input.run_if(in_state(AppState::ChooseCharacter)),
-            )
-            .add_systems(
-                Update,
                 keyboard_input.run_if(in_state(AppState::ChooseCharacter)),
             );
+        
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(
+            Update,
+            controller_input.run_if(in_state(AppState::ChooseCharacter)),
+        );
     }
 }

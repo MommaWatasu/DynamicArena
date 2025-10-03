@@ -1050,7 +1050,7 @@ fn setup(
         },
         #[cfg(target_arch = "wasm32")]
         Sprite {
-            image: asset_server.load(format!("{}web/sky_original.png", PATH_IMAGE_PREFIX)),
+            image: asset_server.load(format!("{}sky_original.png", PATH_IMAGE_PREFIX)),
             ..default()
         },
         #[cfg(not(target_arch = "wasm32"))]
@@ -1069,7 +1069,7 @@ fn setup(
         },
         #[cfg(target_arch = "wasm32")]
         Sprite {
-            image: asset_server.load(format!("{}web/sky_original.png", PATH_IMAGE_PREFIX)),
+            image: asset_server.load(format!("{}sky_original.png", PATH_IMAGE_PREFIX)),
             flip_x: true,
             ..default()
         },
@@ -1087,7 +1087,7 @@ fn setup(
             #[cfg(not(target_arch = "wasm32"))]
             image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
             #[cfg(target_arch = "wasm32")]
-            image: asset_server.load(format!("{}web/background.png", PATH_IMAGE_PREFIX)),
+            image: asset_server.load(format!("{}background.png", PATH_IMAGE_PREFIX)),
             ..default()
         },
         BackGround,
@@ -1594,7 +1594,6 @@ impl Plugin for GamePlugin {
             start_position: Vec2::ZERO,
             id: u64::MAX,
         })
-        .insert_resource(DoubleJumpCheck::new())
         .add_systems(
             Update,
             touch_input.run_if(in_state(AppState::Ingame).and(resource_exists::<Fighting>)),

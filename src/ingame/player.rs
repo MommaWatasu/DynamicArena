@@ -46,7 +46,7 @@ const LOWER_LEG_OFFSET: f32 = -70.0;
 #[cfg(target_arch = "wasm32")]
 const UPPER_ARM_LENGTH: f32 = 10.0;
 #[cfg(target_arch = "wasm32")]
-const LOWER_ARM_LENGTH: f32 = 20.0;
+const UPPER_LEG_LENGTH: f32 = 20.0;
 #[cfg(target_arch = "wasm32")]
 const LIMB_LENGTH: f32 = 15.0;
 #[cfg(target_arch = "wasm32")]
@@ -55,6 +55,8 @@ const NECK_LENGTH: f32 = 20.0;
 const LIMB_RADIUS: f32 = 7.5;
 #[cfg(target_arch = "wasm32")]
 const BODY_THICKNESS: f32 = 5.0;
+#[cfg(target_arch = "wasm32")]
+const BODY_LENGTH: f32 = 32.5;
 #[cfg(target_arch = "wasm32")]
 const HEAD_OFFSET: f32 = 40.0;
 #[cfg(target_arch = "wasm32")]
@@ -1986,7 +1988,6 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
 #[cfg(target_arch = "wasm32")]
 fn check_ground(
     config: Res<GameConfig>,
-    mut double_jump_check: ResMut<DoubleJumpCheck>,
     mut player_query: Query<(&mut Player, &mut Transform)>,
 ) {
     for (mut player, mut transform) in player_query.iter_mut() {

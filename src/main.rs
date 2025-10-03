@@ -242,7 +242,7 @@ fn setup(
 ) {
     info!("main: setup(wasm)");
     // set window config
-    if let Ok(mut window) = windows.get_single_mut() {
+    if let Ok(mut window) = windows.single_mut() {
         if let Some(win) = web_sys::window() {
             if let Ok(screen) = win.screen() {
                 // set window size
