@@ -434,7 +434,10 @@ pub fn spawn_player(
     let texture = asset_server.load(format!("{}character{}/idle.png", PATH_IMAGE_PREFIX, character_id+1));
 
     // The sprite sheet has 30 sprites arranged in a row, and they are all 512px x 512px
+    #[cfg(not(feature="phone"))]
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(512), 30, 4, None, None);
+    #[cfg(feature="phone")]
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(256), 30, 4, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     commands
