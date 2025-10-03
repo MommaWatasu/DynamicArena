@@ -76,9 +76,11 @@ command = "powershell"
 description = "create wasm directory to deploy, and launch the local server to test"
 script = ['''
 #!/bin/bash
+mv ./docs/phone ./phone
 rm -r ./docs/*
 wasm-bindgen --no-typescript --target web --out-dir ./docs --out-name "dynamicarena" ./target/wasm32-unknown-unknown/release/dynamicarena.wasm
 mkdir ./docs/assets
+mv ./phone ./docs/phone
 cp -r assets/fonts ./docs/assets/fonts
 cp -r assets/images ./docs/assets/images
 cp -r assets/sounds ./docs/assets/sounds
