@@ -1099,11 +1099,7 @@ fn player_movement(
                         } else {
                             -CHARACTER_PROFILES[player.character_id as usize].agility * 3.0
                         };
-                        if cfg!(not(feature="phone")) {
-                            player.velocity = Vec2::new(x_vel, 12.0);
-                        } else {
-                            player.velocity = Vec2::new(x_vel, 8.0);
-                        }
+                        player.velocity = Vec2::new(x_vel, 12.0);
                         player.set_animation(JUMP_POSE3, 1, 14);
                     }
                 } else if player.animation.phase == 1 {

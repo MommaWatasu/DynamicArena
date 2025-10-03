@@ -4,7 +4,9 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
 use bevy_rapier2d::prelude::*;
-use crate::{ingame::pose::{FRAMES_VICTORY, FRAMES_DEFEATED}, CharacterTextures, BGM};
+use crate::{CharacterTextures, BGM};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::ingame::pose::{FRAMES_VICTORY, FRAMES_DEFEATED};
 
 pub mod agent;
 #[cfg(not(target_arch = "wasm32"))]
@@ -1094,7 +1096,7 @@ fn setup(
         Transform::from_translation(Vec3::new(0.0, 70.0, -1.0)),
         InGame,
     ));
-    if cfg!(target_arch = "wasm32") {
+    if cfg!(feature="phone") {
         spawn_player(
             0,
             config.characters_id[0],
@@ -1451,7 +1453,7 @@ fn main_game_system(
                             sprite.flip_x = true;
                         }
                         player.reset(id);
-                        if cfg!(target_arch = "wasm32") {
+                        if cfg!(feature="phone") {
                             transform.translation.x = if id.0 == 0 { -250.0 } else { 250.0 };
                             transform.translation.y = 135.0 - config.window_size.y / 2.0;
                         } else {
@@ -1468,7 +1470,7 @@ fn main_game_system(
                                 mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
                             {
                                 positions[3][0] = health_bar.1 * health_bar.0;
-                                if cfg!(target_arch = "wasm32") {
+                                if cfg!(feature="phone") {
                                     positions[2][0] = health_bar.1 * health_bar.0
                                         + if health_id.0 == 0 { 25.0 } else { -25.0 };
                                 } else {
@@ -1486,7 +1488,7 @@ fn main_game_system(
                                 mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
                             {
                                 positions[3][0] = fire_bar.1 * fire_bar.0;
-                                if cfg!(target_arch = "wasm32") {
+                                if cfg!(feature="phone") {
                                     positions[2][0] = fire_bar.1 * fire_bar.0
                                         + if fire_id.0 == 0 { 25.0 } else { -25.0 };
                                 } else {
@@ -1530,7 +1532,7 @@ fn move_background(mut query: Query<&mut Transform, With<SkyBackground>>) {
     // move sky background
     for mut transform in query.iter_mut() {
         transform.translation.x -= 0.25;
-        if cfg!(target_arch = "wasm32") {
+        if cfg!(feature="phone") {
             if transform.translation.x < -1150.0 {
                 transform.translation.x = 1150.0;
             }

@@ -9,7 +9,9 @@ pub const FRAMES_PUNCH: usize = 32;
 pub const FRAMES_BACK_KICK: usize = 49;
 pub const FRAMES_BEND_DOWN: usize = 50;
 pub const FRAMES_ROLL: usize = 36;
+#[cfg(not(target_arch = "wasm32"))]
 pub const FRAMES_VICTORY: usize = 93;
+#[cfg(not(target_arch = "wasm32"))]
 pub const FRAMES_DEFEATED: usize = 120;
 pub const FRAMES_ATTACKED: usize = 25;
 

@@ -29,9 +29,9 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         skill_name: "神速雷光",
         skill_description: "一瞬で敵に近づき、確定でダメージを与える",
         health: 850,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         agility: 4.0,
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         agility: 2.0,
         power: 150.0,
         defense: 80.0
@@ -42,9 +42,9 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         skill_name: "魂吸収",
         skill_description: "相手に一定ダメージを与えて、その分自分が回復する",
         health: 1000,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         agility: 3.0,
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         agility: 1.5,
         power: 100.0,
         defense: 100.0
@@ -55,9 +55,9 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         skill_name: "鉄拳制裁",
         skill_description: "巨大なハンマーを振り下ろして、地面にいる敵に大ダメージを与える",
         health: 1200,
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature="phone"))]
         agility: 2.8,
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature="phone")]
         agility: 1.0,
         power: 130.0,
         defense: 150.0
