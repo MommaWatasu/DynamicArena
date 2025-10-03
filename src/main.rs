@@ -48,7 +48,9 @@ pub struct CharacterTexture {
     bend_down: Handle<Image>,
     roll: Handle<Image>,
     attacked: Handle<Image>,
+    #[cfg(not(target_arch = "wasm32"))]
     victory: Handle<Image>,
+    #[cfg(not(target_arch = "wasm32"))]
     defeated: Handle<Image>,
 }
 
@@ -65,7 +67,9 @@ impl CharacterTexture {
             bend_down: asset_server.load(format!("{}character{}/bend_down.png", PATH_IMAGE_PREFIX, character_id+1)),
             roll: asset_server.load(format!("{}character{}/roll.png", PATH_IMAGE_PREFIX, character_id+1)),
             attacked: asset_server.load(format!("{}character{}/attacked.png", PATH_IMAGE_PREFIX, character_id+1)),
+            #[cfg(not(target_arch = "wasm32"))]
             victory: asset_server.load(format!("{}character{}/victory.png", PATH_IMAGE_PREFIX, character_id+1)),
+            #[cfg(not(target_arch = "wasm32"))]
             defeated: asset_server.load(format!("{}character{}/defeated.png", PATH_IMAGE_PREFIX, character_id+1)),
         }
     }

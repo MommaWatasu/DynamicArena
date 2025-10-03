@@ -1099,7 +1099,7 @@ fn player_movement(
                         } else {
                             -CHARACTER_PROFILES[player.character_id as usize].agility * 3.0
                         };
-                        if cfg!(not(target_arch = "wasm32")) {
+                        if cfg!(not(feature="phone")) {
                             player.velocity = Vec2::new(x_vel, 12.0);
                         } else {
                             player.velocity = Vec2::new(x_vel, 8.0);
@@ -1989,37 +1989,17 @@ fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &
 
 // check if the player is grounding
 #[cfg(feature="phone")]
-fn check_ground(
-    config: Res<GameConfig>,
-    mut player_query: Query<(&mut Player, &mut Transform)>,
-) {
+fn check_ground(config: Res<GameConfig>, mut player_query: Query<(&mut Player, &mut Transform)>) {
     for (mut player, mut transform) in player_query.iter_mut() {
         // phase 0 is the preliminary motion
         if player.animation.phase == 0 {
             continue;
         }
         // change offset based on the type of jump
-        if player
-            .state
-            .check(PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD)
-            && transform.translation.y + 25.0 < 135.0 - config.window_size.y / 2.0
-            && player.animation.phase == 4
+        if player.state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD | PlayerState::STUN)
+            && transform.translation.y < 135.0 - config.window_size.y / 2.0
         {
-            player.state &=
-                !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
-            player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 25.0 / player.animation.count as f32;
-            transform.translation.y = 110.0 - config.window_size.y / 2.0;
-            player.velocity = Vec2::ZERO;
-        } else if player.state.check(PlayerState::JUMP_UP)
-            && transform.translation.y + 35.0 < 135.0 - config.window_size.y / 2.0
-            && player.animation.phase == 2
-        {
-            player.state &=
-                !(PlayerState::JUMP_UP | PlayerState::JUMP_BACKWARD | PlayerState::JUMP_FORWARD);
-            player.set_animation(IDLE_POSE1, 0, 10);
-            player.animation.diff_y = 35.0 / player.animation.count as f32;
-            transform.translation.y = 100.0 - config.window_size.y / 2.0;
+            transform.translation.y = 135.0 - config.window_size.y / 2.0;
             player.velocity = Vec2::ZERO;
         }
     }
@@ -2091,7 +2071,7 @@ fn update_pose(
                     0b01000 => {
                         rotate_parts(&mut transform, 0.0, BODY_OFFSET, flip * player.pose.body, BODY_LENGTH);
                         let sign = if player.pose.facing { 1.0 } else { -1.0 };
-                        if cfg!(not(target_arch = "wasm32")) {
+                        if cfg!(not(feature="phone")) {
                             transform.translation.x += (player.pose.offset[0] - player.pose.old_offset[0]) * sign;
                             transform.translation.y += player.pose.offset[1] - player.pose.old_offset[1];
                         } else {
@@ -2610,7 +2590,7 @@ fn update_health_bar(
                         mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
                     {
                         positions[3][0] = health_bar.1 * health_bar.0;
-                        if cfg!(target_arch = "wasm32") {
+                        if cfg!(feature="phone") {
                             positions[2][0] = health_bar.1 * health_bar.0
                                 + if player_id.0 == 0 { 25.0 } else { -25.0 };
                         } else {
@@ -2649,7 +2629,7 @@ fn update_energy_bar(
                         mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
                     {
                         positions[3][0] = energy_bar.1 * energy_bar.0;
-                        if cfg!(target_arch = "wasm32") {
+                        if cfg!(feature="phone") {
                             positions[2][0] = energy_bar.1 * energy_bar.0
                                 + if player_id.0 == 0 { 25.0 } else { -25.0 };
                         } else {
@@ -2688,7 +2668,7 @@ fn update_fire_bar(
                         mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION)
                     {
                         positions[3][0] = fire_bar.1 * fire_bar.0;
-                        if cfg!(target_arch = "wasm32") {
+                        if cfg!(feature="phone") {
                             positions[2][0] = fire_bar.1 * fire_bar.0
                                 + if player_id.0 == 0 { 25.0 } else { -25.0 };
                         } else {

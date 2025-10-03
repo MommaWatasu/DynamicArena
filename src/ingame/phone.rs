@@ -1,7 +1,7 @@
 use crate::{
     character_def::*,
     ingame::{player::*, pose::*},
-    GameConfig,
+    GameConfig, CharacterTextures
 };
 use bevy::{input::touch::TouchPhase, prelude::*};
 use std::f32::consts::PI;
@@ -40,10 +40,11 @@ fn convert_touch_to_world(touch_position: Vec2, window_size: Vec2) -> Vec2 {
 
 pub fn touch_input(
     config: Res<GameConfig>,
+    character_textures: Res<CharacterTextures>,
     mut touch_state: ResMut<TouchState>,
     mut touch_evr: EventReader<TouchInput>,
     mut circle_query: Query<&mut Transform, With<ControllerCircle>>,
-    mut player_query: Query<(&mut Player, &PlayerID)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
 ) {
     for event in touch_evr.read() {
         match event.phase {
@@ -141,9 +142,9 @@ pub fn touch_input(
             circle_state = CircleState::UpRight;
         }
         // change state of player 1
-        if let Some((mut player, _)) = player_query
+        if let Some((mut player, _, mut sprite)) = player_query
             .iter_mut()
-            .find(|(_, player_id)| player_id.0 == 0)
+            .find(|(_, player_id, _)| player_id.0 == 0)
         {
             match circle_state {
                 CircleState::Right => {
