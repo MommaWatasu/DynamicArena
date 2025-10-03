@@ -147,72 +147,148 @@ pub fn touch_input(
         {
             match circle_state {
                 CircleState::Right => {
-                    if player
-                        .state
-                        .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD)
-                    {
-                        player.velocity.x = CHARACTER_PROFILES[player.character_id as usize].agility;
-                    } else if !player.state.check(PlayerState::WALKING) {
+                    if player.state.is_idle() {
+                        // player is just walking
+                        sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
+                        if player.pose.facing {
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        } else {
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                        }
+                        player.animation_frame_max = FRAMES_WALK;
                         player.state |= PlayerState::WALKING;
-                        player.set_animation(WALKING_POSE1, 0, 10);
+                        player.pose.set(WALKING_POSE1);
+                        player.set_animation(WALKING_POSE2, 1, 15);
                     }
+                    // direction is right
                     player.state |= PlayerState::DIRECTION;
                 }
                 CircleState::Left => {
-                    if player
-                        .state
-                        .check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD)
-                    {
-                        player.velocity.x = -CHARACTER_PROFILES[player.character_id as usize].agility;
-                    } else if !player.state.check(PlayerState::WALKING) {
+                    if player.state.is_idle() {
+                        // player is just walking
+                        sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
+                        if !player.pose.facing {
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        } else {
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                        }
+                        player.animation_frame_max = FRAMES_WALK;
                         player.state |= PlayerState::WALKING;
-                        player.set_animation(WALKING_POSE1, 0, 10);
+                        player.pose.set(WALKING_POSE1);
+                        player.set_animation(WALKING_POSE2, 1, 15);
                     }
+                    // direction is left
                     player.state &= !PlayerState::DIRECTION;
                 }
                 CircleState::Up => {
                     if player.state.is_idle() {
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
                         player.state |= PlayerState::JUMP_UP;
-                        player.set_animation(JUMP_POSE1, 0, 10);
-                        player.velocity = Vec2::ZERO;
+                        player.pose.set(JUMP_POSE1);
+                        player.set_animation(JUMP_POSE2, 0, 11);
+                        player.velocity = Vec2::new(0.0, 12.0);
+                        player.energy += 1;
+                    } else if !player.state.check(
+                        PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD | PlayerState::JUMP_BACKWARD,
+                    ) && player.state.check(PlayerState::WALKING) {
+                        if player.state.check(PlayerState::DIRECTION) {
+                            sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_JUMP;
+                            player.state |= PlayerState::JUMP_FORWARD;
+                            player.pose.set(JUMP_POSE1);
+                            player.set_animation(JUMP_POSE2, 0, 11);
+                            let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                            player.velocity = Vec2::new(x_vel, 12.0);
+                        } else {
+                            sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_JUMP;
+                            player.state |= PlayerState::JUMP_BACKWARD;
+                            player.pose.set(JUMP_POSE1);
+                            player.set_animation(JUMP_POSE2, 0, 11);
+                            let x_vel = CHARACTER_PROFILES[player.character_id as usize].agility;
+                            player.velocity = Vec2::new(-x_vel, 12.0);
+                        }
+                        player.energy += 1;
                     }
                 }
                 CircleState::UpRight => {
                     if player.state.is_idle() {
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
+                        player.state |= PlayerState::DIRECTION;
                         player.state |= PlayerState::JUMP_FORWARD;
-                        player.set_animation(JUMP_POSE1, 0, 10);
+                        player.pose.set(JUMP_POSE1);
+                        player.set_animation(JUMP_POSE2, 0, 11);
                         player.velocity = Vec2::ZERO;
+                        player.energy += 1;
                     }
                 }
                 CircleState::UpLeft => {
                     if player.state.is_idle() {
+                        sprite.image = character_textures.textures[player.character_id as usize].jump.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_JUMP;
+                        player.state &= !PlayerState::DIRECTION;
                         player.state |= PlayerState::JUMP_BACKWARD;
-                        player.set_animation(JUMP_POSE1, 0, 10);
+                        player.pose.set(JUMP_POSE1);
+                        player.set_animation(JUMP_POSE2, 0, 11);
                         player.velocity = Vec2::ZERO;
+                        player.energy += 1;
                     }
                 }
                 CircleState::Down => {
                     if player.state.is_idle() {
+                        sprite.image = character_textures.textures[player.character_id as usize].bend_down.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_BEND_DOWN;
                         player.state |= PlayerState::BEND_DOWN;
-                        player.set_animation(BEND_DOWN_POSE1, 0, 10);
+                        player.pose.set(BEND_DOWN_POSE1);
+                        player.set_animation(BEND_DOWN_POSE2, 0, 27);
                     }
                 }
                 CircleState::DownRight => {
                     if player.state.is_idle() {
+                        sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_ROLL;
                         player.state |= PlayerState::ROLL_FORWARD;
-                        player.set_animation(ROLL_FORWARD_POSE1, 0, 10);
+                        player.pose.set(ROLL_FORWARD_POSE1);
+                        player.set_animation(ROLL_FORWARD_POSE2, 0, 11);
+                        player.state |= PlayerState::DIRECTION;
+                        let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
+                            * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                        player.velocity = Vec2::new(x_vel, 0.0);
                     }
                 }
                 CircleState::DownLeft => {
                     if player.state.is_idle() {
-                        player.state |= PlayerState::ROLL_BACK;
-                        player.set_animation(ROLL_BACK_POSE1, 0, 10);
+                        sprite.image = character_textures.textures[player.character_id as usize].roll.clone();
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                        player.animation_frame_max = FRAMES_ROLL;
+                        player.state |= PlayerState::ROLL_FORWARD;
+                        player.pose.set(ROLL_FORWARD_POSE1);
+                        player.set_animation(ROLL_FORWARD_POSE2, 0, 11);
+                        player.state &= !PlayerState::DIRECTION;
+                        let x_vel = if player.state.is_forward() { 1.0 } else { -1.0 }
+                            * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
+                        player.velocity = Vec2::new(x_vel, 0.0);
                     }
                 }
                 CircleState::None => {
                     if player.state.check(PlayerState::WALKING) {
                         player.state &= !PlayerState::WALKING;
-                        player.set_animation(IDLE_POSE1, 0, 10);
+                        if player.state.is_idle() {
+                            sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
+                            sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                            player.animation_frame_max = FRAMES_IDLE;
+                            player.pose.set(IDLE_POSE1);
+                            player.set_animation(IDLE_POSE2, 0, 15);
+                        }
                     }
                 }
             }
