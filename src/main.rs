@@ -238,6 +238,7 @@ fn setup(
     mut commands: Commands,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
     mut config: ResMut<GameConfig>,
+    asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     info!("main: setup(wasm)");
@@ -255,7 +256,22 @@ fn setup(
             }
         }
     }
+
     // camera
-    commands.spawn(Camera2d::default());
+    commands.spawn((
+        Camera2d,
+        Camera {
+            hdr: true, // HDR is required for the bloom effect
+            ..default()
+        },
+        Transform::default(),
+        Bloom::NATURAL,
+    ));
+
+    // load textures
+    info!("Loading textures...");
+    commands.insert_resource(CharacterTextures::new(&asset_server));
+    info!("Complete");
+
     next_state.set(AppState::Mainmenu);
 }
