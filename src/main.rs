@@ -115,6 +115,9 @@ impl From<u32> for GameMode {
 }
 
 #[derive(Resource)]
+pub struct Score(u32);
+
+#[derive(Resource)]
 struct GameConfig {
     window_size: Vec2,
     mode: GameMode,
@@ -164,6 +167,7 @@ fn main() {
         .insert_resource(GameConfig::default())
         .insert_resource(ClearColor(Color::WHITE))
         .insert_resource(GlobalVolume::new(Volume::Linear(0.5)))
+        .insert_resource(Score(0))
         .add_systems(Startup, setup)
         .add_plugins(mainmenu::MainmenuPlugin)
         .add_plugins(settings::SettingsPlugin)

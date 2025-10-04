@@ -5,7 +5,8 @@ use crate::{
     character_def::*,
     CharacterTextures,
     ingame::{GameState, InGame, DamageDisplay},
-    AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX, PATH_IMAGE_PREFIX
+    AppState, GameConfig, SoundEffect, PATH_SOUND_PREFIX, PATH_IMAGE_PREFIX,
+    Score,
 };
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use bevy_rapier2d::prelude::*;
@@ -91,7 +92,7 @@ pub struct EnergyBar(pub f32, pub f32);
 pub struct FireBar(pub f32, pub f32);
 
 #[derive(Component)]
-struct FireAnimation {
+pub struct FireAnimation {
     facing: bool,
 }
 
@@ -2156,6 +2157,8 @@ fn update_pose(
 fn check_attack(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    config: Res<GameConfig>,
+    mut score: ResMut<Score>,
     mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
@@ -2269,6 +2272,12 @@ fn check_attack(
                     player_info[opponent_id.0 as usize],
                     opponent_parts,
                 );
+                if config.mode == GameMode::SinglePlayer && opponent_id.0 == 1 {
+                    score.0 += damage as u32;
+                }
+                if opponent_parts.is_head() {
+                    score.0 += 20;
+                }
                 if let Some((mut player, _, mut sprite)) = player_query
                     .iter_mut()
                     .find(|(_, id, _)| id.0 == opponent_id.0)

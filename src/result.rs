@@ -1,5 +1,5 @@
 use crate::{
-    ingame::GameState, AppState, SoundEffect, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
+    ingame::GameState, AppState, SoundEffect, Score, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 use bevy::prelude::*;
@@ -7,7 +7,7 @@ use bevy::prelude::*;
 #[derive(Component)]
 struct ShowResult;
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<GameState>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<GameState>, mut score: ResMut<Score>) {
     info!("setup");
     commands
         .spawn((
@@ -66,7 +66,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
                             create_round_result(spawner, &asset_server, 1, gamestate.winners[0]);
                             create_round_result(spawner, &asset_server, 2, gamestate.winners[1]);
                             create_round_result(spawner, &asset_server, 3, gamestate.winners[2]);
-                            create_total_result(spawner, &asset_server, gamestate.get_winner());
+                            create_total_result(spawner, &asset_server, gamestate.get_winner(), score.0);
                         });
                     spawner
                         .spawn((
@@ -102,6 +102,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<
                         ));
                 });
         });
+    score.0 = 0;
 }
 
 fn create_round_result(
@@ -177,7 +178,7 @@ fn create_round_result(
         });
 }
 
-fn create_total_result(spawner: &mut ChildSpawnerCommands, asset_server: &Res<AssetServer>, winner_id: u8) {
+fn create_total_result(spawner: &mut ChildSpawnerCommands, asset_server: &Res<AssetServer>, winner_id: u8, score: u32) {
     spawner
         .spawn((
             Node {
@@ -224,7 +225,7 @@ fn create_total_result(spawner: &mut ChildSpawnerCommands, asset_server: &Res<As
                 ));
             } else {
                 spawner.spawn((
-                    Text::new(format!("Player {} WIN!", winner_id)),
+                    Text::new(format!("Player {} WIN!\nScore: {}", winner_id, score)),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
                         font_size: DEFAULT_FONT_SIZE,
