@@ -31,3 +31,6 @@ blender_obj
 *.blend1
 *.blend11
 *.fbx
+
+# ignore pdf
+*.pdf
