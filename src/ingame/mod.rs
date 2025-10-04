@@ -1234,9 +1234,9 @@ fn main_game_system(
         Without<BackGround>,
     >,
     mut health_query: Query<(&mut HealthBar, &mut Mesh2d, &PlayerID), Without<FireBar>>,
-    mut fire_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID), Without<HealthBar>>,
+    mut fire_query: (Query<(&mut FireBar, &mut Mesh2d, &PlayerID), Without<HealthBar>>, Query<Entity, (With<FireAnimation>, Without<SoundEffect>)>),
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer), Without<StatusBar>>,
-    sound_query: Query<Entity, With<SoundEffect>>,
+    sound_query: Query<Entity, (With<SoundEffect>, Without<FireAnimation>)>,
 ) {
     gamestate.timer.tick(time.delta());
     if gamestate.timer.just_finished() {
@@ -1481,7 +1481,7 @@ fn main_game_system(
                         }
                     }
                     // reset fire bar
-                    for (mut fire_bar, mesh_handler, fire_id) in fire_query.iter_mut() {
+                    for (mut fire_bar, mesh_handler, fire_id) in fire_query.0.iter_mut() {
                         fire_bar.0 = 1.0;
                         if let Some(mesh) = meshes.get_mut(mesh_handler.id()) {
                             if let Some(VertexAttributeValues::Float32x3(ref mut positions)) =
@@ -1504,6 +1504,10 @@ fn main_game_system(
                                 }
                             }
                         }
+                    }
+                    // despawn fire animation entities
+                    for entity in fire_query.1.iter() {
+                        commands.entity(entity).despawn();
                     }
                     // reset timer
                     let (mut text, mut color, mut timer) = timer_query.single_mut().unwrap();
