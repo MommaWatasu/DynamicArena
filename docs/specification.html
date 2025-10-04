@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DynamicArena ルールブック</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        h2 {
+            color: #2d3748;
+            font-size: 2em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #4a5568;
+            font-size: 1.5em;
+            margin: 30px 0 15px 0;
+            padding-left: 15px;
+            border-left: 5px solid #764ba2;
+        }
+
+        .overview {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+
+        li {
+            margin: 10px 0;
+            padding-left: 10px;
+        }
+
+        .attack-list {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .damage-formula {
+            background: #fff5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #fc8181;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            background: #2d3748;
+            color: #f7fafc;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .key-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .key-item {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .key-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .key-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .characters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .character-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 25px;
+            border-radius: 12px;
+            border: 3px solid #e2e8f0;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .character-card h3 {
+            border: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+            font-size: 1.8em;
+            text-align: center;
+            color: #667eea;
+        }
+
+        .character-description {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .stats {
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .skill {
+            background: linear-gradient(135deg, #fef5e7 0%, #fff5f5 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #feb2b2;
+        }
+
+        .skill-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #c53030;
+            margin-bottom: 8px;
+        }
+
+        .skill-description {
+            color: #4a5568;
+        }
+
+        .coefficient-table {
+            width: 100%;
+            margin: 15px 0;
+            border-collapse: collapse;
+        }
+
+        .coefficient-table th,
+        .coefficient-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #cbd5e0;
+        }
+
+        .coefficient-table th {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .coefficient-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        .coefficient-table tr:hover {
+            background: #e2e8f0;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                padding: 20px 15px;
+            }
+
+            .characters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+                <header>
+            <h1>🎮 DynamicArena ルールブック</h1>
+            <p>棒人間の格闘ゲーム</p>
+        </header>
+
+        <div class="content">
+            <h2>ゲーム概要</h2>
+            <div class="overview">
+                <p>DynamicArenaは棒人間の格闘ゲームで、一人プレイと二人プレイに対応しています。</p>
+                <p>コントローラーも使いやすいよう一から設計しています。</p>
+            </div>
+
+            <h2>ルール</h2>
+
+            <h3>試合の流れ</h3>
+            <p>1プレイにつき3試合あります。1試合は片方がもう一方の体力を削りきる、もしくは制限時間(60秒)が経過した時点で残り体力の割合が高い方がその試合は勝ちとなります。</p>
+            <p>3試合終了後、勝利数の多いほうが勝ちとなります。最初の2試合を一方が勝っても、3試合目を実施します。</p>
+
+            <h3>攻撃手段</h3>
+            <div class="attack-list">
+                <ul>
+                    <li>通常キック</li>
+                    <li>パンチ</li>
+                    <li>バックキック</li>
+                    <li>ジャンプキック</li>
+                    <li>遠距離攻撃（一度使用すると5秒のクールダウン有り）</li>
+                    <li>必殺技（キャラにより異なる）</li>
+                </ul>
+            </div>
+
+            <h3>ダメージ計算</h3>
+            <div class="damage-formula">
+                <p>必殺技を除く全ての攻撃は、キャラクターに固有の基礎攻撃力に様々な係数をかけることでダメージが算出されます。</p>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">1. 技係数</h4>
+                <p>まず攻撃の種類に応じて技係数を基礎攻撃力にかけます。</p>
+                <table class="coefficient-table">
+                    <tr>
+                        <th>攻撃の種類</th>
+                        <th>技係数</th>
+                    </tr>
+                    <tr>
+                        <td>パンチ</td>
+                        <td>1.0</td>
+                    </tr>
+                    <tr>
+                        <td>キック及びジャンプキック</td>
+                        <td>1.2</td>
+                    </tr>
+                    <tr>
+                        <td>バックキック</td>
+                        <td>1.5</td>
+                    </tr>
+                </table>
+                <p><strong>注:</strong> ジャンプキックの場合はさらに1.5倍されます。</p>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">2. 部位係数</h4>
+                <p>さらに攻撃を受けた側の当たった体の部位によって部位係数をかけます。</p>
+                <table class="coefficient-table">
+                    <tr>
+                        <th>部位</th>
+                        <th>部位係数</th>
+                    </tr>
+                    <tr>
+                        <td>頭</td>
+                        <td>1.5</td>
+                    </tr>
+                    <tr>
+                        <td>胴体</td>
+                        <td>1.0</td>
+                    </tr>
+                    <tr>
+                        <td>腕</td>
+                        <td>0.9</td>
+                    </tr>
+                    <tr>
+                        <td>足</td>
+                        <td>0.8</td>
+                    </tr>
+                </table>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">3. 防御ボーナス</h4>
+                <p>攻撃を受けた側が屈んでいた場合は防御力を50増加させます（デフォルト値はキャラクター固有）。</p>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">4. 最終ダメージ計算式</h4>
+                <p>以上で計算したダメージをdamage、防御力をdefenceとすると、以下の式で最終ダメージが計算されます。</p>
+                <div class="formula">
+                    最終的なダメージ = damage × 20 / (defence + 50)
+                </div>
+            </div>
+
+            <h3>スコア制度</h3>
+            <div class="damage-formula" style="border-left-color: #667eea; background: #f0f4ff;">
+                <p>シングルプレイヤーモードでボットと戦う場合にはスコアが計算されて結果画面で表示されます。</p>
+                <p>計算方法は単純で、ボットに与えたダメージに、頭に攻撃があたった際のボーナス点を加えて算出されます。</p>
+            </div>
+
+            <h3>キー対応</h3>
+            <div class="key-controls">
+                <div class="key-item">
+                    <span class="key-name">A / D</span><br>
+                    左右移動
+                </div>
+                <div class="key-item">
+                    <span class="key-name">S</span><br>
+                    しゃがむ
+                </div>
+                <div class="key-item">
+                    <span class="key-name">A/D → S</span><br>
+                    ロール
+                </div>
+                <div class="key-item">
+                    <span class="key-name">Space</span><br>
+                    ジャンプ
+                </div>
+                <div class="key-item">
+                    <span class="key-name">A/D → Space</span><br>
+                    前と後ろへジャンプ
+                </div>
+                <div class="key-item">
+                    <span class="key-name">K</span><br>
+                    基本キック
+                </div>
+                <div class="key-item">
+                    <span class="key-name">L</span><br>
+                    パンチ
+                </div>
+                <div class="key-item">
+                    <span class="key-name">J</span><br>
+                    フロントキック
+                </div>
+                <div class="key-item">
+                    <span class="key-name">H</span><br>
+                    バックキック
+                </div>
+                <div class="key-item">
+                    <span class="key-name">G</span><br>
+                    必殺技
+                </div>
+            </div>
+
+            <h2>キャラクター一覧</h2>
+            <div class="characters">
+                <div class="character-card">
+                    <h3>⚡ Momma</h3>
+                    <div class="character-description">
+                        このゲームの開発者で、俊足が自慢のファイター。体力は低いが、強力な攻撃を素早く繰り出すことができる。
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">体力</span>
+                            <span class="stat-value">850</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">俊敏性</span>
+                            <span class="stat-value">4.0 (phone版: 2.0)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻撃力</span>
+                            <span class="stat-value">150.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防御力</span>
+                            <span class="stat-value">80.0</span>
+                        </div>
+                    </div>
+                    <div class="skill">
+                        <div class="skill-name">🌩️ 神速雷光</div>
+                        <div class="skill-description">一瞬で敵に近づき、確定でダメージを与える</div>
+                    </div>
+                </div>
+
+                <div class="character-card">
+                    <h3>💚 Miyaguchi</h3>
+                    <div class="character-description">
+                        縁日班アトラク部門長で、バランス型のファイター。標準的なステータスで扱いやすい
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">体力</span>
+                            <span class="stat-value">1000</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">俊敏性</span>
+                            <span class="stat-value">3.0 (phone版: 1.5)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻撃力</span>
+                            <span class="stat-value">100.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防御力</span>
+                            <span class="stat-value">100.0</span>
+                        </div>
+                    </div>
+                    <div class="skill">
+                        <div class="skill-name">🌀 魂吸収</div>
+                        <div class="skill-description">相手に一定ダメージを与えて、その分自分が回復する</div>
+                    </div>
+                </div>
+
+                <div class="character-card">
+                    <h3>💪 Matsumoto</h3>
+                    <div class="character-description">
+                        ボットの作成者で、体力の多いファイター。スピードは遅いが強靭な肉体とパワーで全てを解決する。
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">体力</span>
+                            <span class="stat-value">1200</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">俊敏性</span>
+                            <span class="stat-value">2.8 (phone版: 1.0)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻撃力</span>
+                            <span class="stat-value">130.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防御力</span>
+                            <span class="stat-value">150.0</span>
+                        </div>
+                    </div>
+                    <div class="skill">
+                        <div class="skill-name">👊 鉄拳制裁</div>
+                        <div class="skill-description">巨大な拳で相手をたたき、地面にいる敵に大ダメージを与える</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 DynamicArena - All Rights Reserved</p>
+        </footer>
+    </div>
+</body>
+</html>

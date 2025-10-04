@@ -53,7 +53,7 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         name: "Matsumoto",
         description: "ボットの作成者で、体力の多いファイター。スピードは遅いが強靭な肉体とパワーで全てを解決する。",
         skill_name: "鉄拳制裁",
-        skill_description: "巨大なハンマーを振り下ろして、地面にいる敵に大ダメージを与える",
+        skill_description: "巨大な拳で相手をたたき、地面にいる敵に大ダメージを与える",
         health: 1200,
         #[cfg(not(feature="phone"))]
         agility: 2.8,
