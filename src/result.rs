@@ -225,7 +225,7 @@ fn create_total_result(spawner: &mut ChildSpawnerCommands, asset_server: &Res<As
                 ));
             } else {
                 spawner.spawn((
-                    Text::new(format!("Player {} WIN!\nScore: {}", winner_id, score)),
+                    Text::new(format!("Player {} WIN! Your Score: {}", winner_id, score)),
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
                         font_size: DEFAULT_FONT_SIZE,
