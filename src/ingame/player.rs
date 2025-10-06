@@ -2162,12 +2162,13 @@ fn check_attack(
     mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
     parts_query: Query<(&BodyParts, &PlayerID)>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform)>,
     character_textures: Res<CharacterTextures>,
-    mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
+    mut damage_display_query: (Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay)>,
+                                Query<(&mut Transform, &mut TextColor, &mut DamageDisplay), Without<PlayerID>>),
 ) {
     let mut player_info: [(isize, PlayerState); 2] = [(0, PlayerState::IDLE); 2];
-    for (player, player_id, _) in player_query.iter() {
+    for (player, player_id, _, _) in player_query.iter() {
         player_info[player_id.0 as usize] = (player.character_id, player.state);
     }
     for collision_event in collision_events.read() {
@@ -2191,7 +2192,7 @@ fn check_attack(
                 let mut opponent_parts: &BodyParts = &BodyParts::NULL;
                 let mut attacker_phase: u8 = 0;
                 let mut attacker_count: u8 = 0;
-                for (mut player, player_id, _) in player_query.iter_mut() {
+                for (mut player, player_id, _, _) in player_query.iter_mut() {
                     if player.state.check(
                         PlayerState::KICKING
                             | PlayerState::BACK_KICKING
@@ -2244,7 +2245,7 @@ fn check_attack(
                     // No attacker found
                     // If the collision is between one body and another body part, move player to avoid collision
                     if parts1.is_body() && !parts2.is_body() {
-                        for (player, player_id, _) in player_query.iter() {
+                        for (player, player_id, _, _) in player_query.iter() {
                             if player_id == id2 {
                                 if player.state.is_idle() {
                                     player_collision.0 = id1.0;
@@ -2254,7 +2255,7 @@ fn check_attack(
                             }
                         }
                     } else if parts2.is_body() && !parts1.is_body() {
-                        for (player, player_id, _) in player_query.iter() {
+                        for (player, player_id, _, _) in player_query.iter() {
                             if player_id == id1 {
                                 if player.state.is_idle() {
                                     player_collision.0 = id2.0;
@@ -2278,12 +2279,12 @@ fn check_attack(
                 if opponent_parts.is_head() {
                     score.0 += 20;
                 }
-                if let Some((mut player, _, mut sprite)) = player_query
+                if let Some((mut player, _, mut sprite, transform)) = player_query
                     .iter_mut()
-                    .find(|(_, id, _)| id.0 == opponent_id.0)
+                    .find(|(_, id, _, _)| id.0 == opponent_id.0)
                 {
                     for (player_id, mut text, mut color, mut damage_display) in
-                        damage_display_query.iter_mut()
+                        damage_display_query.0.iter_mut()
                     {
                         if player_id.0 == opponent_id.0 {
                             commands.spawn((
@@ -2302,6 +2303,14 @@ fn check_attack(
                             }
                             damage_display.alpha = 1.0;
                         }
+                    }
+                    for (mut damage_transform, mut color, mut damage_display) in
+                        damage_display_query.1.iter_mut()
+                    {
+                        damage_transform.translation.x = transform.translation.x;
+                        damage_transform.translation.y = transform.translation.y + 100.0;
+                        color.0 = Color::srgba(5.0, 0.0, 0.0, 1.0);
+                        damage_display.alpha = 1.0;
                     }
                     player.health = player.health.saturating_sub(damage);
                     if !player.state.check(PlayerState::BEND_DOWN) && player.stun_count <= 3 {
@@ -2439,7 +2448,8 @@ fn update_fire_animation(
     character_textures: Res<CharacterTextures>,
     mut fire_query: Query<(Entity, &PlayerID, &mut FireAnimation, &mut Transform, &mut Sprite), (Without<Player>, Without<DamageDisplay>)>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &Transform), (Without<FireAnimation>, Without<DamageDisplay>)>,
-    mut damage_display_query: Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay), (Without<Player>, Without<FireAnimation>)>,
+    mut damage_display_query: (Query<(&PlayerID, &mut Text, &mut TextColor, &mut DamageDisplay), (Without<Player>, Without<FireAnimation>)>,
+                                Query<(&mut Transform, &mut TextColor, &mut DamageDisplay), (Without<PlayerID>, Without<FireAnimation>)>),
     mut fire_charge_query: Query<(&mut FireBar, &mut Mesh2d, &PlayerID)>,
 ) {
     for (entity, fire_player_id, fire_animation, mut fire_transform, mut arrow_sprite) in fire_query.iter_mut() {
@@ -2522,7 +2532,7 @@ fn update_fire_animation(
                     }
 
                     for (damage_player_id, mut damage_text, mut damage_color, mut damage_display) in
-                        damage_display_query.iter_mut()
+                        damage_display_query.0.iter_mut()
                     {
                         if damage_player_id.0 == player_id.0 {
                             damage_text.0 = format!("{}", damage);
@@ -2530,6 +2540,12 @@ fn update_fire_animation(
                             damage_display.is_red = false;
                             damage_display.alpha = 1.0;
                         }
+                    }
+                    for (mut damage_transform, mut damage_color, mut damage_display) in damage_display_query.1.iter_mut() {
+                        damage_transform.translation.x = transform.translation.x;
+                        damage_transform.translation.y = transform.translation.y + 100.0;
+                        damage_color.0 = Color::srgba(5.0, 0.0, 0.0, 1.0);
+                        damage_display.alpha = 1.0;
                     }
                 }
             }

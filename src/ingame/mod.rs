@@ -198,6 +198,23 @@ fn setup(
                 TextColor(Color::WHITE),
             ));
         });
+    // hit display
+    commands.spawn((
+        InGame,
+        Text2d::new("Hit!"),
+        TextFont {
+            font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+            font_size: TITLE_FONT_SIZE,
+            ..default()
+        },
+        TextLayout::new_with_justify(JustifyText::Center),
+        TextColor(Color::srgba(5.0, 0.0, 0.0, 0.0)),
+        Transform::default(),
+        DamageDisplay {
+            is_red: true,
+            alpha: 0.0,
+        },
+    ));
     // damage display
     commands.spawn((
         InGame,
@@ -261,7 +278,7 @@ fn setup(
                         TextLayout::new_with_justify(JustifyText::Center),
                         TextColor(Color::srgba(0.0, 0.0, 5.0, 0.0)),
                         DamageDisplay {
-                            is_red: true,
+                            is_red: false,
                             alpha: 0.0,
                         },
                         PlayerID(1),
