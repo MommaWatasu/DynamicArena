@@ -270,13 +270,14 @@
         </header>
 
         <div class="content">
-            <h2>ゲーム概要</h2>
+            <!-- 基本情報セクション -->
+            <h2>📖 基本情報</h2>
+            
+            <h3>ゲーム概要</h3>
             <div class="overview">
                 <p>DynamicArenaは棒人間の格闘ゲームで、一人プレイと二人プレイに対応しています。</p>
                 <p>コントローラーも使いやすいよう一から設計しています。</p>
             </div>
-
-            <h2>ルール</h2>
 
             <h3>試合の流れ</h3>
             <p>1プレイにつき3試合あります。1試合は片方がもう一方の体力を削りきる、もしくは制限時間(60秒)が経過した時点で残り体力の割合が高い方がその試合は勝ちとなります。</p>
@@ -292,73 +293,6 @@
                     <li>遠距離攻撃（一度使用すると5秒のクールダウン有り）</li>
                     <li>必殺技（キャラにより異なる）</li>
                 </ul>
-            </div>
-
-            <h3>ダメージ計算</h3>
-            <div class="damage-formula">
-                <p>必殺技を除く全ての攻撃は、キャラクターに固有の基礎攻撃力に様々な係数をかけることでダメージが算出されます。</p>
-
-                <h4 style="margin-top: 20px; color: #2d3748;">1. 技係数</h4>
-                <p>まず攻撃の種類に応じて技係数を基礎攻撃力にかけます。</p>
-                <table class="coefficient-table">
-                    <tr>
-                        <th>攻撃の種類</th>
-                        <th>技係数</th>
-                    </tr>
-                    <tr>
-                        <td>パンチ</td>
-                        <td>1.0</td>
-                    </tr>
-                    <tr>
-                        <td>キック及びジャンプキック</td>
-                        <td>1.2</td>
-                    </tr>
-                    <tr>
-                        <td>バックキック</td>
-                        <td>1.5</td>
-                    </tr>
-                </table>
-                <p><strong>注:</strong> ジャンプキックの場合はさらに1.5倍されます。</p>
-
-                <h4 style="margin-top: 20px; color: #2d3748;">2. 部位係数</h4>
-                <p>さらに攻撃を受けた側の当たった体の部位によって部位係数をかけます。</p>
-                <table class="coefficient-table">
-                    <tr>
-                        <th>部位</th>
-                        <th>部位係数</th>
-                    </tr>
-                    <tr>
-                        <td>頭</td>
-                        <td>1.5</td>
-                    </tr>
-                    <tr>
-                        <td>胴体</td>
-                        <td>1.0</td>
-                    </tr>
-                    <tr>
-                        <td>腕</td>
-                        <td>0.9</td>
-                    </tr>
-                    <tr>
-                        <td>足</td>
-                        <td>0.8</td>
-                    </tr>
-                </table>
-
-                <h4 style="margin-top: 20px; color: #2d3748;">3. 防御ボーナス</h4>
-                <p>攻撃を受けた側が屈んでいた場合は防御力を50増加させます（デフォルト値はキャラクター固有）。</p>
-
-                <h4 style="margin-top: 20px; color: #2d3748;">4. 最終ダメージ計算式</h4>
-                <p>以上で計算したダメージをdamage、防御力をdefenceとすると、以下の式で最終ダメージが計算されます。</p>
-                <div class="formula">
-                    最終的なダメージ = damage × 20 / (defence + 50)
-                </div>
-            </div>
-
-            <h3>スコア制度</h3>
-            <div class="damage-formula" style="border-left-color: #667eea; background: #f0f4ff;">
-                <p>シングルプレイヤーモードでボットと戦う場合にはスコアが計算されて結果画面で表示されます。</p>
-                <p>計算方法は単純で、ボットに与えたダメージに、頭に攻撃があたった際のボーナス点を加えて算出されます。</p>
             </div>
 
             <h3>キー対応</h3>
@@ -493,6 +427,76 @@
                         <div class="skill-description">巨大な拳で相手をたたき、地面にいる敵に大ダメージを与える</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- 詳細情報セクション -->
+            <h2>🔬 詳細情報</h2>
+
+            <h3>ダメージ計算</h3>
+            <div class="damage-formula">
+                <p>必殺技を除く全ての攻撃は、キャラクターに固有の基礎攻撃力に様々な係数をかけることでダメージが算出されます。</p>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">1. 技係数</h4>
+                <p>まず攻撃の種類に応じて技係数を基礎攻撃力にかけます。</p>
+                <table class="coefficient-table">
+                    <tr>
+                        <th>攻撃の種類</th>
+                        <th>技係数</th>
+                    </tr>
+                    <tr>
+                        <td>パンチ</td>
+                        <td>1.0</td>
+                    </tr>
+                    <tr>
+                        <td>キック及びジャンプキック</td>
+                        <td>1.2</td>
+                    </tr>
+                    <tr>
+                        <td>バックキック</td>
+                        <td>1.5</td>
+                    </tr>
+                </table>
+                <p><strong>注:</strong> ジャンプキックの場合はさらに1.5倍されます。</p>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">2. 部位係数</h4>
+                <p>さらに攻撃を受けた側の当たった体の部位によって部位係数をかけます。</p>
+                <table class="coefficient-table">
+                    <tr>
+                        <th>部位</th>
+                        <th>部位係数</th>
+                    </tr>
+                    <tr>
+                        <td>頭</td>
+                        <td>1.5</td>
+                    </tr>
+                    <tr>
+                        <td>胴体</td>
+                        <td>1.0</td>
+                    </tr>
+                    <tr>
+                        <td>腕</td>
+                        <td>0.9</td>
+                    </tr>
+                    <tr>
+                        <td>足</td>
+                        <td>0.8</td>
+                    </tr>
+                </table>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">3. 防御ボーナス</h4>
+                <p>攻撃を受けた側が屈んでいた場合は防御力を50増加させます（デフォルト値はキャラクター固有）。</p>
+
+                <h4 style="margin-top: 20px; color: #2d3748;">4. 最終ダメージ計算式</h4>
+                <p>以上で計算したダメージをdamage、防御力をdefenceとすると、以下の式で最終ダメージが計算されます。</p>
+                <div class="formula">
+                    最終的なダメージ = damage × 20 / (defence + 50)
+                </div>
+            </div>
+
+            <h3>スコア制度</h3>
+            <div class="damage-formula" style="border-left-color: #667eea; background: #f0f4ff;">
+                <p>シングルプレイヤーモードでボットと戦う場合にはスコアが計算されて結果画面で表示されます。</p>
+                <p>計算方法は単純で、ボットに与えたダメージに、頭に攻撃があたった際のボーナス点を加えて算出されます。</p>
             </div>
         </div>
 
