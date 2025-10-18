@@ -686,15 +686,15 @@ impl Agent {
                 Action::RangedAttack
             } else if environment.distance > 200.0 {
                 // Use jump forward for quick approach to vulnerable player
-                Action::BackKick
+                Action::RollForward
             } else {
-                Action::Punch
+                Action::Kick
             }
         } else if environment.distance < 500.0 {
             // Medium-long range - roll forward to close distance quickly for punishment
             Action::RollForward
         } else {
-            Action::MoveForward
+            Action::JumpForward
         }
     }
     
@@ -755,7 +755,7 @@ impl Agent {
                      environment.agent_fire_charge == FIRE_CHARGE_MAX {
                 return Action::RangedAttack;
             } else if environment.player_state.check(PlayerState::JUMP_FORWARD) {
-                return Action::BackKick;
+                return Action::Punch;
             } else {
                 let rand = rand();
                 if rand < 0.25 {
