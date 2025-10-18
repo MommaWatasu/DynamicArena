@@ -77,8 +77,8 @@ enum Action {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct ActionState {
     current_action: Action,
-    frames_since_start: u8,
-    planned_duration: u8,
+    frames_since_start: u32,
+    planned_duration: u32,
     priority: ActionPriority,
 }
 
@@ -149,12 +149,12 @@ struct Environment {
 #[derive(Resource)]
 pub struct Agent {
     timer: Timer,
-    count: u8,
+    count: u32,
     level: Level,
     policy: Policy,
     action_state: ActionState,
     last_player_health: f32,
-    engagement_timer: u8,  // Timer to start engagement even without being attacked
+    engagement_timer: u32,  // Timer to start engagement even without being attacked
 }
 
 impl Agent {
@@ -657,9 +657,9 @@ impl Agent {
         if environment.player_state.check(PlayerState::BACK_KICKING) {
             if environment.distance < 180.0 {
                 // Roll forward to get behind player after their back kick
-                return Action::RollForward;
+                return Action::JumpBackward;
             } else {
-                return Action::MoveForward;
+                return Action::RollBackward;
             }
         }
         Action::None
@@ -685,15 +685,10 @@ impl Agent {
             if environment.agent_fire_charge == FIRE_CHARGE_MAX {
                 Action::RangedAttack
             } else if environment.distance > 200.0 {
-                // Use roll forward for quick approach to vulnerable player
-                Action::RollForward
+                // Use jump forward for quick approach to vulnerable player
+                Action::BackKick
             } else {
-                // Jump forward first, then kick on next frame
-                if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
-                    Action::JumpKick  // Add kick to existing jump
-                } else {
-                    Action::JumpForward  // Jump first
-                }
+                Action::Punch
             }
         } else if environment.distance < 500.0 {
             // Medium-long range - roll forward to close distance quickly for punishment
@@ -705,6 +700,9 @@ impl Agent {
     
     /// Select aggressive action based on distance and resources
     fn select_offensive_action(&self, environment: &Environment) -> Action {
+        if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
+            return Action::JumpKick;
+        }
         // Improved offensive strategy with better resource management and rolling actions
         if environment.distance < 150.0 {
             let rand = rand();
@@ -731,12 +729,9 @@ impl Agent {
             if environment.player_state.check(PlayerState::WALKING) {
                 let rand = rand();
                 if rand < 0.3 {
-                    // Use roll forward for faster, evasive approach
-                    return Action::RollForward;
-                } else if environment.agent_state.check(PlayerState::JUMP_UP | PlayerState::JUMP_FORWARD) {
-                    return Action::JumpKick;  // Add kick to existing jump
+                    return Action::MoveForward
                 } else {
-                    return Action::JumpForward;  // Jump first
+                    return Action::BackKick
                 }
             } else if environment.is_player_vulnerable {
                 // Quick roll forward to punish vulnerable player
@@ -952,7 +947,7 @@ pub fn agent_system(
               && environment.distance > 200.0);
         
         // Update policy every 2 seconds (was every 2 seconds before)
-        if agent.count >= AGENT_FREQUENCY as u8 * 2 {
+        if agent.count >= AGENT_FREQUENCY as u32 * 2 {
             agent.count = 0;
             agent.select_policy(&environment);
         }
