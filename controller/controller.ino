@@ -1,15 +1,15 @@
 #include <BleGamepad.h>
 
 // ピン定義 - 実際のピン番号に合わせて変更してください
-#define JOYSTICK_NORTH_PIN   14   // ジョイスティック上
-#define JOYSTICK_SOUTH_PIN   26   // ジョイスティック下  
-#define JOYSTICK_WEST_PIN    27  // ジョイスティック左
-#define JOYSTICK_EAST_PIN    12  // ジョイスティック右
+#define JOYSTICK_NORTH_PIN   4   // ジョイスティック上
+#define JOYSTICK_SOUTH_PIN   16   // ジョイスティック下  
+#define JOYSTICK_WEST_PIN    17  // ジョイスティック左
+#define JOYSTICK_EAST_PIN    5  // ジョイスティック右
 
-#define BUTTON_1_PIN        25  // ボタン1
-#define BUTTON_2_PIN        13  // ボタン2
-#define BUTTON_3_PIN        33 // ボタン3
-#define BUTTON_4_PIN        32  // ボタン4
+#define BUTTON_1_PIN        32  // ボタン1
+#define BUTTON_2_PIN        33  // ボタン2
+#define BUTTON_3_PIN        25 // ボタン3
+#define BUTTON_4_PIN        26  // ボタン4
 
 // BLEGamepadオブジェクト作成
 BleGamepad bleGamepad("ESP32ArcadeController", "MommaWatasu", 100);
@@ -124,10 +124,10 @@ void loop() {
     // ボタン3の状態更新
     if (button3 != prevButton3) {
       if (button3) {
-        bleGamepad.press(BUTTON_3);
+        bleGamepad.press(BUTTON_5);
         Serial.println("Button 3 pressed");
       } else {
-        bleGamepad.release(BUTTON_3);
+        bleGamepad.release(BUTTON_5);
         Serial.println("Button 3 released");
       }
       prevButton3 = button3;
