@@ -1,5 +1,5 @@
 use crate::{
-    ingame::GameState, AppState, SoundEffect, Score, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
+    ingame::GameState, AppState, SoundEffect, Score, BGM, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 use bevy::prelude::*;
@@ -7,8 +7,24 @@ use bevy::prelude::*;
 #[derive(Component)]
 struct ShowResult;
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, gamestate: Res<GameState>, mut score: ResMut<Score>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    gamestate: Res<GameState>,
+    mut score: ResMut<Score>,
+    audio_query: Query<Entity, With<BGM>>
+) {
     info!("setup");
+
+    for entity in audio_query.iter() {
+        commands.entity(entity).despawn();
+    }
+    commands.spawn((
+        AudioPlayer::new(asset_server.load(format!("{}Result.ogg", PATH_SOUND_PREFIX))),
+        PlaybackSettings::LOOP,
+        BGM(false),
+    ));
+
     commands
         .spawn((
             ImageNode::new(

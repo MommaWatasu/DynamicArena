@@ -128,7 +128,7 @@ fn setup(
         commands.entity(entity).despawn();
     }
     commands.spawn((
-        AudioPlayer::new(asset_server.load(format!("{}Bushido_Electric.ogg", PATH_SOUND_PREFIX))),
+        AudioPlayer::new(asset_server.load(format!("{}Fighting.ogg", PATH_SOUND_PREFIX))),
         PlaybackSettings::LOOP,
         BGM(false),
     ));
