@@ -2505,6 +2505,9 @@ fn update_fire_animation(
                     let mut damage = 50;
                     if player.state.check(PlayerState::BEND_DOWN) {
                         damage = 40;
+                    } else if player.state.check(PlayerState::ROLL_BACK | PlayerState::ROLL_FORWARD) {
+                        // Rolling dodge the fire attack
+                        return;
                     }
                     player.health = player.health.saturating_sub(damage);
                     commands.spawn((
