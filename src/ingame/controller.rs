@@ -86,7 +86,9 @@ fn controller_system(
                     player.state |= PlayerState::BEND_DOWN;
                     player.pose.set(BEND_DOWN_POSE1);
                     player.set_animation(BEND_DOWN_POSE2, 0, 27);
-                } else if player.state.is_just_walk() && player.state.check(PlayerState::WALKING) {
+                    // This is for testing purpose
+                    player.energy += 1;
+                } else if player.state.is_just_walk() {
                     if player.pose.facing {
                         if player.state.check(PlayerState::DIRECTION) {
                             // player is walking right
@@ -132,7 +134,7 @@ fn controller_system(
                         * CHARACTER_PROFILES[player.character_id as usize].agility * 2.0;
                     player.velocity = Vec2::new(x_vel, 0.0);
                 }
-            } else if player.state.check(PlayerState::BEND_DOWN) {
+            } else if player.state.check(PlayerState::BEND_DOWN) && player.animation.phase != 2 {
                 // player is bending down
                 // then stop bending down
                 player.set_animation(BEND_DOWN_POSE1, 2, 23);
@@ -207,7 +209,7 @@ fn controller_system(
                 }
             }
 
-            if gamepad.just_pressed(GamepadButton::South) {
+            if gamepad.just_pressed(GamepadButton::West) {
                 if (player.pose.facing && gamepad.pressed(GamepadButton::DPadLeft))
                     || (!player.pose.facing && gamepad.pressed(GamepadButton::DPadRight)) {
                     // player is idle
@@ -276,7 +278,7 @@ fn controller_system(
                     player.energy += 2;
                 }
             }
-            if gamepad.just_pressed(GamepadButton::West) && player.energy == 100 {
+            if gamepad.just_pressed(GamepadButton::South) && player.energy == 100 {
                 if player.state.is_idle() {
                     // player is idle
                     // then player will use skill
