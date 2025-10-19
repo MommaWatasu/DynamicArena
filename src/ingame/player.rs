@@ -747,8 +747,6 @@ fn keyboard_input(
                 player.state |= PlayerState::BEND_DOWN;
                 player.pose.set(BEND_DOWN_POSE1);
                 player.set_animation(BEND_DOWN_POSE2, 0, 27);
-                // This is for testing purpose
-                player.energy += 1;
             } else if player.state.is_just_walk() {
                 if player.pose.facing {
                     if player.state.check(PlayerState::DIRECTION) {
