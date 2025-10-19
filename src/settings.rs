@@ -296,9 +296,9 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     },
                     #[cfg(not(target_arch = "wasm32"))]
                     if config_num == settings_idx as u32 {
-                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+                        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8))
                     } else {
-                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+                        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.0))
                     },
                     #[cfg(target_arch = "wasm32")]
                     BorderColor(Color::BLACK),
@@ -357,9 +357,9 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     },
                     #[cfg(not(target_arch = "wasm32"))]
                     if config_num == settings_idx as u32 {
-                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+                        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.8))
                     } else {
-                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+                        BorderColor(Color::srgba(0.0, 0.0, 0.0, 0.0))
                     },
                     #[cfg(target_arch = "wasm32")]
                     BorderColor(Color::BLACK),
@@ -496,7 +496,7 @@ fn controller_input(
     mut audio: Query<&mut AudioSink, With<BGM>>,
 ) {
     for gamepad in gamepads.iter() {
-        if gamepad.just_pressed(GamepadButton::West) {
+        if gamepad.just_pressed(GamepadButton::East) {
             next_state.set(AppState::Mainmenu);
         }
         if gamepad.just_pressed(GamepadButton::DPadUp) {

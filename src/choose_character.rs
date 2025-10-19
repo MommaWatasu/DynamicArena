@@ -356,9 +356,9 @@ fn controller_input(
                 }
             }
         }
-        if gamepad.just_pressed(GamepadButton::West) {
+        if gamepad.just_pressed(GamepadButton::East) {
             next_state.set(AppState::ConnectController);
-        } else if gamepad.just_pressed(GamepadButton::East) {
+        } else if gamepad.just_pressed(GamepadButton::West) {
             next_state.set(AppState::Confirm);
         }
     }

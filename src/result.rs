@@ -247,7 +247,7 @@ fn controller_input(
     gamepads: Query<&Gamepad>,
 ) {
     for gamepad in gamepads.iter() {
-        if gamepad.just_pressed(GamepadButton::West) {
+        if gamepad.just_pressed(GamepadButton::South) {
             next_state.set(AppState::Mainmenu);
         }
     }
