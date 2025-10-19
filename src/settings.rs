@@ -58,7 +58,12 @@ impl<T: Clone + ToString + Send + Sync + Display> SettingItem<T> {
 #[derive(Component)]
 struct ConfigElement(u32);
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<GameConfig>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    setting_idx: Res<SettingIndex>,
+    config: Res<GameConfig>
+) {
     info!("setup");
     commands
         .spawn((
@@ -154,6 +159,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                setting_idx.idx,
                                 SettingItem::new(
                                     "音量".to_string(),
                                     0f32,
@@ -168,6 +174,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                setting_idx.idx,
                                 SettingItem::new(
                                     "ゲームモード".to_string(),
                                     1u32,
@@ -181,6 +188,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                setting_idx.idx,
                                 SettingItem::new(
                                     "ボットの強さ".to_string(),
                                     1u32,
@@ -199,6 +207,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                setting_idx.idx,
                                 SettingItem::new(
                                     "フルスクリーン".to_string(),
                                     1u32,
@@ -220,6 +229,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<Gam
 fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
     asset_server: &Res<AssetServer>,
     spawner: &mut ChildSpawnerCommands,
+    settings_idx: u8,
     item: SettingItem<T>,
     config_num: u32,
 ) {
@@ -233,11 +243,19 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                     bottom: Val::Px(5.0),
                     ..Default::default()
                 },
+                border: UiRect::all(Val::Px(3.0)),
                 flex_direction: FlexDirection::Row,
                 align_content: AlignContent::Center,
                 ..Default::default()
             },
+            ConfigElement(config_num),
             BackgroundColor(Color::WHITE),
+            #[cfg(not(target_arch = "wasm32"))]
+            if config_num == settings_idx as u32 {
+                BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+            } else {
+                BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+            },
             BorderRadius::all(Val::Px(20.0)),
         ))
         .with_children(|spawner| {
@@ -387,7 +405,9 @@ fn update_setting(
             "+" => {
                 sign = true;
             }
-            _ => sign = false,
+            _ => {
+                return;
+            },
         }
         for (element, mut item, mut text) in &mut value_query.iter_mut() {
             if element.0 == config_element.0 {
@@ -446,21 +466,108 @@ fn update_setting(
 fn controller_input(
     mut next_state: ResMut<NextState<AppState>>,
     mut setting_index: ResMut<SettingIndex>,
+    mut border_query: Query<(&mut BorderColor, &ConfigElement)>,
     gamepads: Query<&Gamepad>,
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    mut value_query: Query<
+        (&ConfigElement, &mut SettingItem<f32>, &mut Text),
+        (With<ConfigElement>, Without<SettingItem<u32>>),
+    >,
+    mut value_query_int: Query<
+        (&ConfigElement, &mut SettingItem<u32>, &mut Text),
+        (With<ConfigElement>, Without<SettingItem<f32>>),
+    >,
+    mut config: ResMut<GameConfig>,
+    mut global_volume: ResMut<GlobalVolume>,
+    mut audio: Query<&mut AudioSink, With<BGM>>,
 ) {
     for gamepad in gamepads.iter() {
         if gamepad.just_pressed(GamepadButton::DPadUp) {
             if setting_index.idx != 0 {
                 setting_index.idx -= 1;
+                for (mut border_color, item_index) in border_query.iter_mut() {     
+                    if border_color.0.alpha() != 0.0 {
+                        border_color.0.set_alpha(0.0);
+                    } else {
+                        if item_index.0 == setting_index.idx as u32 {
+                            border_color.0.set_alpha(0.8);
+                        }
+                    }
+                }
             }
 
         } else if gamepad.just_pressed(GamepadButton::DPadDown) {
             if setting_index.idx != 2 {
                 setting_index.idx += 1;
+                for (mut border_color, item_index) in border_query.iter_mut() {     
+                    if border_color.0.alpha() != 0.0 {
+                        border_color.0.set_alpha(0.0);
+                    } else {
+                        if item_index.0 == setting_index.idx as u32 {
+                            border_color.0.set_alpha(0.8);
+                        }
+                    }
+                }
             }
         }
+        let sign;
         if gamepad.just_pressed(GamepadButton::DPadLeft) {
+            sign = false;
         } else if gamepad.just_pressed(GamepadButton::DPadRight) {
+            sign = true;
+        } else {
+            return;
+        }
+        for (element, mut item, mut text) in &mut value_query.iter_mut() {
+            if element.0 == setting_index.idx as u32 {
+                let mut new_value = item.value.clone();
+                if sign {
+                    new_value += item.step.clone();
+                } else {
+                    new_value -= item.step.clone();
+                }
+                if new_value < item.min {
+                    new_value = item.min.clone();
+                } else if new_value > item.max {
+                    new_value = item.max.clone();
+                }
+                item.value = new_value.clone();
+                text.0 = format!("{:.1}", new_value);
+                if element.0 == 0 {
+                    config.sound_volume = new_value;
+                    global_volume.volume = Volume::Linear(new_value);
+                    let mut sink = audio.single_mut().unwrap();
+                    sink.set_volume(Volume::Linear(new_value));
+                }
+            }
+        }
+        for (element, mut item, mut text) in &mut value_query_int.iter_mut() {
+            if element.0 == setting_index.idx as u32 {
+                let mut new_value = item.value.clone();
+                if sign {
+                    new_value += item.step.clone();
+                } else {
+                    new_value -= item.step.clone();
+                }
+                if new_value < item.min {
+                    new_value = item.min.clone();
+                } else if new_value > item.max {
+                    new_value = item.max.clone();
+                }
+                item.value = new_value.clone();
+                text.0 = item.get_string();
+                if element.0 == 1 {
+                    config.mode = GameMode::from(new_value);
+                } else if element.0 == 2 {
+                    config.level = Level::from(new_value);
+                } else if element.0 == 3 {
+                    windows.single_mut().unwrap().mode = if { new_value } == 1 {
+                        WindowMode::Windowed
+                    } else {
+                        WindowMode::BorderlessFullscreen(MonitorSelection::Primary)
+                    };
+                }
+            }
         }
         if gamepad.just_pressed(GamepadButton::West) {
             next_state.set(AppState::Mainmenu);
