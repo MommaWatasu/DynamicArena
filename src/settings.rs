@@ -294,6 +294,13 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                         justify_content: JustifyContent::Center,
                         ..default()
                     },
+                    #[cfg(not(target_arch = "wasm32"))]
+                    if config_num == settings_idx as u32 {
+                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+                    } else {
+                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+                    },
+                    #[cfg(target_arch = "wasm32")]
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
                     ConfigElement(config_num),
@@ -348,6 +355,13 @@ fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
                         justify_content: JustifyContent::Center,
                         ..default()
                     },
+                    #[cfg(not(target_arch = "wasm32"))]
+                    if config_num == settings_idx as u32 {
+                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.8))
+                    } else {
+                        BorderColor(Color::srgba(10.0, 0.0, 0.0, 0.0))
+                    },
+                    #[cfg(target_arch = "wasm32")]
                     BorderColor(Color::BLACK),
                     BorderRadius::MAX,
                     ConfigElement(config_num),
@@ -482,6 +496,9 @@ fn controller_input(
     mut audio: Query<&mut AudioSink, With<BGM>>,
 ) {
     for gamepad in gamepads.iter() {
+        if gamepad.just_pressed(GamepadButton::West) {
+            next_state.set(AppState::Mainmenu);
+        }
         if gamepad.just_pressed(GamepadButton::DPadUp) {
             if setting_index.idx != 0 {
                 setting_index.idx -= 1;
@@ -568,9 +585,6 @@ fn controller_input(
                     };
                 }
             }
-        }
-        if gamepad.just_pressed(GamepadButton::West) {
-            next_state.set(AppState::Mainmenu);
         }
     }
 }
