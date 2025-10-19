@@ -1060,25 +1060,33 @@ fn player_movement(
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
+                            // Still in the air - enter falling phase
                             player.animation.phase = 2;
+                            // Reset velocity to 0 so player falls from current position
+                            player.velocity = Vec2::ZERO;
                         } else {
+                            // On the ground - return to idle
                             sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_IDLE;
                             player.state = PlayerState::IDLE;
+                            player.velocity = Vec2::ZERO;
                             player.pose.set(IDLE_POSE1);
                             player.set_animation(IDLE_POSE2, 1, 15);
                         }
                     }
                 } else if player.animation.phase == 2 {
                     if transform.translation.y == 270.0 - config.window_size.y / 2.0 {
+                        // Landed on ground - return to idle
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.animation_frame_max = FRAMES_IDLE;
                         player.state = PlayerState::IDLE;
+                        player.velocity = Vec2::ZERO;
                         player.pose.set(IDLE_POSE1);
                         player.set_animation(IDLE_POSE2, 1, 15);
                     } else {
+                        // Still falling - apply gravity
                         player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 3.0 / FPS);
                     }
                 }
@@ -2322,6 +2330,7 @@ fn check_attack(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_ATTACKED;
                             player.state = PlayerState::STUN;
+                            player.velocity = Vec2::ZERO;  // Reset velocity when entering stun
                             player.pose.set(STUN_POSE1);
                             player.set_animation(STUN_POSE2, 0, 6);
                         } else {
@@ -2329,6 +2338,7 @@ fn check_attack(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_ATTACKED;
                             player.state = PlayerState::STUN;
+                            player.velocity = Vec2::ZERO;  // Reset velocity when entering stun
                             player.pose.set(STUN_POSE1);
                             player.set_animation(STUN_POSE2, 0, 6);
                         }
@@ -2517,6 +2527,7 @@ fn update_fire_animation(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_ATTACKED;
                             player.state = PlayerState::STUN;
+                            player.velocity = Vec2::ZERO;  // Reset velocity when entering stun
                             player.pose.set(STUN_POSE1);
                             player.set_animation(STUN_POSE2, 0, 6);
                         } else {
@@ -2524,6 +2535,7 @@ fn update_fire_animation(
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_ATTACKED;
                             player.state = PlayerState::STUN;
+                            player.velocity = Vec2::ZERO;  // Reset velocity when entering stun
                             player.pose.set(STUN_POSE1);
                             player.set_animation(STUN_POSE2, 0, 6);
                         }
