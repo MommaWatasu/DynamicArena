@@ -1,5 +1,4 @@
 use super::{pose::*, rand, BackGround, Fighting, SkillEntity, SkillName};
-#[cfg(not(target_arch = "wasm32"))]
 use crate::GameMode;
 use crate::{
     character_def::*,

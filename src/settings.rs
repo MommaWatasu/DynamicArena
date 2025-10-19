@@ -61,6 +61,7 @@ struct ConfigElement(u32);
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    #[cfg(not(target_arch = "wasm32"))]
     setting_idx: Res<SettingIndex>,
     config: Res<GameConfig>
 ) {
@@ -159,6 +160,7 @@ fn setup(
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                #[cfg(not(target_arch = "wasm32"))]
                                 setting_idx.idx,
                                 SettingItem::new(
                                     "音量".to_string(),
@@ -174,6 +176,7 @@ fn setup(
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                #[cfg(not(target_arch = "wasm32"))]
                                 setting_idx.idx,
                                 SettingItem::new(
                                     "ゲームモード".to_string(),
@@ -188,6 +191,7 @@ fn setup(
                             create_setting_item(
                                 &asset_server,
                                 spawner,
+                                #[cfg(not(target_arch = "wasm32"))]
                                 setting_idx.idx,
                                 SettingItem::new(
                                     "ボットの強さ".to_string(),
@@ -207,7 +211,6 @@ fn setup(
                             create_setting_item(
                                 &asset_server,
                                 spawner,
-                                setting_idx.idx,
                                 SettingItem::new(
                                     "フルスクリーン".to_string(),
                                     1u32,
@@ -229,6 +232,7 @@ fn setup(
 fn create_setting_item<T: Clone + ToString + Send + Sync + Display>(
     asset_server: &Res<AssetServer>,
     spawner: &mut ChildSpawnerCommands,
+    #[cfg(not(target_arch = "wasm32"))]
     settings_idx: u8,
     item: SettingItem<T>,
     config_num: u32,
