@@ -75,9 +75,21 @@ void loop() {
       } else if (joystickDown && joystickLeft) {
         dpadValue = DPAD_DOWN_LEFT;
       } else if (joystickUp) {
-        dpadValue = DPAD_UP;
+        if (prevJoystickRight) {
+          dpadValue = DPAD_UP_RIGHT;
+        } else if (prevJoystickLeft) {
+          dpadValue = DPAD_UP_LEFT;
+        } else {
+          dpadValue = DPAD_UP;
+        }
       } else if (joystickDown) {
-        dpadValue = DPAD_DOWN;
+        if (prevJoystickRight) {
+          dpadValue = DPAD_DOWN_RIGHT;
+        } else if (prevJoystickLeft) {
+          dpadValue = DPAD_DOWN_LEFT;
+        } else {
+          dpadValue = DPAD_DOWN;
+        }
       } else if (joystickLeft) {
         dpadValue = DPAD_LEFT;
       } else if (joystickRight) {
