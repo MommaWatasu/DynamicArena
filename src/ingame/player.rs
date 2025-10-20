@@ -1760,7 +1760,7 @@ fn skill_animation(
                             transform.translation.y = rand() * 100.0;
                         }
                         if player.animation.count == 10 {
-                            damage = 150;
+                            damage = 200;
                             *player_visibility = Visibility::Visible;
                             if let Some((_, _, mesh_handler)) =
                                 curtain_query.iter().find(|x| x.1.id == 1)
