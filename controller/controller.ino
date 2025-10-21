@@ -20,6 +20,9 @@ bool prevJoystickDown = false;
 bool prevJoystickLeft = false;
 bool prevJoystickRight = false;
 
+int JoystickRightcount = 0;
+int JoystickLeftcount = 0;
+
 bool prevButton1 = false;
 bool prevButton2 = false;
 bool prevButton3 = false;
@@ -58,6 +61,17 @@ void loop() {
     bool button2 = !digitalRead(BUTTON_2_PIN);
     bool button3 = !digitalRead(BUTTON_3_PIN);
     bool button4 = !digitalRead(BUTTON_4_PIN);
+
+    if (joystickRight) {
+      JoystickRightcount = 10;
+    } else {
+      JoystickRightcount -= 1;
+    }
+    if (joystickLeft) {
+      JoystickLeftcount = 10;
+    } else {
+      JoystickLeftcount -= 1;
+    }
     
     // DPadの状態更新（変化があった場合のみ）
     if (joystickUp != prevJoystickUp || joystickDown != prevJoystickDown || 
@@ -75,17 +89,17 @@ void loop() {
       } else if (joystickDown && joystickLeft) {
         dpadValue = DPAD_DOWN_LEFT;
       } else if (joystickUp) {
-        if (prevJoystickRight) {
+        if (JoystickRightcount > 0) {
           dpadValue = DPAD_UP_RIGHT;
-        } else if (prevJoystickLeft) {
+        } else if (JoystickLeftcount > 0) {
           dpadValue = DPAD_UP_LEFT;
         } else {
           dpadValue = DPAD_UP;
         }
       } else if (joystickDown) {
-        if (prevJoystickRight) {
+        if (JoystickRightcount > 0) {
           dpadValue = DPAD_DOWN_RIGHT;
-        } else if (prevJoystickLeft) {
+        } else if (JoystickLeftcount > 0) {
           dpadValue = DPAD_DOWN_LEFT;
         } else {
           dpadValue = DPAD_DOWN;
