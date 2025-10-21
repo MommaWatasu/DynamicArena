@@ -28,13 +28,13 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         description: "このゲームの開発者で、俊足が自慢のファイター。体力は低いが、強力な攻撃を素早く繰り出すことができる。",
         skill_name: "神速雷光",
         skill_description: "一瞬で敵に近づき、確定でダメージを与える",
-        health: 850,
+        health: 900,
         #[cfg(not(feature="phone"))]
         agility: 4.0,
         #[cfg(feature="phone")]
         agility: 2.0,
-        power: 150.0,
-        defense: 80.0
+        power: 160.0,
+        defense: 85.0
     },
     CharacterProfile {
         name: "Miyaguchi",
@@ -60,6 +60,6 @@ pub const CHARACTER_PROFILES: [CharacterProfile; 3] = [
         #[cfg(feature="phone")]
         agility: 1.0,
         power: 130.0,
-        defense: 150.0
+        defense: 130.0
     },
 ];
