@@ -22,6 +22,8 @@ bool prevJoystickRight = false;
 
 int JoystickRightcount = 0;
 int JoystickLeftcount = 0;
+int JoystickUpcount = 0;
+int JoystickDowncount = 0;
 
 bool prevButton1 = false;
 bool prevButton2 = false;
@@ -72,6 +74,16 @@ void loop() {
     } else {
       JoystickLeftcount -= 1;
     }
+    if (joystickUp) {
+      JoystickUpcount = 10;
+    } else {
+      JoystickUpcount -= 1;
+    }
+    if (joystickDown) {
+      JoystickDowncount = 10;
+    } else {
+      JoystickDowncount -= 1;
+    }
     
     // DPadの状態更新（変化があった場合のみ）
     if (joystickUp != prevJoystickUp || joystickDown != prevJoystickDown || 
@@ -105,9 +117,21 @@ void loop() {
           dpadValue = DPAD_DOWN;
         }
       } else if (joystickLeft) {
-        dpadValue = DPAD_LEFT;
+        if (JoystickUpcount > 0) {
+          dpadValue = DPAD_UP_LEFT;
+        } else if (JoystickDowncount > 0) {
+          dpadValue = DPAD_DOWN_LEFT;
+        } else {
+          dpadValue = DPAD_LEFT;
+        }
       } else if (joystickRight) {
-        dpadValue = DPAD_RIGHT;
+        if (JoystickUpcount > 0) {
+          dpadValue = DPAD_UP_RIGHT;
+        } else if (JoystickDowncount > 0) {
+          dpadValue = DPAD_DOWN_RIGHT;
+        } else {
+          dpadValue = DPAD_RIGHT;
+        }
       }
       
       bleGamepad.setHat1(dpadValue);
