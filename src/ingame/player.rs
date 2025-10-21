@@ -1,5 +1,5 @@
 use super::{pose::*, rand, BackGround, Fighting, SkillEntity, SkillName};
-use crate::GameMode;
+use crate::{GameMode, DEFAULT_FONT_SIZE, PATH_BOLD_FONT};
 use crate::{
     character_def::*,
     CharacterTextures,
@@ -479,6 +479,19 @@ pub fn spawn_player(
         ))
         // Body
         .with_children(|spawner| {
+            // Name Tag
+            spawner
+                .spawn((
+                    Text2d::new(format!("Player {}", id + 1)),
+                    TextFont {
+                        font: asset_server.load(PATH_BOLD_FONT),
+                        font_size: DEFAULT_FONT_SIZE,
+                        ..default()
+                    },
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    TextColor(Color::WHITE),
+                    Transform::from_translation(Vec3::new(0.0, 150.0, 0.0))
+                ));
             spawner
                 .spawn((
                     Transform::from_translation(Vec3::new(10.0, BODY_OFFSET, 0.0)),
