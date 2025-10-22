@@ -4,7 +4,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
 use bevy_rapier2d::prelude::*;
-use crate::{CharacterTextures, BGM};
+use crate::{CharacterTextures, BGM, GameMode};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::ingame::pose::{FRAMES_VICTORY, FRAMES_DEFEATED};
 
@@ -35,6 +35,10 @@ use player::*;
 use phone::*;
 
 const FPS: f32 = 60.0;
+#[cfg(not(target_arch = "wasm32"))]
+const BARS_OFFSET_Y: f32 = 60.0;
+#[cfg(target_arch = "wasm32")]
+const BARS_OFFSET_Y: f32 = 30.0;
 
 #[derive(Resource, Default)]
 pub struct GameState {
@@ -163,40 +167,112 @@ fn setup(
             TextColor(Color::BLACK),
         ));
 
-    // timer box
+    // timer box and player names
     commands
         .spawn((
             InGame,
             Node {
-                #[cfg(not(feature="phone"))]
-                width: Val::Px(300.0),
-                #[cfg(feature="phone")]
-                width: Val::Px(150.0),
-                #[cfg(not(feature="phone"))]
-                height: Val::Px(100.0),
-                #[cfg(feature="phone")]
-                height: Val::Px(50.0),
+                width: Val::Percent(100.0),
                 justify_self: JustifySelf::Center,
                 align_self: AlignSelf::Start,
                 justify_content: JustifyContent::Center,
+                justify_items: JustifyItems::Center,
                 align_items: AlignItems::Center,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(Color::BLACK),
-            BorderRadius::all(Val::Px(5.0)),
         ))
         .with_children(|spawner| {
+            spawner.spawn(
+                Node {
+                    width: Val::Percent(50.0),
+                    justify_content: JustifyContent::SpaceBetween,
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                }
+            )
+            .with_children(|spawner| {
+                spawner.spawn((
+                    Node {
+                        width: Val::Percent(25.0),
+                        justify_self: JustifySelf::Center,
+                        align_self: AlignSelf::Start,
+                        ..default()
+                    },
+                ))
+                .with_children(|spawner| {
+                    spawner.spawn((
+                        if config.mode == GameMode::SinglePlayer {
+                            Text::new("You")
+                        } else {
+                            Text::new("Player 1")
+                        },
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                            font_size: DEFAULT_FONT_SIZE,
+                            ..default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Left),
+                        TextColor(Color::WHITE),
+                    ));
+                });
+                spawner.spawn((
+                    Node {
+                        width: Val::Percent(25.0),
+                        justify_self: JustifySelf::Center,
+                        align_self: AlignSelf::End,
+                        ..default()
+                    },
+                ))
+                .with_children(|spawner| {
+                    spawner.spawn((
+                        if config.mode == GameMode::SinglePlayer {
+                            Text::new("Bot")
+                        } else {
+                            Text::new("Player 2")
+                        },
+                        TextFont {
+                            font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                            font_size: DEFAULT_FONT_SIZE,
+                            ..default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Right),
+                        TextColor(Color::WHITE),
+                    ));
+                });
+            });
             spawner.spawn((
-                GameTimer(60.0),
-                Text::new("60.00"),
-                TextFont {
-                    font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
-                    font_size: DEFAULT_FONT_SIZE,
+                Node {
+                    #[cfg(not(feature="phone"))]
+                    width: Val::Px(300.0),
+                    #[cfg(feature="phone")]
+                    width: Val::Px(150.0),
+                    #[cfg(not(feature="phone"))]
+                    height: Val::Px(100.0),
+                    #[cfg(feature="phone")]
+                    height: Val::Px(50.0),
+                    justify_self: JustifySelf::Center,
+                    align_self: AlignSelf::Center,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
                     ..default()
                 },
-                TextLayout::new_with_justify(JustifyText::Center),
-                TextColor(Color::WHITE),
-            ));
+                BackgroundColor(Color::BLACK),
+                BorderRadius::all(Val::Px(5.0)),
+            ))
+            .with_children(|spawner| {
+                spawner.spawn((
+                    GameTimer(60.0),
+                    Text::new("60.00"),
+                    TextFont {
+                        font: asset_server.load(PATH_BOLD_MONOSPACE_FONT),
+                        font_size: DEFAULT_FONT_SIZE,
+                        ..default()
+                    },
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    TextColor(Color::WHITE),
+                ));
+            });
         });
     // hit display
     commands.spawn((
@@ -352,9 +428,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 30.0, 1.0)),
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 30.0 - BARS_OFFSET_Y, 1.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 25.0 - BARS_OFFSET_Y, 1.0)),
     ));
     // health bar for player 2
     commands.spawn((
@@ -422,9 +498,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 30.0, 1.0)),
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 30.0 - BARS_OFFSET_Y, 1.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0, 1.0)),
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 25.0 - BARS_OFFSET_Y, 1.0)),
     ));
 
     // energy bar for player 1
@@ -488,9 +564,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 60.0, 1.0)),
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 60.0 - BARS_OFFSET_Y, 1.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 1.0)),
     ));
     commands.spawn((
         InGame,
@@ -557,9 +633,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 60.0, 2.0)),
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 60.0 - BARS_OFFSET_Y, 2.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 2.0)),
     ));
     // energy bar for player 2
     commands.spawn((
@@ -622,9 +698,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 60.0, 1.0)),
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 60.0 - BARS_OFFSET_Y, 1.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 1.0)),
     ));
     commands.spawn((
         InGame,
@@ -691,9 +767,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 60.0, 2.0)),
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 60.0 - BARS_OFFSET_Y, 2.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 2.0)),
     ));
 
     // fire charge bar for player 1
@@ -757,9 +833,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0 - BARS_OFFSET_Y, 1.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 1.0)),
     ));
     commands.spawn((
         InGame,
@@ -826,9 +902,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
+        Transform::from_translation(Vec3::new(-150.0, config.window_size.y / 2.0 - 90.0 - BARS_OFFSET_Y, 2.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
+        Transform::from_translation(Vec3::new(-75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 2.0)),
     ));
     
     // fire charge bar for player 2
@@ -892,9 +968,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 1.0)),
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0 - BARS_OFFSET_Y, 1.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 1.0)),
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 1.0)),
     ));
     commands.spawn((
         InGame,
@@ -961,9 +1037,9 @@ fn setup(
         ),
         MeshMaterial2d(materials.add(ColorMaterial::default())),
         #[cfg(not(feature="phone"))]
-        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0, 2.0)),
+        Transform::from_translation(Vec3::new(150.0, config.window_size.y / 2.0 - 90.0 - BARS_OFFSET_Y, 2.0)),
         #[cfg(feature="phone")]
-        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0, 2.0)),
+        Transform::from_translation(Vec3::new(75.0, config.window_size.y / 2.0 - 50.0 - BARS_OFFSET_Y, 2.0)),
     ));
 
     // skill name display
