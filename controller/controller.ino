@@ -1,15 +1,15 @@
 #include <BleGamepad.h>
 
 // ピン定義 - 実際のピン番号に合わせて変更してください
-#define JOYSTICK_NORTH_PIN   4   // ジョイスティック上
-#define JOYSTICK_SOUTH_PIN   16   // ジョイスティック下  
-#define JOYSTICK_WEST_PIN    17  // ジョイスティック左
-#define JOYSTICK_EAST_PIN    5  // ジョイスティック右
+#define JOYSTICK_NORTH_PIN   16   // ジョイスティック上
+#define JOYSTICK_SOUTH_PIN   5   // ジョイスティック下  
+#define JOYSTICK_WEST_PIN    4  // ジョイスティック左
+#define JOYSTICK_EAST_PIN    17  // ジョイスティック右
 
-#define BUTTON_1_PIN        32  // ボタン1
-#define BUTTON_2_PIN        33  // ボタン2
-#define BUTTON_3_PIN        25 // ボタン3
-#define BUTTON_4_PIN        26  // ボタン4
+#define BUTTON_1_PIN        26  // ボタン1
+#define BUTTON_2_PIN        25  // ボタン2
+#define BUTTON_3_PIN        33 // ボタン3
+#define BUTTON_4_PIN        32  // ボタン4
 
 // BLEGamepadオブジェクト作成
 BleGamepad bleGamepad("ESP32ArcadeController", "MommaWatasu", 100);
