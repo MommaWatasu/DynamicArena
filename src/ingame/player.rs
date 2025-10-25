@@ -423,6 +423,7 @@ struct PlayerCollision(u8);
 pub fn spawn_player(
     id: u8,
     character_id: isize,
+    is_single: bool,
     commands: &mut Commands,
     texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
     asset_server: &Res<AssetServer>,
@@ -482,7 +483,15 @@ pub fn spawn_player(
             // Name Tag
             spawner
                 .spawn((
-                    Text2d::new(format!("Player {}", id + 1)),
+                    if is_single {
+                        if id == 0 {
+                            Text2d::new("You")
+                        } else {
+                            Text2d::new("Bot")
+                        }
+                    } else {
+                        Text2d::new(format!("Player {}", id + 1))
+                    },
                     TextFont {
                         font: asset_server.load(PATH_BOLD_FONT),
                         font_size: DEFAULT_FONT_SIZE,

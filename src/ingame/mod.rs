@@ -1193,6 +1193,7 @@ fn setup(
         spawn_player(
             0,
             config.characters_id[0],
+            true,
             &mut commands,
             &mut texture_atlas_layouts,
             &asset_server,
@@ -1201,6 +1202,7 @@ fn setup(
         spawn_player(
             1,
             config.characters_id[1],
+            true,
             &mut commands,
             &mut texture_atlas_layouts,
             &asset_server,
@@ -1210,6 +1212,7 @@ fn setup(
         spawn_player(
             0,
             config.characters_id[0],
+            config.mode == GameMode::SinglePlayer,
             &mut commands,
             &mut texture_atlas_layouts,
             &asset_server,
@@ -1218,6 +1221,7 @@ fn setup(
         spawn_player(
             1,
             config.characters_id[1],
+            config.mode == GameMode::SinglePlayer,
             &mut commands,
             &mut texture_atlas_layouts,
             &asset_server,
