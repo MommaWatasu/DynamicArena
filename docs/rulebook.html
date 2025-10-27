@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DynamicArena ルールブック</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px;
+        }
+
+        .container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .content {
+            padding: 15px 20px;
+        }
+
+        h2 {
+            color: #2d3748;
+            font-size: 1.4em;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #667eea;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            color: #4a5568;
+            font-size: 1.1em;
+            margin: 15px 0 8px 0;
+            padding-left: 10px;
+            border-left: 4px solid #764ba2;
+            page-break-after: avoid;
+        }
+
+        .overview {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 0.95em;
+        }
+
+        .overview p {
+            margin: 5px 0;
+        }
+
+        ul, ol {
+            margin: 8px 0 8px 25px;
+            font-size: 0.95em;
+        }
+
+        li {
+            margin: 5px 0;
+            padding-left: 5px;
+        }
+
+        .attack-list {
+            background: #f7fafc;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 8px 0;
+        }
+
+        .damage-formula {
+            background: #fff5f5;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 8px 0;
+            border-left: 3px solid #fc8181;
+            font-size: 0.95em;
+        }
+
+        .damage-formula p {
+            margin: 5px 0;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            background: #2d3748;
+            color: #f7fafc;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 8px 0;
+            text-align: center;
+        }
+
+        .key-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+
+        .key-item {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 8px 10px;
+            border-radius: 5px;
+            border: 1px solid #cbd5e0;
+        }
+
+        .key-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1em;
+        }
+
+        .controller-section {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .controller-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 15px;
+            align-items: start;
+        }
+
+        .controller-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controller-diagram svg {
+            width: 100%;
+            max-width: 350px;
+            height: auto;
+        }
+
+        .controller-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .control-group {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .control-header {
+            font-weight: bold;
+            font-size: 1em;
+            color: #667eea;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.85em;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .control-item:last-child {
+            border-bottom: none;
+        }
+
+        .control-name {
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .control-action {
+            color: #667eea;
+        }
+
+        .characters {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 12px 0;
+            page-break-inside: avoid;
+        }
+
+        .character-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            page-break-inside: avoid;
+        }
+
+        .character-card h3 {
+            border: none;
+            padding: 0;
+            margin: 0 0 8px 0;
+            font-size: 1.2em;
+            text-align: center;
+            color: #667eea;
+        }
+
+        .character-description {
+            background: #edf2f7;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            font-style: italic;
+            font-size: 0.85em;
+        }
+
+        .stats {
+            margin: 8px 0;
+            font-size: 0.85em;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .skill {
+            background: linear-gradient(135deg, #fef5e7 0%, #fff5f5 100%);
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 8px;
+            border: 1px solid #feb2b2;
+        }
+
+        .skill-name {
+            font-weight: bold;
+            font-size: 0.95em;
+            color: #c53030;
+            margin-bottom: 4px;
+        }
+
+        .skill-description {
+            color: #4a5568;
+            font-size: 0.85em;
+        }
+
+        .coefficient-table {
+            width: 100%;
+            margin: 10px 0;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .coefficient-table th,
+        .coefficient-table td {
+            padding: 6px 8px;
+            text-align: left;
+            border: 1px solid #cbd5e0;
+        }
+
+        .coefficient-table th {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .coefficient-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                width: 100%;
+            }
+
+            .character-card,
+            .key-item {
+                box-shadow: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 100%;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            h2 {
+                font-size: 1.2em;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .characters {
+                grid-template-columns: 1fr;
+            }
+
+            .key-controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .controller-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 DynamicArena ルールブック</h1>
+            <p>棒人間の格闘ゲーム</p>
+        </header>
+
+        <div class="content">
+            <!-- 基本情報セクション -->
+            <h2>📖 基本情報</h2>
+            
+            <h3>ゲーム概要</h3>
+            <div class="overview">
+                <p>DynamicArenaは棒人間の格闘ゲームで、一人プレイと二人プレイに対応しています。</p>
+                <p>一人プレイの場合にはボット対戦と、縁日班員との対戦が可能です。</p>
+            </div>
+
+            <h3>試合の流れ</h3>
+            <p>1プレイにつき3試合あります。1試合は片方がもう一方の体力を削りきる、もしくは制限時間(60秒)が経過した時点で残り体力の割合が高い方がその試合は勝ちとなります。</p>
+            <p>3試合終了後、勝利数の多いほうが勝ちとなります。最初の2試合を一方が勝っても、3試合目を実施します。</p>
+
+            <h3>コントローラー操作</h3>
+            <div class="controller-section">
+                <div class="controller-layout">
+                    <!-- 左側：ジョイスティック操作 -->
+                    <div class="control-group">
+                        <div class="control-header">🕹️ ジョイスティック</div>
+                        <div class="control-item">
+                            <span class="control-name">左/右</span>
+                            <span class="control-action">移動</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">下</span>
+                            <span class="control-action">しゃがむ</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">左/右 → 下</span>
+                            <span class="control-action">ロール</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">上</span>
+                            <span class="control-action">ジャンプ</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">左/右 → 上</span>
+                            <span class="control-action">前後ジャンプ</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 中央：コントローラー図 -->
+                    <div class="controller-diagram">
+                        <img src="assets/controller.png" alt="コントローラー図" style="width:100%; max-width:320px; height:auto; display:block;" />
+                    </div>
+                    
+                    <!-- 右側：ボタン操作 -->
+                    <div class="control-group">
+                        <div class="control-header">🎮 ボタン</div>
+                        <div class="control-item">
+                            <span class="control-name">ボタン1</span>
+                            <span class="control-action">必殺技</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">ボタン2</span>
+                            <span class="control-action">パンチ</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">ボタン3</span>
+                            <span class="control-action">遠距離攻撃</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-name">ボタン4</span>
+                            <span class="control-action">キック</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2>キャラクター一覧</h2>
+            <div class="characters">
+                <div class="character-card">
+                    <h3>⚡ Momma</h3>
+                    <div class="character-description">
+                        このゲームの開発者で、俊足が自慢のファイター。体力は低いが、強力な攻撃を素早く繰り出すことができる。
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">体力</span>
+                            <span class="stat-value">850</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">俊敏性</span>
+                            <span class="stat-value">4.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻撃力</span>
+                            <span class="stat-value">150.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防御力</span>
+                            <span class="stat-value">80.0</span>
+                        </div>
+                    </div>
+                    <div class="skill">
+                        <div class="skill-name">🌩️ 神速雷光</div>
+                        <div class="skill-description">一瞬で敵に近づき、確定でダメージを与える</div>
+                    </div>
+                </div>
+
+                <div class="character-card">
+                    <h3>💚 Miyaguchi</h3>
+                    <div class="character-description">
+                        縁日班アトラク部門長で、バランス型のファイター。標準的なステータスで扱いやすい
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">体力</span>
+                            <span class="stat-value">1000</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">俊敏性</span>
+                            <span class="stat-value">3.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻撃力</span>
+                            <span class="stat-value">100.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防御力</span>
+                            <span class="stat-value">100.0</span>
+                        </div>
+                    </div>
+                    <div class="skill">
+                        <div class="skill-name">🌀 魂吸収</div>
+                        <div class="skill-description">相手に一定ダメージを与えて、その分自分が回復する</div>
+                    </div>
+                </div>
+
+                <div class="character-card">
+                    <h3>💪 Matsumoto</h3>
+                    <div class="character-description">
+                        ボットの作成者で、体力の多いファイター。スピードは遅いが強靭な肉体とパワーで全てを解決する。
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">体力</span>
+                            <span class="stat-value">1200</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">俊敏性</span>
+                            <span class="stat-value">2.8</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻撃力</span>
+                            <span class="stat-value">130.0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防御力</span>
+                            <span class="stat-value">150.0</span>
+                        </div>
+                    </div>
+                    <div class="skill">
+                        <div class="skill-name">👊 鉄拳制裁</div>
+                        <div class="skill-description">巨大な拳で相手をたたき、地面にいる敵に大ダメージを与える</div>
+                    </div>
+                </div>
+            </div>
+
+            
+
+            <h2>スコア制度</h2>
+            <div class="damage-formula" style="border-left-color: #667eea; background: #f0f4ff;">
+                <p>シングルプレイヤーモードでボットと戦う場合にはスコアが計算されて結果画面で表示されます。</p>
+                <p>計算方法は単純で、ボットに与えたダメージに、頭に攻撃があたった際のボーナス点を加えて算出されます。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
