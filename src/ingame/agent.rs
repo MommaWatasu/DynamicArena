@@ -545,10 +545,34 @@ impl Agent {
             Policy::Neutral => self.select_neutral_action(environment),
         };
         
+        // Add random inaction for Easy and Normal levels to make them less aggressive
+        let final_action = match self.level {
+            Level::Easy => {
+                // Easy: 50% chance to do nothing instead of the selected action
+                if rand() < 0.5 && new_action != Action::Skill {
+                    Action::None
+                } else {
+                    new_action
+                }
+            }
+            Level::Normal => {
+                // Normal: 25% chance to do nothing instead of the selected action
+                if rand() < 0.25 && new_action != Action::Skill {
+                    Action::None
+                } else {
+                    new_action
+                }
+            }
+            Level::Hard => {
+                // Hard: No random inaction, always follows strategy
+                new_action
+            }
+        };
+        
         // Check if we can change to this new action
-        if self.can_interrupt_for_action(new_action) {
-            self.action_state = ActionState::new(new_action);
-            new_action
+        if self.can_interrupt_for_action(final_action) {
+            self.action_state = ActionState::new(final_action);
+            final_action
         } else {
             // Continue current action if we can't interrupt
             self.action_state.current_action
