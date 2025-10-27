@@ -146,15 +146,15 @@
 
         .controller-section {
             background: #f7fafc;
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         .controller-layout {
             display: grid;
             grid-template-columns: 1fr 1.2fr 1fr;
-            gap: 15px;
+            gap: 10px;
             align-items: start;
         }
 
@@ -179,7 +179,7 @@
 
         .control-group {
             background: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             border: 2px solid #e2e8f0;
         }
@@ -188,15 +188,15 @@
             font-weight: bold;
             font-size: 1em;
             color: #667eea;
-            margin-bottom: 8px;
-            padding-bottom: 5px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
             border-bottom: 2px solid #e2e8f0;
         }
 
         .control-item {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
+            padding: 4px 0;
             font-size: 0.85em;
             border-bottom: 1px solid #f7fafc;
         }
@@ -342,6 +342,76 @@
             }
         }
 
+        .game-flow-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+            align-items: start;
+        }
+
+        .game-flow-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .game-flow-image {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-flow-step {
+            color: #4a5568;
+            font-size: 1em;
+            margin: 0 0 8px 0;
+            padding-left: 10px;
+            border-left: 3px solid #667eea;
+        }
+
+        .game-flow-description {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+
+        .game-flow-list {
+            margin: 5px 0 5px 25px;
+            font-size: 0.9em;
+        }
+
+        .game-flow-image-container {
+            text-align: center;
+            width: 100%;
+        }
+
+        .game-flow-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-flow-caption {
+            font-size: 0.85em;
+            color: #718096;
+            margin-top: 8px;
+        }
+
+        .game-flow-placeholder {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -370,6 +440,10 @@
             .controller-layout {
                 grid-template-columns: 1fr;
             }
+
+            .game-flow-section {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -380,21 +454,70 @@
             <p>棒人間の格闘ゲーム</p>
         </header>
 
-        <div class="content">
-            <!-- 基本情報セクション -->
-            <h2>📖 基本情報</h2>
-            
-            <h3>ゲーム概要</h3>
-            <div class="overview">
-                <p>DynamicArenaは棒人間の格闘ゲームで、一人プレイと二人プレイに対応しています。</p>
-                <p>一人プレイの場合にはボット対戦と、縁日班員との対戦が可能です。</p>
+        <div class="content"></div>
+            <h2>ゲームの流れ</h2>
+
+            <h4 class="game-flow-step">1. メインメニュー</h4>
+            <p class="game-flow-description">ゲームを開始するには、Startが赤く囲ってある状態でボタン1を押します。</p>
+
+            <h4 class="game-flow-step">2. コントローラー接続画面</h4>
+            <p class="game-flow-description">コントローラーの接続を確認する画面です。「接続済み」と表示されていればボタン3で次の画面に移ってください。</p>
+
+            <div class="game-flow-section">
+                <div class="game-flow-content">
+                    <h4 class="game-flow-step">3. キャラクター選択</h4>
+                    <p class="game-flow-description">
+                        プレイするキャラクターを選択します。キャラクターごとにステータスや必殺技が異なるので、お好きなキャラクターを選んでください。<br>
+                        キャラクターの変更はジョイスティックを左右に動かして行います。<br>
+                        キャラクターが決まったらボタン3で次の画面に進みます。
+                    </p>
+                </div>
+                <div class="game-flow-image">
+                    <div class="game-flow-image-container">
+                        <img src="assets/choose_character.png" alt="キャラクター選択画面" />
+                    </div>
+                </div>
             </div>
 
-            <h3>試合の流れ</h3>
-            <p>1プレイにつき3試合あります。1試合は片方がもう一方の体力を削りきる、もしくは制限時間(60秒)が経過した時点で残り体力の割合が高い方がその試合は勝ちとなります。</p>
-            <p>3試合終了後、勝利数の多いほうが勝ちとなります。最初の2試合を一方が勝っても、3試合目を実施します。</p>
+            <h4 class="game-flow-step">4. 戦闘待機</h4>
+            <p class="game-flow-description">戦闘が始まる前の待機画面です。準備ができたらボタン1で戦闘開始してください。押さなくても10秒で自動開始します。</p>
 
-            <h3>コントローラー操作</h3>
+            <div class="game-flow-section">
+                <div class="game-flow-content">
+                    <h4 class="game-flow-step">5. 戦闘中</h4>
+                    <p class="game-flow-description">
+                        戦闘が始まります。相手の体力を0にするか、制限時間内に体力の割合が多い方がその試合の勝者となります。1プレイあたり3ラウンドあります。<br>
+                        画面一番上の緑のバーが体力、その下の青いバーが必殺技ゲージ、一番下の赤いバーが遠距離攻撃ゲージです。<br>
+                        ジャンプや攻撃をして、必殺技ゲージが満タンになると赤と青のグラデーションになります。<br>
+                        遠距離攻撃ゲージが満タンになると赤く光ります。
+                    </p>
+                </div>
+                <div class="game-flow-image">
+                    <div class="game-flow-image-container">
+                        <img src="assets/fighting.png" alt="戦闘画面" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-flow-section">
+                <div class="game-flow-content">
+                    <h4 class="game-flow-step">6. リザルト</h4>
+                    <p class="game-flow-description">3ラウンド終了後、勝敗が表示されます。</p>
+                    <ul class="game-flow-list">
+                        <li>各ラウンドと総合の勝者が表示されます</li>
+                        <li>シングルプレイの場合はスコアも表示されます</li>
+                        <li>スコアは基本的にボットに与えたダメージで、頭に攻撃があたった際のボーナス点を加えて算出されます。</li>
+                        <li>結果を確認したらボタン1を押してメインメニューに戻ってください</li>
+                    </ul>
+                </div>
+                <div class="game-flow-image">
+                    <div class="game-flow-image-container">
+                        <img src="assets/result.png" alt="結果画面" />
+                    </div>
+                </div>
+            </div>
+
+            <h2>コントローラー操作&攻撃方法</h2>
             <div class="controller-section">
                 <div class="controller-layout">
                     <!-- 左側：ジョイスティック操作 -->
@@ -402,23 +525,15 @@
                         <div class="control-header">🕹️ ジョイスティック</div>
                         <div class="control-item">
                             <span class="control-name">左/右</span>
-                            <span class="control-action">移動</span>
+                            <span class="control-action">設定の-/+</span>
                         </div>
                         <div class="control-item">
                             <span class="control-name">下</span>
-                            <span class="control-action">しゃがむ</span>
+                            <span class="control-action">カーソル下移動</span>
                         </div>
                         <div class="control-item">
-                            <span class="control-name">左/右 → 下</span>
-                            <span class="control-action">ロール</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="control-name">上</span>
+                            <span class="control-name">カーソル上移動</span>
                             <span class="control-action">ジャンプ</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="control-name">左/右 → 上</span>
-                            <span class="control-action">前後ジャンプ</span>
                         </div>
                     </div>
                     
@@ -432,23 +547,79 @@
                         <div class="control-header">🎮 ボタン</div>
                         <div class="control-item">
                             <span class="control-name">ボタン1</span>
-                            <span class="control-action">必殺技</span>
+                            <span class="control-action">決定/確定</span>
                         </div>
                         <div class="control-item">
                             <span class="control-name">ボタン2</span>
-                            <span class="control-action">パンチ</span>
+                            <span class="control-action">戻る</span>
                         </div>
                         <div class="control-item">
                             <span class="control-name">ボタン3</span>
-                            <span class="control-action">遠距離攻撃</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="control-name">ボタン4</span>
-                            <span class="control-action">キック</span>
+                            <span class="control-action">進む</span>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            <table class="coefficient-table">
+                <thead>
+                    <tr>
+                        <th>種類</th>
+                        <th>操作</th>
+                        <th>説明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="2">基本攻撃</td>
+                        <td>ボタン2</td>
+                        <td>パンチ - 素早い近距離攻撃。連続で繰り出せる</td>
+                    </tr>
+                    <tr>
+                        <td>ボタン3</td>
+                        <td>キック - パンチより威力の高い近距離攻撃</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="2">特殊攻撃</td>
+                        <td>左/右 → ボタン3</td>
+                        <td>バックキック - より強力でリーチの長い攻撃</td>
+                    </tr>
+                    <tr>
+                        <td>ボタン4</td>
+                        <td>遠距離攻撃 - ゲージを消費して炎の矢を飛ばす(ゲージ満タン時のみ)</td>
+                    </tr>
+                    <tr>
+                        <td>必殺技</td>
+                        <td>ボタン1</td>
+                        <td>キャラクター固有の強力な技(ゲージ満タン時のみ)</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="6">移動・回避</td>
+                        <td>左/右</td>
+                        <td>移動</td>
+                    </tr>
+                    <tr>
+                        <td>上 (→ ボタン3)</td>
+                        <td>ジャンプ - ボタン3でジャンプキック</td>
+                    </tr>
+                    <tr>
+                        <td>左 → 上 (→ ボタン3)</td>
+                        <td>左ジャンプ - 前方ジャンプの場合、ボタン3でジャンプキック</td>
+                    </tr>
+                    <tr>
+                        <td>右 → 上 (→ ボタン3)</td>
+                        <td>右ジャンプ - 前方ジャンプの場合、ボタン3でジャンプキック</td>
+                    </tr>
+                    <tr>
+                        <td>下</td>
+                        <td>しゃがむ - 防御力が増加</td>
+                    </tr>
+                    <tr>
+                        <td>左/右 → 下</td>
+                        <td>ロール - 遠距離攻撃を回避できる</td>
+                    </tr>
+                </tbody>
+            </table>
 
             <h2>キャラクター一覧</h2>
             <div class="characters">
@@ -460,7 +631,7 @@
                     <div class="stats">
                         <div class="stat-item">
                             <span class="stat-label">体力</span>
-                            <span class="stat-value">850</span>
+                            <span class="stat-value">900</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">俊敏性</span>
@@ -468,16 +639,16 @@
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">攻撃力</span>
-                            <span class="stat-value">150.0</span>
+                            <span class="stat-value">160.0</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">防御力</span>
-                            <span class="stat-value">80.0</span>
+                            <span class="stat-value">85.0</span>
                         </div>
                     </div>
                     <div class="skill">
                         <div class="skill-name">🌩️ 神速雷光</div>
-                        <div class="skill-description">一瞬で敵に近づき、確定でダメージを与える</div>
+                        <div class="skill-description">一瞬で敵に近づき、確定で200ダメージを与える</div>
                     </div>
                 </div>
 
@@ -506,7 +677,7 @@
                     </div>
                     <div class="skill">
                         <div class="skill-name">🌀 魂吸収</div>
-                        <div class="skill-description">相手に一定ダメージを与えて、その分自分が回復する</div>
+                        <div class="skill-description">相手に100ダメージを与えて、その分自分が回復する</div>
                     </div>
                 </div>
 
@@ -530,22 +701,14 @@
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">防御力</span>
-                            <span class="stat-value">150.0</span>
+                            <span class="stat-value">130.0</span>
                         </div>
                     </div>
                     <div class="skill">
                         <div class="skill-name">👊 鉄拳制裁</div>
-                        <div class="skill-description">巨大な拳で相手をたたき、地面にいる敵に大ダメージを与える</div>
+                        <div class="skill-description">巨大な拳で相手をたたき、地面にいる敵に250ダメージを与える</div>
                     </div>
                 </div>
-            </div>
-
-            
-
-            <h2>スコア制度</h2>
-            <div class="damage-formula" style="border-left-color: #667eea; background: #f0f4ff;">
-                <p>シングルプレイヤーモードでボットと戦う場合にはスコアが計算されて結果画面で表示されます。</p>
-                <p>計算方法は単純で、ボットに与えたダメージに、頭に攻撃があたった際のボーナス点を加えて算出されます。</p>
             </div>
         </div>
     </div>
