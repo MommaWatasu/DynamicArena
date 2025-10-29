@@ -1967,7 +1967,7 @@ fn update_soul_absorb_animation(
                 if player.character_id == 1 {
                     player.health += 1;
                 } else {
-                    player.health -= 1;
+                    player.health = player.health.saturating_sub(1);
                 }
                 for (display_id, mut text, mut color, mut damage_display) in
                         damage_display_query.iter_mut()
