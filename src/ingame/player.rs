@@ -2185,6 +2185,7 @@ fn check_attack(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     config: Res<GameConfig>,
+    fighting: ResMut<Fighting>,
     mut score: ResMut<Score>,
     mut player_collision: ResMut<PlayerCollision>,
     mut collision_events: EventReader<CollisionEvent>,
@@ -2199,6 +2200,10 @@ fn check_attack(
         player_info[player_id.0 as usize] = (player.character_id, player.state);
     }
     for collision_event in collision_events.read() {
+        // skill animation in progress, skip attack checking
+        if fighting.0 == 1 {
+            continue;
+        }
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _) => {
                 let Ok((parts1, id1)) = parts_query.get(*entity1) else {
