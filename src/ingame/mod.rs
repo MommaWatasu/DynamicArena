@@ -1264,7 +1264,7 @@ fn update_timer(
     mut timer_query: Query<(&mut Text, &mut TextColor, &mut GameTimer)>,
     health_bar_query: Query<(&HealthBar, &PlayerID)>,
 ) {
-    if fighting.0 != 0 {
+    if fighting.0 != 0 || gamestate.phase != 5 {
         return;
     }
     let (mut text, mut color, mut timer) = timer_query.single_mut().unwrap();
@@ -1479,10 +1479,12 @@ fn main_game_system(
                             sprite.image = character_textures.textures[player.character_id as usize].victory.clone();
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_VICTORY;
+                            player.animation.count = FRAMES_VICTORY as u8;
                         } else {
                             sprite.image = character_textures.textures[player.character_id as usize].defeated.clone();
                             sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                             player.animation_frame_max = FRAMES_DEFEATED;
+                            player.animation.count = FRAMES_DEFEATED as u8;
                         }
                     }
                     gamestate.count = 1;

@@ -228,7 +228,6 @@ struct AnimationTimer {
 
 pub struct PlayerColliderAnimation {
     diff_pose: Pose,
-    diff_y: f32,
     pub phase: u8,
     pub count: u8,
 }
@@ -254,7 +253,6 @@ impl Player {
             pose: IDLE_POSE1,
             animation: PlayerColliderAnimation {
                 diff_pose: default(),
-                diff_y: 0.0,
                 phase: 1,
                 count: 10,
             },
@@ -273,7 +271,6 @@ impl Player {
             pose: OPPOSITE_DEFAULT_POSE,
             animation: PlayerColliderAnimation {
                 diff_pose: default(),
-                diff_y: 0.0,
                 phase: 1,
                 count: 10,
             },
@@ -294,7 +291,6 @@ impl Player {
         }
         self.animation = PlayerColliderAnimation {
             diff_pose: default(),
-            diff_y: 0.0,
             phase: 1,
             count: 10,
         };
@@ -306,7 +302,6 @@ impl Player {
     pub fn set_animation(&mut self, pose: Pose, phase: u8, count: u8) {
         self.animation = PlayerColliderAnimation {
             diff_pose: (pose - self.pose) / count as f32,
-            diff_y: 0.0,
             phase,
             count,
         };
@@ -335,16 +330,17 @@ impl Player {
         }
         self.animation.count -= 1;
     }
-    pub fn update_animation_idle(&mut self, transform: &mut Transform, sprite: &mut Sprite) {
+    pub fn update_animation_final(&mut self, sprite: &mut Sprite) {
         if self.animation.count == 0 {
             return;
         }
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
             atlas.index += 1;
+            if atlas.index >= self.animation_frame_max {
+                atlas.index = self.animation_frame_max - 1;
+            }
         }
-        self.pose += self.animation.diff_pose;
         self.animation.count -= 1;
-        transform.translation.y += self.animation.diff_y;
     }
 }
 
@@ -1020,7 +1016,7 @@ fn player_movement(
             // when game phase is 6(gameover), player will perform the loser and winner pose
             if gamestate.phase == 6 && player.animation.count != 0 {
                 transform.translation.y += (270.0 - config.window_size.y / 2.0 - transform.translation.y) / player.animation.count as f32;
-                player.update_animation(&mut sprite);
+                player.update_animation_final(&mut sprite);
                 if player.animation.count == 0 {
                     player.animation.phase = 1;
                     commands.remove_resource::<Fighting>();
@@ -1038,7 +1034,7 @@ fn player_movement(
             if player.state.is_idle() {
                 player.velocity = Vec2::ZERO;
                 if player.animation.phase == 0 {
-                    player.update_animation_idle(&mut transform, &mut sprite);
+                    player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         if player.state.check(PlayerState::COOLDOWN) {
                             player.state &= !PlayerState::COOLDOWN;
