@@ -7,16 +7,62 @@ use bevy::prelude::*;
 #[derive(Component)]
 struct ShowResult;
 
-/// プレイ回数を記録する構造体
+/// Structure to record play count
 #[derive(Debug, Default)]
 struct PlayCount {
     single_mode: u32,
     multi_mode: u32,
+    time_slot: String,
 }
 
 impl PlayCount {
     const FILE_PATH: &'static str = "statistics.txt";
-    /// load from statistics.txt
+    
+    /// Get current time slot (e.g., "2025-10-29 14:00-15:00")
+    fn get_current_time_slot() -> String {
+        use std::time::SystemTime;
+        
+        let now = SystemTime::now();
+        let duration_since_epoch = now.duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Time went backwards");
+        let timestamp = duration_since_epoch.as_secs();
+        
+        // Get UTC time (in seconds)
+        let total_seconds = timestamp;
+        let total_minutes = total_seconds / 60;
+        let total_hours = total_minutes / 60;
+        let total_days = total_hours / 24;
+        
+        // Calculate date from days since January 1, 1970
+        let year = 1970 + (total_days / 365) as i32;
+        let day_of_year = (total_days % 365) as u32;
+        
+        // Simple month/day calculation (ignoring leap years)
+        let (month, day) = Self::day_of_year_to_month_day(day_of_year);
+        
+        // JST (+9 hours)
+        let hour_utc = (total_hours % 24) as u32;
+        let hour_jst = (hour_utc + 9) % 24;
+        
+        format!("{:04}-{:02}-{:02} {:02}:00-{:02}:00", 
+                year, month, day, hour_jst, (hour_jst + 1) % 24)
+    }
+    
+    /// Convert day of year to month and day
+    fn day_of_year_to_month_day(day_of_year: u32) -> (u32, u32) {
+        let days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        let mut remaining_days = day_of_year;
+        
+        for (month_idx, &days) in days_in_month.iter().enumerate() {
+            if remaining_days < days {
+                return ((month_idx + 1) as u32, remaining_days + 1);
+            }
+            remaining_days -= days;
+        }
+        (12, 31) // Fallback
+    }
+    
+    /// Load from statistics.txt (read only the latest section)
     fn load() -> Self {
         let path = std::path::PathBuf::from(Self::FILE_PATH);
 
@@ -24,13 +70,29 @@ impl PlayCount {
             Ok(content) => {
                 let mut single = 0;
                 let mut multi = 0;
+                let mut time_slot = String::new();
+                let mut in_latest_section = false;
                 
-                for line in content.lines() {
-                    if line.starts_with("Single Mode:") {
+                // Find the last section
+                let lines: Vec<&str> = content.lines().collect();
+                for i in (0..lines.len()).rev() {
+                    let line = lines[i];
+                    
+                    if line.starts_with("=====") {
+                        // If a separator is found, the latest section is after it
+                        break;
+                    }
+                    
+                    if line.starts_with("Time Slot:") && !in_latest_section {
+                        if let Some(time_str) = line.split("Time Slot:").nth(1) {
+                            time_slot = time_str.trim().to_string();
+                            in_latest_section = true;
+                        }
+                    } else if line.starts_with("Single Mode:") && in_latest_section {
                         if let Some(count_str) = line.split(':').nth(1) {
                             single = count_str.trim().parse().unwrap_or(0);
                         }
-                    } else if line.starts_with("Multi Mode:") {
+                    } else if line.starts_with("Multi Mode:") && in_latest_section {
                         if let Some(count_str) = line.split(':').nth(1) {
                             multi = count_str.trim().parse().unwrap_or(0);
                         }
@@ -40,6 +102,7 @@ impl PlayCount {
                 PlayCount {
                     single_mode: single,
                     multi_mode: multi,
+                    time_slot,
                 }
             }
             Err(_) => PlayCount::default(),
@@ -47,18 +110,56 @@ impl PlayCount {
     }
 
     /// save the play count to statistics.txt
-    fn save(&self) -> std::io::Result<()> {
+    fn save(&self, mode: GameMode) -> std::io::Result<()> {
         let path = std::path::PathBuf::from(Self::FILE_PATH);
-        let content = format!(
-            "Single Mode: {}\nMulti Mode: {}\n",
-            self.single_mode, self.multi_mode
-        );
+        let current_time_slot = Self::get_current_time_slot();
         
-        std::fs::write(&path, content)?;
+        // Read existing content
+        let existing_content = std::fs::read_to_string(&path).unwrap_or_default();
+        
+        // If time slot has changed
+        if self.time_slot != current_time_slot {
+            let mut new_content = existing_content;
+            
+            // Add separator if there is existing content
+            if !new_content.is_empty() {
+                new_content.push_str("\n========================================\n\n");
+            }
+            
+            // Create new section
+            new_content.push_str(&format!("Time Slot: {}\n", current_time_slot));
+            
+            // New count (initialize according to mode)
+            let (single, multi) = match mode {
+                GameMode::SinglePlayer => (1, 0),
+                GameMode::MultiPlayer => (0, 1),
+            };
+            
+            new_content.push_str(&format!("Single Mode: {}\n", single));
+            new_content.push_str(&format!("Multi Mode: {}\n", multi));
+            
+            std::fs::write(&path, new_content)?;
+        } else {
+            // If same time slot, update the latest section
+            let mut lines: Vec<String> = existing_content.lines().map(|s| s.to_string()).collect();
+            
+            // Update Single Mode and Multi Mode in the last section
+            for i in (0..lines.len()).rev() {
+                if lines[i].starts_with("Single Mode:") {
+                    lines[i] = format!("Single Mode: {}", self.single_mode);
+                } else if lines[i].starts_with("Multi Mode:") {
+                    lines[i] = format!("Multi Mode: {}", self.multi_mode);
+                }
+            }
+            
+            let new_content = lines.join("\n") + "\n";
+            std::fs::write(&path, new_content)?;
+        }
+        
         Ok(())
     }
     
-    /// increment the play count based on game mode
+    /// Increment the play count based on game mode
     fn increment(&mut self, mode: GameMode) {
         match mode {
             GameMode::SinglePlayer => self.single_mode += 1,
@@ -77,10 +178,10 @@ fn setup(
 ) {
     info!("setup");
 
-    // プレイ回数を記録
+    // Record play count
     let mut play_count = PlayCount::load();
     play_count.increment(game_config.mode);
-    if let Err(e) = play_count.save() {
+    if let Err(e) = play_count.save(game_config.mode) {
         error!("Failed to save play count: {}", e);
     } else {
         info!("Play count saved: Single Mode: {}, Multi Mode: {}", 
