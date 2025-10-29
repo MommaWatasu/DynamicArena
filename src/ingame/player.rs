@@ -321,7 +321,7 @@ impl Player {
                     }
                 } else {
                     atlas.index += 1;
-                    if atlas.index == self.animation_frame_max - 1 {
+                    if atlas.index >= self.animation_frame_max {
                         atlas.index = 0;
                     }
                 }
@@ -1052,6 +1052,8 @@ fn player_movement(
                 } else if player.animation.phase == 2 {
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
+                        // Reset sprite index when looping back to phase 1
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
                         player.set_animation(IDLE_POSE2, 1, 15);
                     }
                 }
@@ -2344,8 +2346,8 @@ fn check_attack(
                     if !player.state.check(PlayerState::BEND_DOWN) && player.stun_count <= 3 {
                         player.stun_count -= 1;
                         if player.stun_count == 0 {
-                            // after 3 hits, player will be invicible for 240 frames(4 seconds)
-                            player.stun_count = 243;
+                            // after 3 hits, player will be invicible for 120 frames(2 seconds)
+                            player.stun_count = 123;
                         }
                         if player.state.is_idle() {
                             sprite.image = character_textures.textures[player.character_id as usize].attacked.clone();
