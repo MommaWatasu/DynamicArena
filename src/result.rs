@@ -1,5 +1,5 @@
 use crate::{
-    ingame::GameState, AppState, SoundEffect, Score, BGM, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_EXTRA_BOLD_FONT,
+    ingame::GameState, AppState, GameConfig, GameMode, SoundEffect, Score, BGM, PATH_SOUND_PREFIX, DEFAULT_FONT_SIZE, PATH_BOLD_FONT, PATH_BOLD_JP_FONT, PATH_EXTRA_BOLD_FONT,
     PATH_IMAGE_PREFIX, TITLE_FONT_SIZE,
 };
 use bevy::prelude::*;
@@ -7,14 +7,85 @@ use bevy::prelude::*;
 #[derive(Component)]
 struct ShowResult;
 
+/// プレイ回数を記録する構造体
+#[derive(Debug, Default)]
+struct PlayCount {
+    single_mode: u32,
+    multi_mode: u32,
+}
+
+impl PlayCount {
+    const FILE_PATH: &'static str = "statistics.txt";
+    /// load from statistics.txt
+    fn load() -> Self {
+        let path = std::path::PathBuf::from(Self::FILE_PATH);
+
+        match std::fs::read_to_string(&path) {
+            Ok(content) => {
+                let mut single = 0;
+                let mut multi = 0;
+                
+                for line in content.lines() {
+                    if line.starts_with("Single Mode:") {
+                        if let Some(count_str) = line.split(':').nth(1) {
+                            single = count_str.trim().parse().unwrap_or(0);
+                        }
+                    } else if line.starts_with("Multi Mode:") {
+                        if let Some(count_str) = line.split(':').nth(1) {
+                            multi = count_str.trim().parse().unwrap_or(0);
+                        }
+                    }
+                }
+                
+                PlayCount {
+                    single_mode: single,
+                    multi_mode: multi,
+                }
+            }
+            Err(_) => PlayCount::default(),
+        }
+    }
+
+    /// save the play count to statistics.txt
+    fn save(&self) -> std::io::Result<()> {
+        let path = std::path::PathBuf::from(Self::FILE_PATH);
+        let content = format!(
+            "Single Mode: {}\nMulti Mode: {}\n",
+            self.single_mode, self.multi_mode
+        );
+        
+        std::fs::write(&path, content)?;
+        Ok(())
+    }
+    
+    /// increment the play count based on game mode
+    fn increment(&mut self, mode: GameMode) {
+        match mode {
+            GameMode::SinglePlayer => self.single_mode += 1,
+            GameMode::MultiPlayer => self.multi_mode += 1,
+        }
+    }
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     gamestate: Res<GameState>,
+    game_config: Res<GameConfig>,
     mut score: ResMut<Score>,
     audio_query: Query<Entity, With<BGM>>
 ) {
     info!("setup");
+
+    // プレイ回数を記録
+    let mut play_count = PlayCount::load();
+    play_count.increment(game_config.mode);
+    if let Err(e) = play_count.save() {
+        error!("Failed to save play count: {}", e);
+    } else {
+        info!("Play count saved: Single Mode: {}, Multi Mode: {}", 
+              play_count.single_mode, play_count.multi_mode);
+    }
 
     for entity in audio_query.iter() {
         commands.entity(entity).despawn();
@@ -44,7 +115,7 @@ fn setup(
                 .spawn((
                     Node {
                         width: Val::Percent(80.0),
-                        height: Val::Percent(80.0),
+                        height: Val::Percent(90.0),
                         flex_direction: FlexDirection::Column,
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -84,6 +155,17 @@ fn setup(
                             create_round_result(spawner, &asset_server, 3, gamestate.winners[2]);
                             create_total_result(spawner, &asset_server, gamestate.get_winner(), score.0);
                         });
+                    spawner
+                        .spawn((
+                            Text::new("景品を受け取って、次の人に交代してね！"),
+                            TextFont {
+                                font: asset_server.load(PATH_BOLD_JP_FONT),
+                                font_size: DEFAULT_FONT_SIZE,
+                                ..Default::default()
+                            },
+                            TextColor(Color::BLACK),
+                            TextLayout::new_with_justify(JustifyText::Center),
+                        ));
                     spawner
                         .spawn((
                             Button,
