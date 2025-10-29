@@ -71,30 +71,27 @@ impl PlayCount {
                 let mut single = 0;
                 let mut multi = 0;
                 let mut time_slot = String::new();
-                let mut in_latest_section = false;
                 
-                // Find the last section
-                let lines: Vec<&str> = content.lines().collect();
-                for i in (0..lines.len()).rev() {
-                    let line = lines[i];
-                    
-                    if line.starts_with("=====") {
-                        // If a separator is found, the latest section is after it
-                        break;
-                    }
-                    
-                    if line.starts_with("Time Slot:") && !in_latest_section {
-                        if let Some(time_str) = line.split("Time Slot:").nth(1) {
-                            time_slot = time_str.trim().to_string();
-                            in_latest_section = true;
-                        }
-                    } else if line.starts_with("Single Mode:") && in_latest_section {
-                        if let Some(count_str) = line.split(':').nth(1) {
-                            single = count_str.trim().parse().unwrap_or(0);
-                        }
-                    } else if line.starts_with("Multi Mode:") && in_latest_section {
-                        if let Some(count_str) = line.split(':').nth(1) {
-                            multi = count_str.trim().parse().unwrap_or(0);
+                // Find the last section by splitting on separators
+                let sections: Vec<&str> = content.split("========================================").collect();
+                
+                // Get the last section (most recent)
+                if let Some(last_section) = sections.last() {
+                    for line in last_section.lines() {
+                        let line = line.trim();
+                        
+                        if line.starts_with("Time Slot:") {
+                            if let Some(time_str) = line.split("Time Slot:").nth(1) {
+                                time_slot = time_str.trim().to_string();
+                            }
+                        } else if line.starts_with("Single Mode:") {
+                            if let Some(count_str) = line.split(':').nth(1) {
+                                single = count_str.trim().parse().unwrap_or(0);
+                            }
+                        } else if line.starts_with("Multi Mode:") {
+                            if let Some(count_str) = line.split(':').nth(1) {
+                                multi = count_str.trim().parse().unwrap_or(0);
+                            }
                         }
                     }
                 }
@@ -149,6 +146,9 @@ impl PlayCount {
                     lines[i] = format!("Single Mode: {}", self.single_mode);
                 } else if lines[i].starts_with("Multi Mode:") {
                     lines[i] = format!("Multi Mode: {}", self.multi_mode);
+                } else if lines[i] == "========================================" {
+                    // Reached the separator, stop updating
+                    break;
                 }
             }
             
