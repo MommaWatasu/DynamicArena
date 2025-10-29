@@ -548,16 +548,16 @@ impl Agent {
         // Add random inaction for Easy and Normal levels to make them less aggressive
         let final_action = match self.level {
             Level::Easy => {
-                // Easy: 50% chance to do nothing instead of the selected action
-                if rand() < 0.5 && new_action != Action::Skill {
+                // Easy: 99.9% chance to do nothing instead of the selected action
+                if rand() < 0.999 && new_action != Action::Skill {
                     Action::None
                 } else {
                     new_action
                 }
             }
             Level::Normal => {
-                // Normal: 25% chance to do nothing instead of the selected action
-                if rand() < 0.25 && new_action != Action::Skill {
+                // Normal: 50% chance to do nothing instead of the selected action
+                if rand() < 0.50 && new_action != Action::Skill {
                     Action::None
                 } else {
                     new_action
