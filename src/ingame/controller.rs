@@ -13,8 +13,10 @@ fn controller_system(
     mut fighting: ResMut<Fighting>,
     character_textures: Res<CharacterTextures>,
     gamepads: Query<(&Gamepad, Entity)>,
-    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite)>,
+    mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>,
 ) {
+    update_facing(&mut player_query);
+
     #[allow(unused_assignments)]
     let mut id = 0;
     for (gamepad, entity) in gamepads.iter() {
@@ -23,7 +25,7 @@ fn controller_system(
         } else {
             id = 1;
         }
-        for (mut player, player_id, mut sprite) in player_query.iter_mut() {
+        for (mut player, player_id, mut sprite, _) in player_query.iter_mut() {
             if player_id.0 != id {
                 continue;
             } else if player.state.check(PlayerState::COOLDOWN) {
@@ -32,40 +34,41 @@ fn controller_system(
 
             if gamepad.pressed(GamepadButton::DPadLeft) {
                 if player.state.is_idle() {
-                // player is just walking
-                sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
-                if player.pose.facing {
-                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                } else {
-                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                    // player is just walking
+                    sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
+                    if player.pose.facing {
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                    } else {
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                    }
+                    player.animation_frame_max = FRAMES_WALK;
+                    player.state |= PlayerState::WALKING;
+                    player.pose.set(WALKING_POSE1);
+                    player.set_animation(WALKING_POSE2, 1, 15);
                 }
-                player.animation_frame_max = FRAMES_WALK;
-                player.state |= PlayerState::WALKING;
-                player.pose.set(WALKING_POSE1);
-                player.set_animation(WALKING_POSE2, 1, 15);
-            }
-            // direction is right
-            player.state |= PlayerState::DIRECTION;
+                // direction is left
+                player.state &= !PlayerState::DIRECTION;
             } else if gamepad.pressed(GamepadButton::DPadRight) {
                 if player.state.is_idle() {
-                // player is just walking
-                sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
-                if !player.pose.facing {
-                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
-                } else {
-                    sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                    // player is just walking
+                    sprite.image = character_textures.textures[player.character_id as usize].walk.clone();
+                    if !player.pose.facing {
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);
+                    } else {
+                        sprite.texture_atlas.as_mut().map(|atlas| atlas.index = FRAMES_WALK - 1);
+                    }
+                    player.animation_frame_max = FRAMES_WALK;
+                    player.state |= PlayerState::WALKING;
+                    player.pose.set(WALKING_POSE1);
+                    player.set_animation(WALKING_POSE2, 1, 15);
                 }
-                player.animation_frame_max = FRAMES_WALK;
-                player.state |= PlayerState::WALKING;
-                player.pose.set(WALKING_POSE1);
-                player.set_animation(WALKING_POSE2, 1, 15);
-            }
-            // direction is left
-            player.state &= !PlayerState::DIRECTION;
+                // direction is right
+                player.state |= PlayerState::DIRECTION;
             } else {
                 // player is not walking
                 if player.state.check(PlayerState::WALKING) {
                     player.state &= !PlayerState::WALKING;
+                    player.velocity = Vec2::ZERO;
                     if player.state.is_idle() {
                         sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
                         sprite.texture_atlas.as_mut().map(|atlas| atlas.index = 0);

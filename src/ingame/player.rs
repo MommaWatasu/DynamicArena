@@ -1406,8 +1406,10 @@ fn player_movement(
                 // no collision, player moves freely
                 if !player.state.check(PlayerState::STUN) {
                     // if not in stun state, apply velocity
-                    transform.translation +=
-                        Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+                    if !player.state.check(PlayerState::BACK_KICKING) {
+                        transform.translation +=
+                            Vec3::new(player.velocity.x, player.velocity.y, 0.0) * PIXELS_PER_METER / FPS;
+                    }
                 } else if player.state.check(PlayerState::STUN) && player.animation.phase == 2 {
                     // if in stun state and falling down, apply velocity
                     transform.translation +=
