@@ -91,8 +91,11 @@ fn setup(
                             TextColor(Color::BLACK),
                         ));
                 });
-            
-            config.characters_id = [0, choose_rand_character(0)];
+            if config.mode == GameMode::SinglePlayer {
+                config.characters_id = [0, choose_rand_character(0)];
+            } else {
+                config.characters_id = [0, 2];
+            }
             spawner
                 .spawn(Node {
                     width: Val::Percent(100.0),
@@ -333,7 +336,7 @@ fn controller_input(
                     }
                     if text.0 == format!("Player {}", id+1) {
                         text.0 = "".to_string();
-                    } else if character_id_text.0 == config.characters_id[0] {
+                    } else if character_id_text.0 == config.characters_id[id] {
                         text.0 = format!("Player {}", id+1);
                     }
                 }
@@ -350,7 +353,7 @@ fn controller_input(
                     }
                     if text.0 == format!("Player {}", id+1) {
                         text.0 = "".to_string();
-                    } else if character_id_text.0 == config.characters_id[0] {
+                    } else if character_id_text.0 == config.characters_id[id] {
                         text.0 = format!("Player {}", id+1);
                     }
                 }
