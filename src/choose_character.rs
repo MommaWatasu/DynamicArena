@@ -373,15 +373,23 @@ fn keyboard_input(
     mut config: ResMut<GameConfig>,
     mut text_query: Query<(&mut Text, &TextColor, &CharacterID)>,
 ) {
+    /*
     if config.mode == GameMode::MultiPlayer {
         // keyboard is invaild in multi player mode
         return;
     }
+    */
     
     let mut character_id = 0;
     for (text, _, character_id_text) in text_query.iter_mut() {
-        if text.0 == "Player 1".to_string() {
-            character_id = character_id_text.0;
+        if config.mode == GameMode::MultiPlayer {
+            if text.0 == "Player 2".to_string() {
+                character_id = character_id_text.0;
+            }
+        } else {
+            if text.0 == "Player 1".to_string() {
+                character_id = character_id_text.0;
+            }
         }
     }
     if keys.just_pressed(KeyCode::KeyD) {
@@ -392,10 +400,18 @@ fn keyboard_input(
                 if text_color.0 == Color::srgba(0.0, 0.0, 10.0, 0.8) {
                     continue;
                 }
-                if text.0 == "Player 1".to_string() {
-                    text.0 = "".to_string();
-                } else if character_id_text.0 == config.characters_id[0] {
-                    text.0 = "Player 1".to_string();
+                if config.mode == GameMode::MultiPlayer {
+                    if text.0 == "Player 2".to_string() {
+                        text.0 = "".to_string();
+                    } else if character_id_text.0 == config.characters_id[1] {
+                        text.0 = "Player 2".to_string();
+                    }
+                } else {
+                    if text.0 == "Player 1".to_string() {
+                        text.0 = "".to_string();
+                    } else if character_id_text.0 == config.characters_id[0] {
+                        text.0 = "Player 1".to_string();
+                    }
                 }
             }
         }
@@ -407,10 +423,18 @@ fn keyboard_input(
                 if text_color.0 == Color::srgba(0.0, 0.0, 10.0, 0.8) {
                     continue;
                 }
-                if text.0 == "Player 1".to_string() {
-                    text.0 = "".to_string();
-                } else if character_id_text.0 == config.characters_id[0] {
-                    text.0 = "Player 1".to_string();
+                if config.mode == GameMode::MultiPlayer {
+                    if text.0 == "Player 2".to_string() {
+                        text.0 = "".to_string();
+                    } else if character_id_text.0 == config.characters_id[1] {
+                        text.0 = "Player 2".to_string();
+                    }
+                } else {
+                    if text.0 == "Player 1".to_string() {
+                        text.0 = "".to_string();
+                    } else if character_id_text.0 == config.characters_id[0] {
+                        text.0 = "Player 1".to_string();
+                    }
                 }
             }
         }
