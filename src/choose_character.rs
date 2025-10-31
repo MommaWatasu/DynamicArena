@@ -397,16 +397,19 @@ fn keyboard_input(
             config.characters_id[0] = character_id + 1;
             config.characters_id[1] = choose_rand_character(config.characters_id[0]);
             for (mut text, text_color, character_id_text) in text_query.iter_mut() {
-                if text_color.0 == Color::srgba(0.0, 0.0, 10.0, 0.8) {
-                    continue;
-                }
                 if config.mode == GameMode::MultiPlayer {
+                    if text_color.0 == Color::srgba(10.0, 0.0, 0.0, 0.8) {
+                        continue;
+                    }
                     if text.0 == "Player 2".to_string() {
                         text.0 = "".to_string();
                     } else if character_id_text.0 == config.characters_id[1] {
                         text.0 = "Player 2".to_string();
                     }
                 } else {
+                    if text_color.0 == Color::srgba(0.0, 0.0, 10.0, 0.8) {
+                        continue;
+                    }
                     if text.0 == "Player 1".to_string() {
                         text.0 = "".to_string();
                     } else if character_id_text.0 == config.characters_id[0] {
@@ -420,16 +423,19 @@ fn keyboard_input(
             config.characters_id[0] = character_id - 1;
             config.characters_id[1] = choose_rand_character(config.characters_id[0]);
             for (mut text, text_color, character_id_text) in text_query.iter_mut() {
-                if text_color.0 == Color::srgba(0.0, 0.0, 10.0, 0.8) {
-                    continue;
-                }
                 if config.mode == GameMode::MultiPlayer {
+                    if text_color.0 == Color::srgba(10.0, 0.0, 0.0, 0.8) {
+                        continue;
+                    }
                     if text.0 == "Player 2".to_string() {
                         text.0 = "".to_string();
                     } else if character_id_text.0 == config.characters_id[1] {
                         text.0 = "Player 2".to_string();
                     }
                 } else {
+                    if text_color.0 == Color::srgba(0.0, 0.0, 10.0, 0.8) {
+                        continue;
+                    }
                     if text.0 == "Player 1".to_string() {
                         text.0 = "".to_string();
                     } else if character_id_text.0 == config.characters_id[0] {
