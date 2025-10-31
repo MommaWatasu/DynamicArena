@@ -687,8 +687,10 @@ fn keyboard_input(
 ) {
     #[cfg(not(target_arch="wasm32"))]
     if config.gamepads[0] != Entity::from_raw(0) {
+        /*
         // if gamepad is enabled, we don't handle keyboard input
         return;
+        */
     }
 
     update_facing(&mut player_query);
@@ -703,6 +705,9 @@ fn keyboard_input(
 
         #[cfg(not(target_arch="wasm32"))]
         if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
+            continue;
+        }
+        if config.gamepads[0] != Entity::from_raw(0) && player_id.0 == 0 {
             continue;
         }
         if player.state.check(PlayerState::COOLDOWN) {
