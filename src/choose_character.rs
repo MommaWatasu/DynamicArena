@@ -394,8 +394,12 @@ fn keyboard_input(
     }
     if keys.just_pressed(KeyCode::KeyD) {
         if character_id != 2 {
-            config.characters_id[0] = character_id + 1;
-            config.characters_id[1] = choose_rand_character(config.characters_id[0]);
+            if config.mode == GameMode::MultiPlayer {
+                config.characters_id[1] = character_id + 1;
+            } else {
+                config.characters_id[0] = character_id + 1;
+                config.characters_id[1] = choose_rand_character(config.characters_id[0]);
+            }
             for (mut text, text_color, character_id_text) in text_query.iter_mut() {
                 if config.mode == GameMode::MultiPlayer {
                     if text_color.0 == Color::srgba(10.0, 0.0, 0.0, 0.8) {
@@ -420,8 +424,12 @@ fn keyboard_input(
         }
     } else if keys.just_pressed(KeyCode::KeyA) {
         if character_id != 0 {
-            config.characters_id[0] = character_id - 1;
-            config.characters_id[1] = choose_rand_character(config.characters_id[0]);
+            if config.mode == GameMode::MultiPlayer {
+                config.characters_id[1] = character_id - 1;
+            } else {
+                config.characters_id[0] = character_id - 1;
+                config.characters_id[1] = choose_rand_character(config.characters_id[0]);
+            }
             for (mut text, text_color, character_id_text) in text_query.iter_mut() {
                 if config.mode == GameMode::MultiPlayer {
                     if text_color.0 == Color::srgba(10.0, 0.0, 0.0, 0.8) {
