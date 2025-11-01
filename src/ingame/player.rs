@@ -2414,6 +2414,7 @@ fn check_attack(
 }
 
 fn avoid_collision(
+    player_collision: Res<PlayerCollision>,
     mut player_query: Query<(&Player, &PlayerID, &mut Transform)>,
 ) {
     // no collision
