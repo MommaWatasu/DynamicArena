@@ -214,7 +214,8 @@ fn controller_system(
 
             if gamepad.just_pressed(GamepadButton::West) {
                 if (player.pose.facing && gamepad.pressed(GamepadButton::DPadLeft))
-                    || (!player.pose.facing && gamepad.pressed(GamepadButton::DPadRight)) {
+                    || (!player.pose.facing && gamepad.pressed(GamepadButton::DPadRight))
+                    && !player.state.check(PlayerState::BACK_KICKING) {
                     // player is idle
                     // then player will back kick
                     sprite.image = character_textures.textures[player.character_id as usize].back_kick.clone();
