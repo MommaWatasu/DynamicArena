@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     ingame::{player::*, pose::*, Fighting},
     character_def::{CHARACTER_PROFILES, FIRE_CHARGE_MAX},
-    AppState, GameConfig, CharacterTextures,
+    AppState, GameConfig, GameMode, CharacterTextures,
 };
 
 // TODO: controller system is old and needs to be updated based on the new animation system
@@ -24,6 +24,11 @@ fn controller_system(
             id = 0;
         } else {
             id = 1;
+        }
+        
+        // シングルプレイの場合、コントローラー2の入力は無視
+        if game_config.mode == GameMode::SinglePlayer && id == 1 {
+            continue;
         }
         for (mut player, player_id, mut sprite, _) in player_query.iter_mut() {
             if player_id.0 != id {
@@ -213,8 +218,8 @@ fn controller_system(
             }
 
             if gamepad.just_pressed(GamepadButton::West) {
-                if (player.pose.facing && gamepad.pressed(GamepadButton::DPadLeft))
-                    || (!player.pose.facing && gamepad.pressed(GamepadButton::DPadRight))
+                if ((player.pose.facing && gamepad.pressed(GamepadButton::DPadLeft))
+                    || (!player.pose.facing && gamepad.pressed(GamepadButton::DPadRight)))
                     && !player.state.check(PlayerState::BACK_KICKING) {
                     // player is idle
                     // then player will back kick
