@@ -1076,18 +1076,25 @@ fn player_movement(
                             transform.translation.x += 5.0;
                         }
                     }
+                    // Apply gravity during stun animation phase 0 if in the air
+                    if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
+                        player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 3.0 / FPS);
+                    }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         player.set_animation(STUN_POSE1, 1, 18);
                     }
                 } else if player.animation.phase == 1 {
+                    // Apply gravity during stun animation phase 1 if in the air
+                    if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
+                        player.velocity -= Vec2::new(0.0, GRAVITY_ACCEL * 3.0 / FPS);
+                    }
                     player.update_animation(&mut sprite);
                     if player.animation.count == 0 {
                         if transform.translation.y > 270.0 - config.window_size.y / 2.0 {
                             // Still in the air - enter falling phase
                             player.animation.phase = 2;
-                            // Reset velocity to 0 so player falls from current position
-                            player.velocity = Vec2::ZERO;
+                            // Don't reset velocity - let gravity take effect
                         } else {
                             // On the ground - return to idle
                             sprite.image = character_textures.textures[player.character_id as usize].idle.clone();
