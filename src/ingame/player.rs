@@ -1814,6 +1814,8 @@ fn skill_animation(
                             let mut transform = camera_query.single_mut().unwrap();
                             transform.translation.x = 0.0;
                             transform.translation.y = 0.0;
+                            
+                            player.animation.phase = 7;
                         }
                     } else if player.character_id == 1 {
                         player.animation.count += 1;
@@ -2399,7 +2401,7 @@ fn check_attack(
 }
 
 fn avoid_collision(
-    player_collision: Res<PlayerCollision>,
+    mut player_collision: ResMut<PlayerCollision>,
     mut player_query: Query<(&Player, &PlayerID, &mut Transform)>,
 ) {
     // no collision
@@ -2413,6 +2415,8 @@ fn avoid_collision(
     {
         transform.translation.x += if player.pose.facing { -1.0 } else { 1.0 };
     }
+    // Reset collision state after moving to prevent continuous backward movement
+    player_collision.0 = 2;
 }
 
 // coefficiency for each attack
