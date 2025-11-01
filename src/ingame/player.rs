@@ -399,7 +399,7 @@ impl Debug for BodyParts {
 }
 
 #[derive(Resource)]
-struct PlayerCollision(u8);
+pub struct PlayerCollision(pub u8);
 
 /// Spawns a player character with the specified ID and character profile.
 ///
@@ -1572,7 +1572,7 @@ fn player_movement(
 // This function handles the skill animation
 fn skill_animation(
     mut commands: Commands,
-    mut fighting: ResMut<Fighting>,
+    mut fighting: (ResMut<Fighting>, ResMut<PlayerCollision>),
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
@@ -1601,17 +1601,18 @@ fn skill_animation(
     >,
 ) {
     // normal animation
-    if fighting.0 == 0 {
+    if fighting.0.0 == 0 {
         return;
     }
+    fighting.1.0 = 2;
     timer.timer.tick(time.delta());
     if timer.timer.just_finished() {
         // perform skill animation
-        if fighting.0 != 0 {
+        if fighting.0.0 != 0 {
             let mut opponent_position = Vec2::ZERO;
             if let Some((_, _, _, transform, _)) = player_query
                 .iter_mut()
-                .find(|(_, id, _, _, _)| id.0 != fighting.0 - 1)
+                .find(|(_, id, _, _, _)| id.0 != fighting.0.0 - 1)
             {
                 opponent_position = Vec2::new(transform.translation.x, transform.translation.y);
             }
@@ -1619,7 +1620,7 @@ fn skill_animation(
             if let Some((mut player, player_id, mut sprite, mut transform, mut player_visibility)) =
                 player_query
                     .iter_mut()
-                    .find(|(_, id, _, _, _)| id.0 == fighting.0 - 1)
+                    .find(|(_, id, _, _, _)| id.0 == fighting.0.0 - 1)
             {
                 if player.animation.phase == 0 {
                     player.animation.count += 1;
@@ -1917,7 +1918,7 @@ fn skill_animation(
                     player.animation.phase = 0;
                     player.animation.count = 0;
                     player.state &= !PlayerState::SKILL;
-                    fighting.0 = 0;
+                    fighting.0.0 = 0;
                     if let Some((_, mesh_handler, _)) =
                         energy_query.iter().find(|x| x.2 == player_id)
                     {
@@ -1936,7 +1937,7 @@ fn skill_animation(
                 if damage != 0 {
                     if let Some((mut player, player_id, _, _, _)) = player_query
                         .iter_mut()
-                        .find(|(_, id, _, _, _)| id.0 != fighting.0 - 1)
+                        .find(|(_, id, _, _, _)| id.0 != fighting.0.0 - 1)
                     {
                         for (player_id_text, mut text, mut color, mut damage_display) in
                             damage_display_query.iter_mut()

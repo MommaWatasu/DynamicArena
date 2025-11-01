@@ -4,7 +4,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
 use bevy_rapier2d::prelude::*;
-use crate::{CharacterTextures, BGM, GameMode};
+use crate::{CharacterTextures, BGM, GameMode, ingame::player::PlayerCollision};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::ingame::pose::{FRAMES_VICTORY, FRAMES_DEFEATED};
 
@@ -1317,7 +1317,7 @@ fn check_gameset(
 fn main_game_system(
     mut commands: Commands,
     time: Res<Time>,
-    config: Res<GameConfig>,
+    mut config: (Res<GameConfig>, ResMut<PlayerCollision>),
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut gamestate: ResMut<GameState>,
@@ -1554,12 +1554,14 @@ fn main_game_system(
                         player.reset(id);
                         if cfg!(feature="phone") {
                             transform.translation.x = if id.0 == 0 { -250.0 } else { 250.0 };
-                            transform.translation.y = 135.0 - config.window_size.y / 2.0;
+                            transform.translation.y = 135.0 - config.0.window_size.y / 2.0;
                         } else {
                             transform.translation.x = if id.0 == 0 { -500.0 } else { 500.0 };
-                            transform.translation.y = 270.0 - config.window_size.y / 2.0;
+                            transform.translation.y = 270.0 - config.0.window_size.y / 2.0;
                         }
                     }
+                    //reset player collision state
+                    config.1.0 = 2;
 
                     // reset health bar
                     for (mut health_bar, mesh_handler, health_id) in health_query.iter_mut() {
