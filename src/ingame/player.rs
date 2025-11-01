@@ -1700,20 +1700,25 @@ fn skill_animation(
                         }
                     } else if player.character_id == 2 {
                         // character 2 skill
-                        commands.spawn((
-                            Sprite {
-                                image: asset_server.load(format!("{}fist.png", PATH_IMAGE_PREFIX)),
-                                ..Default::default()
-                            },
-                            Transform::from_translation(Vec3::new(
-                                opponent_position.x,
-                                0.0,
-                                20.0,
-                            )),
-                            SkillEntity { id: 3 },
-                        ));
-                        player.animation.phase = 3;
-                        player.animation.count = 60;
+                        player.animation.count += 1;
+                        if player.animation.count == 1 {
+                            commands.spawn((
+                                Sprite {
+                                    image: asset_server.load(format!("{}fist.png", PATH_IMAGE_PREFIX)),
+                                    ..Default::default()
+                                },
+                                Transform::from_translation(Vec3::new(
+                                    opponent_position.x,
+                                    0.0,
+                                    20.0,
+                                )),
+                                SkillEntity { id: 3 },
+                            ));
+                        }
+                        if player.animation.count == 1 {
+                            player.animation.phase = 3;
+                            player.animation.count = 60;
+                        }
                     }
                 } else if player.animation.phase == 3 {
                     if player.character_id == 0 {
