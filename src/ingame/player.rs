@@ -2428,8 +2428,6 @@ fn avoid_collision(
     {
         transform.translation.x += if player.pose.facing { -1.0 } else { 1.0 };
     }
-    // Reset collision state after moving to prevent continuous backward movement
-    player_collision.0 = 2;
 }
 
 // coefficiency for each attack
