@@ -707,6 +707,7 @@ fn keyboard_input(
         if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
             continue;
         }
+        #[cfg(not(target_arch="wasm32"))]
         if config.gamepads[0] != Entity::from_raw(0) {
             continue;
         }
