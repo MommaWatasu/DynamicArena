@@ -15,6 +15,12 @@ fn controller_system(
     gamepads: Query<(&Gamepad, Entity)>,
     mut player_query: Query<(&mut Player, &PlayerID, &mut Sprite, &mut Transform)>,
 ) {
+    // skill animation
+    // ignore controller input during skill animation
+    if fighting.0 != 0 {
+        return;
+    }
+
     update_facing(&mut player_query);
 
     #[allow(unused_assignments)]
