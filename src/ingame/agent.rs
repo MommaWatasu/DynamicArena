@@ -544,7 +544,7 @@ impl Agent {
             Policy::Defensive => self.select_defensive_action(environment),
             Policy::Neutral => self.select_neutral_action(environment),
         };
-        
+        /*
         // Add random inaction for Easy and Normal levels to make them less aggressive
         let final_action = match self.level {
             Level::Easy => {
@@ -568,11 +568,12 @@ impl Agent {
                 new_action
             }
         };
+        */
         
         // Check if we can change to this new action
-        if self.can_interrupt_for_action(final_action) {
-            self.action_state = ActionState::new(final_action);
-            final_action
+        if self.can_interrupt_for_action(new_action) {
+            self.action_state = ActionState::new(new_action);
+            new_action
         } else {
             // Continue current action if we can't interrupt
             self.action_state.current_action
