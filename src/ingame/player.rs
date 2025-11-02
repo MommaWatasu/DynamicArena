@@ -707,7 +707,7 @@ fn keyboard_input(
         if player_id.0 == 1 && config.mode == GameMode::SinglePlayer {
             continue;
         }
-        if config.gamepads[0] != Entity::from_raw(0) && player_id.0 == 0 {
+        if config.gamepads[0] != Entity::from_raw(0) {
             continue;
         }
         if player.state.check(PlayerState::COOLDOWN) {
@@ -1827,8 +1827,6 @@ fn skill_animation(
                             let mut transform = camera_query.single_mut().unwrap();
                             transform.translation.x = 0.0;
                             transform.translation.y = 0.0;
-                            
-                            player.animation.phase = 7;
                         }
                     } else if player.character_id == 1 {
                         player.animation.count += 1;
